@@ -78,10 +78,20 @@ function ShellChrome({
     void navigate({ to: "/", replace: true });
   };
 
-  // The market is shown as text, never as a control: people cannot reassign
-  // themselves, and every submitted row records the market it was filed under.
+  // Markets are changeable now that people serve several in parallel, so the
+  // chip is a control. Every submitted row keeps the market it was filed
+  // under, so changing this never rewrites history.
   const marketLabel = employee?.primaryMarket ? MARKET_LABELS[employee.primaryMarket] : null;
   const extraMarkets = (employee?.markets.length ?? 0) - 1;
+
+  const changeMarkets = () => {
+    try {
+      window.sessionStorage.removeItem("kijamii-markets-confirmed");
+    } catch {
+      /* storage unavailable; reloading still reaches the question */
+    }
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen bg-background lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
@@ -148,13 +158,18 @@ function ShellChrome({
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {marketLabel && (
-                <span className="hidden items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold sm:inline-flex">
+                <button
+                  type="button"
+                  onClick={changeMarkets}
+                  title="Change your markets or department"
+                  className="hidden items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors hover:border-border-strong sm:inline-flex"
+                >
                   <span className="label-xs">Market</span>
                   {marketLabel}
                   {extraMarkets > 0 && (
                     <span className="text-muted-foreground">+{extraMarkets}</span>
                   )}
-                </span>
+                </button>
               )}
               {actions}
               <ThemeToggle />

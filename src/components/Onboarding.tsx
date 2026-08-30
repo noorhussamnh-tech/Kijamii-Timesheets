@@ -16,17 +16,21 @@ import { MARKETS, MARKET_LABELS, type Market, type ReferenceOption } from "@/lib
 import { cn } from "@/lib/utils";
 
 /**
- * Shown once, on a person's first sign-in.
+ * Shown at every sign-in, pre-filled with the last answer.
  *
- * They choose the markets they work across and their department. After this
- * the fields are locked -- only an admin can change them -- which is what
- * keeps someone from switching market to get a different configuration.
+ * People serve several markets in parallel and move between them, so this is a
+ * confirmation rather than a one-time setup: usually a glance and Continue,
+ * but changeable whenever the work changes. Entries already logged keep the
+ * market that applied when they were written.
  */
-export function Onboarding() {
+export function Onboarding({ onDone }: { onDone?: () => void }) {
   const { employee, refreshEmployee, signOut } = useAuth();
-  const [markets, setMarkets] = useState<Market[]>([]);
-  const [primaryMarket, setPrimaryMarket] = useState<Market | null>(null);
-  const [department, setDepartment] = useState<string>("");
+  // Pre-filled from the profile, so returning simply means confirming.
+  const [markets, setMarkets] = useState<Market[]>(() => employee?.markets ?? []);
+  const [primaryMarket, setPrimaryMarket] = useState<Market | null>(
+    () => employee?.primaryMarket ?? null,
+  );
+  const [department, setDepartment] = useState<string>(() => employee?.department ?? "");
   const [departments, setDepartments] = useState<ReferenceOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +62,7 @@ export function Onboarding() {
     );
   };
 
+  const returning = (employee?.markets.length ?? 0) > 0;
   const canSubmit = markets.length > 0 && primaryMarket !== null && !saving;
 
   const submit = async () => {
@@ -72,6 +77,7 @@ export function Onboarding() {
         expectedWeeklyHours: employee?.expectedWeeklyHours ?? 40,
       });
       await refreshEmployee();
+      onDone?.();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save your details.");
       setSaving(false);
@@ -83,15 +89,18 @@ export function Onboarding() {
       <div className="w-full max-w-md">
         <KijamiiMark tone="light" />
         <div className="mt-6 rounded-xl border bg-surface p-6 shadow-card">
-          <h1 className="text-lg font-bold">Welcome, {employee?.fullName?.split(" ")[0]}</h1>
+          <h1 className="text-lg font-bold">
+            {returning ? "Welcome back" : "Welcome"}, {employee?.fullName?.split(" ")[0]}
+          </h1>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            Two quick questions and you are set up. These decide which clients you see and which
-            timesheet you get, so an admin has to change them later.
+            {returning
+              ? "Still the same markets today? Adjust if the work has moved, or carry on."
+              : "Two quick questions. These decide which clients you see and which timesheet you get."}
           </p>
 
           <fieldset className="mt-6">
             <legend className="label-xs mb-2">
-              Which markets do you work across?<span className="ml-0.5 text-brand">*</span>
+              Which markets are you working across?<span className="ml-0.5 text-brand">*</span>
             </legend>
             <div className="grid grid-cols-3 gap-1.5">
               {MARKETS.map((market) => {
@@ -169,7 +178,7 @@ export function Onboarding() {
 
           <Button className="mt-6 w-full" disabled={!canSubmit} onClick={() => void submit()}>
             {saving && <Loader2 className="size-4 animate-spin" />}
-            {saving ? "Setting up…" : "Continue to my timesheet"}
+            {saving ? "Saving…" : returning ? "Continue" : "Continue to my timesheet"}
           </Button>
 
           <button

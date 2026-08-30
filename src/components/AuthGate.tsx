@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2, ShieldAlert } from "lucide-react";
 
@@ -22,9 +22,37 @@ function Centered({ children }: { children: ReactNode }) {
  * writes regardless of what renders here, so a person who edits the URL gains
  * nothing -- they reach a page whose queries return nothing.
  */
+/**
+ * Remembers, for this browser tab only, that the markets were confirmed.
+ *
+ * sessionStorage rather than localStorage on purpose: the point is to ask
+ * again at the next sign-in, not to remember the answer forever.
+ */
+const CONFIRMED_KEY = "kijamii-markets-confirmed";
+
 export function AuthGate({ children }: { children: ReactNode }) {
   const { status, employee, signOut } = useAuth();
   const navigate = useNavigate();
+  const [confirmed, setConfirmed] = useState(true);
+
+  useEffect(() => {
+    if (status !== "ready" || !employee) return;
+    try {
+      setConfirmed(window.sessionStorage.getItem(CONFIRMED_KEY) === employee.id);
+    } catch {
+      // Storage unavailable: ask, rather than silently skipping the question.
+      setConfirmed(false);
+    }
+  }, [status, employee]);
+
+  const markConfirmed = useCallback(() => {
+    setConfirmed(true);
+    try {
+      if (employee) window.sessionStorage.setItem(CONFIRMED_KEY, employee.id);
+    } catch {
+      /* storage unavailable; it will simply ask again */
+    }
+  }, [employee]);
 
   if (status === "misconfigured") {
     return (
@@ -92,6 +120,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (status === "onboarding" && employee) {
     return <Onboarding />;
+  }
+
+  // Somebody who already has a profile still confirms their markets once per
+  // session, because people move between markets and the answer goes stale.
+  if (status === "ready" && !confirmed) {
+    return <Onboarding onDone={markConfirmed} />;
   }
 
   return <>{children}</>;
