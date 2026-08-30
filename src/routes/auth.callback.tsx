@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 
@@ -22,6 +22,7 @@ export const Route = createFileRoute("/auth/callback")({
 function AuthCallback() {
   const navigate = useNavigate();
   const [failed, setFailed] = useState(false);
+  const exchangeStarted = useRef(false);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -29,6 +30,11 @@ function AuthCallback() {
       setFailed(true);
       return;
     }
+
+    // Strict mode invokes effects twice; without this the second run would
+    // consume the code a second time and race the first.
+    if (exchangeStarted.current) return;
+    exchangeStarted.current = true;
 
     let cancelled = false;
 
@@ -48,10 +54,17 @@ function AuthCallback() {
       const code = params.get("code");
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
+
         if (error) {
-          console.error("[timesheets] code exchange failed", { message: error.message });
-          if (!cancelled) setFailed(true);
-          return;
+          // An auth code is single-use, so a repeated exchange (a refresh, the
+          // back button, an effect running twice) fails even though the first
+          // one worked. Only report a failure if there is genuinely no session.
+          const { data } = await supabase.auth.getSession();
+          if (!data.session) {
+            console.error("[timesheets] code exchange failed", { message: error.message });
+            if (!cancelled) setFailed(true);
+            return;
+          }
         }
       }
 

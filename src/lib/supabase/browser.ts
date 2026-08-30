@@ -16,7 +16,17 @@ let cached: SupabaseClient | null = null;
 export function getSupabaseBrowserClient(): SupabaseClient | null {
   if (!SUPABASE_CONFIGURED) return null;
   if (!cached) {
-    cached = createBrowserClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    cached = createBrowserClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        // The callback route performs the code exchange itself. Leaving this
+        // on makes the library race it: whichever runs second is handed an
+        // already-consumed single-use code and fails, which surfaced as
+        // "Sign-in could not be completed" on a sign-in that had in fact
+        // succeeded.
+        detectSessionInUrl: false,
+        flowType: "pkce",
+      },
+    });
   }
   return cached;
 }
