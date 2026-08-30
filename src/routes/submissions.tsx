@@ -180,12 +180,24 @@ function Submissions() {
               <table className="w-full min-w-[720px] text-left text-[13px]">
                 <thead>
                   <tr className="border-b bg-surface-muted">
-                    <th scope="col" className="label-xs px-3 py-2.5">Week</th>
-                    <th scope="col" className="label-xs px-3 py-2.5">Date range</th>
-                    <th scope="col" className="label-xs px-3 py-2.5 text-right">Total</th>
-                    <th scope="col" className="label-xs px-3 py-2.5 text-right">Billable</th>
-                    <th scope="col" className="label-xs px-3 py-2.5">Status</th>
-                    <th scope="col" className="label-xs px-3 py-2.5">Submitted</th>
+                    <th scope="col" className="label-xs px-3 py-2.5">
+                      Week
+                    </th>
+                    <th scope="col" className="label-xs px-3 py-2.5">
+                      Date range
+                    </th>
+                    <th scope="col" className="label-xs px-3 py-2.5 text-right">
+                      Total
+                    </th>
+                    <th scope="col" className="label-xs px-3 py-2.5 text-right">
+                      Billable
+                    </th>
+                    <th scope="col" className="label-xs px-3 py-2.5">
+                      Status
+                    </th>
+                    <th scope="col" className="label-xs px-3 py-2.5">
+                      Submitted
+                    </th>
                     <th scope="col" className="label-xs px-3 py-2.5" />
                   </tr>
                 </thead>
@@ -211,9 +223,7 @@ function Submissions() {
                         <StatusBadge status={row.status} />
                       </td>
                       <td className="num px-3 py-2.5 text-muted-foreground">
-                        {row.submittedAt
-                          ? format(new Date(row.submittedAt), "d MMM · HH:mm")
-                          : "—"}
+                        {row.submittedAt ? format(new Date(row.submittedAt), "d MMM · HH:mm") : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <Button variant="ghost" size="sm" onClick={() => open(row.weekStart)}>

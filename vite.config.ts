@@ -12,4 +12,10 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  nitro: {
+    // Deployment target is Vercel. Nitro would auto-detect this when building
+    // on Vercel itself; pinning it means a local `bun run build` produces the
+    // same output as CI. Lovable's own builds still override this internally.
+    preset: process.env["NITRO_PRESET"] ?? "vercel",
+  },
 });

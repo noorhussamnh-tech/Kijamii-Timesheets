@@ -1,5 +1,5 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "kijamii-timesheets",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -9,7 +9,12 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "overrides": {
     "rolldown": "1.2.1"

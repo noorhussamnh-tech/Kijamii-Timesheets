@@ -16,12 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
 import { fetchAdminWeek } from "@/lib/data/api";
 import { formatHours } from "@/lib/domain/totals";
-import {
-  MARKETS,
-  MARKET_LABELS,
-  type AdminEmployeeStatus,
-  type Market,
-} from "@/lib/domain/types";
+import { MARKETS, MARKET_LABELS, type AdminEmployeeStatus, type Market } from "@/lib/domain/types";
 import { currentWeekKey, shiftWeek, weekRangeLabel } from "@/lib/domain/week";
 
 export const Route = createFileRoute("/admin")({
@@ -212,12 +207,24 @@ function AdminOverview() {
                 <table className="w-full min-w-[680px] text-left text-[13px]">
                   <thead>
                     <tr className="border-b bg-surface-muted">
-                      <th scope="col" className="label-xs px-3 py-2.5">Employee</th>
-                      <th scope="col" className="label-xs px-3 py-2.5">Market</th>
-                      <th scope="col" className="label-xs px-3 py-2.5">Department</th>
-                      <th scope="col" className="label-xs px-3 py-2.5 text-right">Hours</th>
-                      <th scope="col" className="label-xs px-3 py-2.5">Status</th>
-                      <th scope="col" className="label-xs px-3 py-2.5">Submitted</th>
+                      <th scope="col" className="label-xs px-3 py-2.5">
+                        Employee
+                      </th>
+                      <th scope="col" className="label-xs px-3 py-2.5">
+                        Market
+                      </th>
+                      <th scope="col" className="label-xs px-3 py-2.5">
+                        Department
+                      </th>
+                      <th scope="col" className="label-xs px-3 py-2.5 text-right">
+                        Hours
+                      </th>
+                      <th scope="col" className="label-xs px-3 py-2.5">
+                        Status
+                      </th>
+                      <th scope="col" className="label-xs px-3 py-2.5">
+                        Submitted
+                      </th>
                     </tr>
                   </thead>
                   <tbody>

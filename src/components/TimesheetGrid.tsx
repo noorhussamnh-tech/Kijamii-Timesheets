@@ -148,7 +148,11 @@ export function TimesheetGrid() {
             <thead>
               <tr className="border-b bg-surface-muted">
                 {config.fields.map((field) => (
-                  <th key={field.key} scope="col" className={cn("label-xs px-2.5 py-2.5", field.width)}>
+                  <th
+                    key={field.key}
+                    scope="col"
+                    className={cn("label-xs px-2.5 py-2.5", field.width)}
+                  >
                     {field.label}
                     {field.required && <span className="ml-0.5 text-brand">*</span>}
                   </th>

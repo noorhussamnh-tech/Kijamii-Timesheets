@@ -8,7 +8,10 @@ import { cn } from "@/lib/utils";
 const STYLES: Record<WeekStatus, { label: string; className: string }> = {
   draft: { label: "Draft", className: "bg-warning-soft text-warning border-warning/30" },
   submitted: { label: "Submitted", className: "bg-success-soft text-success border-success/30" },
-  returned: { label: "Returned", className: "bg-destructive/10 text-destructive border-destructive/30" },
+  returned: {
+    label: "Returned",
+    className: "bg-destructive/10 text-destructive border-destructive/30",
+  },
   approved: { label: "Approved", className: "bg-brand-soft text-brand border-brand/30" },
   missing: { label: "Missing", className: "bg-muted text-muted-foreground border-border-strong" },
 };

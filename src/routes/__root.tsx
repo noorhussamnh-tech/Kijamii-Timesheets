@@ -83,8 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Kijamii Timesheets" },
       {
         name: "description",
-        content:
-          "Internal weekly timesheets for Kijamii teams across Egypt, UAE and KSA.",
+        content: "Internal weekly timesheets for Kijamii teams across Egypt, UAE and KSA.",
       },
       { name: "author", content: "Kijamii" },
       { property: "og:title", content: "Kijamii Timesheets" },

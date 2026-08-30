@@ -33,7 +33,12 @@ export function SaveIndicator({ className }: { className?: string | undefined })
 
   if (saveState === "saving") {
     return (
-      <span className={cn("inline-flex items-center gap-1 text-[11px] text-muted-foreground", className)}>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 text-[11px] text-muted-foreground",
+          className,
+        )}
+      >
         <Loader2 className="size-3 animate-spin" /> Saving…
       </span>
     );
@@ -41,7 +46,12 @@ export function SaveIndicator({ className }: { className?: string | undefined })
 
   if (dirty) {
     return (
-      <span className={cn("inline-flex items-center gap-1 text-[11px] text-muted-foreground", className)}>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 text-[11px] text-muted-foreground",
+          className,
+        )}
+      >
         <RefreshCw className="size-3" /> Unsaved changes
       </span>
     );
@@ -49,7 +59,12 @@ export function SaveIndicator({ className }: { className?: string | undefined })
 
   if (lastSavedAt) {
     return (
-      <span className={cn("inline-flex items-center gap-1 text-[11px] text-muted-foreground", className)}>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 text-[11px] text-muted-foreground",
+          className,
+        )}
+      >
         <Check className="size-3 text-success" /> Saved {format(new Date(lastSavedAt), "HH:mm")}
       </span>
     );

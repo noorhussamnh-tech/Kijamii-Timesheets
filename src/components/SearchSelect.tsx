@@ -78,9 +78,7 @@ export function SearchSelect({
                   }}
                   className="gap-2 text-[13px]"
                 >
-                  <Check
-                    className={cn("size-3.5", o.id === value ? "opacity-100" : "opacity-0")}
-                  />
+                  <Check className={cn("size-3.5", o.id === value ? "opacity-100" : "opacity-0")} />
                   <span className="truncate">{o.name}</span>
                   {o.meta && (
                     <span className="num ml-auto text-[11px] text-muted-foreground">{o.meta}</span>

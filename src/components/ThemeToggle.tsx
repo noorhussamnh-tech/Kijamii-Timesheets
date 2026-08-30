@@ -10,7 +10,10 @@ export function ThemeToggle({ className }: { className?: string | undefined }) {
     <div
       role="group"
       aria-label="Color theme"
-      className={cn("flex items-center gap-0.5 rounded-md border bg-surface-muted p-0.5", className)}
+      className={cn(
+        "flex items-center gap-0.5 rounded-md border bg-surface-muted p-0.5",
+        className,
+      )}
     >
       <button
         type="button"
@@ -19,7 +22,9 @@ export function ThemeToggle({ className }: { className?: string | undefined }) {
         onClick={() => setTheme("light")}
         className={cn(
           "grid size-7 place-items-center rounded transition-colors",
-          !isDark ? "bg-surface text-foreground shadow-card" : "text-muted-foreground hover:text-foreground",
+          !isDark
+            ? "bg-surface text-foreground shadow-card"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         <Sun className="size-3.5" />
@@ -31,7 +36,9 @@ export function ThemeToggle({ className }: { className?: string | undefined }) {
         onClick={() => setTheme("dark")}
         className={cn(
           "grid size-7 place-items-center rounded transition-colors",
-          isDark ? "bg-surface text-foreground shadow-card" : "text-muted-foreground hover:text-foreground",
+          isDark
+            ? "bg-surface text-foreground shadow-card"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         <Moon className="size-3.5" />

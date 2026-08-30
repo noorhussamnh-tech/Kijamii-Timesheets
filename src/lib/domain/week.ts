@@ -64,7 +64,8 @@ export function isDateInWeek(dateKey: string, week: WeekKey): boolean {
 export function weekRangeLabel(week: WeekKey): string {
   const start = parseDateKey(week);
   const end = addDays(start, 6);
-  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+  const sameMonth =
+    start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
   return sameMonth
     ? `${format(start, "d")} – ${format(end, "d MMM yyyy")}`
     : `${format(start, "d MMM")} – ${format(end, "d MMM yyyy")}`;

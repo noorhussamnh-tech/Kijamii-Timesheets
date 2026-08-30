@@ -104,8 +104,8 @@ export function SubmitDialog({
         {!isDay && totals.missing > 0 && (
           <p className="flex items-start gap-2 rounded-md bg-warning-soft p-2.5 text-[12px] font-medium text-warning">
             <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-            You are {formatHours(totals.missing)} below the expected{" "}
-            {formatHours(totals.expected)}. You can still submit.
+            You are {formatHours(totals.missing)} below the expected {formatHours(totals.expected)}.
+            You can still submit.
           </p>
         )}
 
@@ -117,7 +117,12 @@ export function SubmitDialog({
         </p>
 
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={pending}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={pending}
+          >
             Keep editing
           </Button>
           <Button size="sm" onClick={() => void confirm()} disabled={pending}>

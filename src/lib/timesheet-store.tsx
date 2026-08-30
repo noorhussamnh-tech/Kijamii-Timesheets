@@ -304,10 +304,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
 
   // ------------------------------------------------------------ mutation
 
-  const isDayLocked = useCallback(
-    (date: string) => lockedDays.includes(date),
-    [lockedDays],
-  );
+  const isDayLocked = useCallback((date: string) => lockedDays.includes(date), [lockedDays]);
 
   const mutate = useCallback(
     (fn: (rows: TimesheetEntry[]) => TimesheetEntry[]) => {
@@ -418,18 +415,13 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       });
       if (copies.length > 0) mutate((current) => [...current, ...copies]);
     } catch (cause) {
-      setSaveError(
-        cause instanceof Error ? cause.message : "Could not copy last week's entries.",
-      );
+      setSaveError(cause instanceof Error ? cause.message : "Could not copy last week's entries.");
     }
   }, [weekKey, readOnly, mutate]);
 
   // ---------------------------------------------------------- validation
 
-  const validation = useMemo(
-    () => validateWeek(entries, weekKey),
-    [entries, weekKey],
-  );
+  const validation = useMemo(() => validateWeek(entries, weekKey), [entries, weekKey]);
 
   const issueFor = useCallback(
     (entryId: string) =>
@@ -559,11 +551,40 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       totals,
     }),
     [
-      weekKey, setWeekKey, isFuture, loading, loadError, config, reference, availableClients,
-      entries, status, readOnly, lockedDays, isDayLocked, addRow, updateRow, duplicateRow,
-      deleteRow, copyPreviousDay, copyPreviousWeek, visibleDates, addDay, saveState, lastSavedAt,
-      saveError, dirty, saveDraft, submitting, submitWeek, submitDay, lastSubmission, showErrors,
-      validation, issueFor, totals,
+      weekKey,
+      setWeekKey,
+      isFuture,
+      loading,
+      loadError,
+      config,
+      reference,
+      availableClients,
+      entries,
+      status,
+      readOnly,
+      lockedDays,
+      isDayLocked,
+      addRow,
+      updateRow,
+      duplicateRow,
+      deleteRow,
+      copyPreviousDay,
+      copyPreviousWeek,
+      visibleDates,
+      addDay,
+      saveState,
+      lastSavedAt,
+      saveError,
+      dirty,
+      saveDraft,
+      submitting,
+      submitWeek,
+      submitDay,
+      lastSubmission,
+      showErrors,
+      validation,
+      issueFor,
+      totals,
     ],
   );
 

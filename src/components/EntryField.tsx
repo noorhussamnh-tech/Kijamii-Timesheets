@@ -92,7 +92,9 @@ export function EntryField({
       return (
         <SearchSelect
           value={value}
-          options={key === "serviceId" ? options : options.map((o) => ({ id: o.name, name: o.name }))}
+          options={
+            key === "serviceId" ? options : options.map((o) => ({ id: o.name, name: o.name }))
+          }
           placeholder={`Select ${field.label.toLowerCase()}`}
           emptyText="No matches"
           disabled={disabled}

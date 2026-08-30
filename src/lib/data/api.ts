@@ -160,13 +160,15 @@ export async function fetchReferenceData(): Promise<ReferenceData> {
     ((rows ?? []) as { id: string; name: string }[]).map((r) => ({ id: r.id, name: r.name }));
 
   return {
-    clients: ((clients.data ?? []) as {
-      id: string;
-      name: string;
-      sector: string | null;
-      markets: Market[] | null;
-      is_other: boolean;
-    }[]).map<ClientOption>((r) => ({
+    clients: (
+      (clients.data ?? []) as {
+        id: string;
+        name: string;
+        sector: string | null;
+        markets: Market[] | null;
+        is_other: boolean;
+      }[]
+    ).map<ClientOption>((r) => ({
       id: r.id,
       name: r.name,
       sector: r.sector,
