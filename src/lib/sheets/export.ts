@@ -8,6 +8,15 @@
  * The export is additive and one-way. It appends submitted weeks to the
  * spreadsheet Finance already uses; it never reads the sheet back, so nobody
  * can corrupt real timesheet data by editing a cell.
+ *
+ * This file is imported by the admin page. Only the `createServerFn` wrapper
+ * survives in the browser bundle -- the handler body, and with it the
+ * credential-handling import below, is stripped out at build time.
+ *
+ * It therefore lives here rather than under `lib/server/`, which TanStack
+ * Start's import protection blocks client code from reaching at all. The
+ * module that actually touches the private key, `client.server.ts`, is
+ * imported only inside the handler and never reaches the browser.
  */
 import { createServerClient } from "@supabase/ssr";
 import { createServerFn } from "@tanstack/react-start";
@@ -47,7 +56,7 @@ interface ExportResult {
 }
 
 export const exportWeekToSheets = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown): { weekStart: string } => {
+  .validator((input: unknown): { weekStart: string } => {
     const value = input as { weekStart?: unknown };
     const weekStart = typeof value?.weekStart === "string" ? value.weekStart : "";
     // Reject anything that is not a plain ISO date before it reaches the query.

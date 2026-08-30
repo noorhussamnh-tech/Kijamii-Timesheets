@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { AlertCircle, ShieldAlert } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { ExportToSheets } from "@/components/ExportToSheets";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Select,
@@ -167,6 +168,9 @@ function AdminOverview() {
             ))}
           </SelectContent>
         </Select>
+        <div className="ml-auto">
+          <ExportToSheets weekStart={week} />
+        </div>
       </div>
 
       {error && (
