@@ -131,6 +131,7 @@ export function TimesheetGrid() {
     readOnly,
     visibleDates,
     focusDate,
+    defaultEntryDate,
     loading,
     loadError,
     reload,
@@ -179,7 +180,7 @@ export function TimesheetGrid() {
         </p>
         {!readOnly && (
           <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <Button size="sm" onClick={() => addRow(focusDate)}>
+            <Button size="sm" onClick={() => addRow(defaultEntryDate)}>
               <Plus className="size-3.5" /> {startsToday ? "Log today's hours" : "Add first row"}
             </Button>
             {/* Catching up on the whole week starts from an earlier day. */}

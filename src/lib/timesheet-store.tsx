@@ -99,6 +99,8 @@ interface TimesheetContextValue {
   selectableDates: string[];
   /** The day the UI should foreground: today, or the week start. */
   focusDate: string;
+  /** Where a new row lands: the most recent day that is not locked. */
+  defaultEntryDate: string;
   /** Reveals a day. Without an argument, the earliest one still hidden. */
   addDay: (date?: string) => void;
   /** Days that have happened but are not currently on screen. */
@@ -388,19 +390,32 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     [readOnly],
   );
 
+  /**
+   * Where a new row lands when no day was named.
+   *
+   * Not simply today: submitting a day locks it, and a row created on a locked
+   * day is read-only the instant it appears. So this falls back to the most
+   * recent day that is still open, and only then to today.
+   */
+  const defaultEntryDate = useMemo(() => {
+    if (!isDayLocked(focusDate)) return focusDate;
+    const open = [...recentDates].reverse().find((date) => !isDayLocked(date));
+    return open ?? focusDate;
+  }, [focusDate, recentDates, isDayLocked]);
+
   const addRow = useCallback(
     (date?: string) => {
-      mutate((rows) => [...rows, emptyEntry(date ?? focusDate)]);
+      mutate((rows) => [...rows, emptyEntry(date ?? defaultEntryDate)]);
     },
-    [focusDate, mutate],
+    [defaultEntryDate, mutate],
   );
 
   /** Appends a row that quick add has already filled in. */
   const addQuickRow = useCallback(
     (patch: Partial<TimesheetEntry>) => {
-      mutate((rows) => [...rows, { ...emptyEntry(patch.workDate ?? focusDate), ...patch }]);
+      mutate((rows) => [...rows, { ...emptyEntry(patch.workDate ?? defaultEntryDate), ...patch }]);
     },
-    [focusDate, mutate],
+    [defaultEntryDate, mutate],
   );
 
   const updateRow = useCallback(
@@ -637,6 +652,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       visibleDates,
       selectableDates,
       focusDate,
+      defaultEntryDate,
       addDay,
       hiddenDates,
       saveState,

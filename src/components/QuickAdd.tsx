@@ -13,7 +13,7 @@ import { useTimesheet } from "@/lib/timesheet-store";
  * being forced onto the nearest field -- a wrong guess costs more than a gap.
  */
 export function QuickAdd() {
-  const { reference, availableClients, addQuickRow, focusDate, readOnly } = useTimesheet();
+  const { reference, availableClients, addQuickRow, defaultEntryDate, readOnly } = useTimesheet();
   const [text, setText] = useState("");
 
   const sources = useMemo(
@@ -36,7 +36,7 @@ export function QuickAdd() {
   const commit = () => {
     if (!parsed) return;
     addQuickRow({
-      workDate: focusDate,
+      workDate: defaultEntryDate,
       clientId: parsed.clientId ?? "",
       serviceId: parsed.serviceId ?? "",
       projectType: parsed.projectType ?? "",
