@@ -7,6 +7,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatHours } from "@/lib/domain/totals";
@@ -46,11 +48,27 @@ export function SummaryBar({
   onSubmitDay: (date: string) => void;
   onSubmitWeek: () => void;
 }) {
-  const { totals, status, readOnly, saveDraft, dirty, submitting, visibleDates, isDayLocked } =
-    useTimesheet();
+  const {
+    totals,
+    status,
+    readOnly,
+    saveDraft,
+    dirty,
+    submitting,
+    isDayLocked,
+    selectableDates,
+    entries,
+  } = useTimesheet();
 
-  const openDays = visibleDates.filter((date) => !isDayLocked(date));
-  const targetDay = openDays[openDays.length - 1];
+  /**
+   * Every day that can still be submitted on its own: it has happened, it has
+   * entries, and it is not already locked. Listing them means a day can be
+   * submitted after the fact -- catching up on Thursday still lets Monday be
+   * closed off separately.
+   */
+  const submittableDays = selectableDates.filter(
+    (date) => !isDayLocked(date) && entries.some((row) => row.workDate === date),
+  );
 
   return (
     <div className="sticky bottom-0 z-20 -mx-4 border-t bg-surface/95 px-4 py-3 shadow-raised backdrop-blur sm:-mx-6 sm:px-6">
@@ -99,13 +117,20 @@ export function SummaryBar({
                     <ChevronUp className="size-3.5 opacity-80" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" side="top" className="w-56">
-                  <DropdownMenuItem
-                    disabled={!targetDay}
-                    onClick={() => targetDay && onSubmitDay(targetDay)}
-                  >
-                    Submit {targetDay ? dayLabel(targetDay) : "day"}
-                  </DropdownMenuItem>
+                <DropdownMenuContent align="end" side="top" className="w-64">
+                  {submittableDays.length > 0 && (
+                    <>
+                      <DropdownMenuLabel className="label-xs">
+                        Submit a single day
+                      </DropdownMenuLabel>
+                      {submittableDays.map((date) => (
+                        <DropdownMenuItem key={date} onClick={() => onSubmitDay(date)}>
+                          {dayLabel(date)}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem onClick={onSubmitWeek}>Submit whole week</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
