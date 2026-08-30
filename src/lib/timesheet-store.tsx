@@ -89,7 +89,10 @@ interface TimesheetContextValue {
   selectableDates: string[];
   /** The day the UI should foreground: today, or the week start. */
   focusDate: string;
-  addDay: () => void;
+  /** Reveals a day. Without an argument, the earliest one still hidden. */
+  addDay: (date?: string) => void;
+  /** Days that have happened but are not currently on screen. */
+  hiddenDates: string[];
 
   saveState: SaveState;
   lastSavedAt: string | null;
@@ -391,10 +394,23 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     return all.filter((date) => date === focusDate || used.has(date));
   }, [weekKey, entries, extraDates, focusDate]);
 
-  const addDay = useCallback(() => {
-    const next = selectableDates.find((date) => !visibleDates.includes(date));
-    if (next) setExtraDates((dates) => [...dates, next]);
-  }, [selectableDates, visibleDates]);
+  /**
+   * Days that have happened but are not on screen. Someone catching up on
+   * Thursday needs to reach Monday directly, not by revealing each day in turn.
+   */
+  const hiddenDates = useMemo(
+    () => selectableDates.filter((date) => !visibleDates.includes(date)),
+    [selectableDates, visibleDates],
+  );
+
+  const addDay = useCallback(
+    (date?: string) => {
+      const target = date ?? hiddenDates[0];
+      if (!target || visibleDates.includes(target)) return;
+      setExtraDates((dates) => (dates.includes(target) ? dates : [...dates, target]));
+    },
+    [hiddenDates, visibleDates],
+  );
 
   /** Pulls last week's rows in as a fresh draft, remapped onto this week. */
   const copyPreviousWeek = useCallback(async () => {
@@ -535,6 +551,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       selectableDates,
       focusDate,
       addDay,
+      hiddenDates,
       saveState,
       lastSavedAt,
       saveError,
@@ -574,6 +591,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       selectableDates,
       focusDate,
       addDay,
+      hiddenDates,
       saveState,
       lastSavedAt,
       saveError,

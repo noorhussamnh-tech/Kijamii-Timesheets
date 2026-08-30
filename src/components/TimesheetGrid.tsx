@@ -3,6 +3,12 @@ import { AlertCircle, Copy, Loader2, Plus, Trash2 } from "lucide-react";
 
 import { EntryField } from "@/components/EntryField";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatHours } from "@/lib/domain/totals";
 import { dayLabel, shortDayLabel, toDateKey } from "@/lib/domain/week";
@@ -91,6 +97,32 @@ function DayHeading({ date }: { date: string }) {
   );
 }
 
+/**
+ * Reveals a past day of this week. A list rather than a single button, so
+ * catching up on Thursday reaches Monday in one click instead of three.
+ */
+function AddDayMenu({ className }: { className?: string | undefined }) {
+  const { hiddenDates, addDay } = useTimesheet();
+  if (hiddenDates.length === 0) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className={className}>
+          <Plus className="size-3.5" /> Add day
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-52">
+        {hiddenDates.map((date) => (
+          <DropdownMenuItem key={date} onClick={() => addDay(date)} className="text-[13px]">
+            {dayLabel(date)}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function TimesheetGrid() {
   const {
     config,
@@ -99,7 +131,6 @@ export function TimesheetGrid() {
     readOnly,
     visibleDates,
     focusDate,
-    addDay,
     loading,
     loadError,
     reload,
@@ -147,15 +178,17 @@ export function TimesheetGrid() {
             : "Add a row, or copy last week's entries and adjust the hours."}
         </p>
         {!readOnly && (
-          <Button className="mt-4" size="sm" onClick={() => addRow(focusDate)}>
-            <Plus className="size-3.5" /> {startsToday ? "Log today's hours" : "Add first row"}
-          </Button>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Button size="sm" onClick={() => addRow(focusDate)}>
+              <Plus className="size-3.5" /> {startsToday ? "Log today's hours" : "Add first row"}
+            </Button>
+            {/* Catching up on the whole week starts from an earlier day. */}
+            <AddDayMenu />
+          </div>
         )}
       </div>
     );
   }
-
-  const canAddDay = visibleDates.length < 7;
 
   return (
     <div className="space-y-4">
@@ -233,11 +266,7 @@ export function TimesheetGrid() {
             <Button variant="ghost" size="sm" onClick={() => addRow()}>
               <Plus className="size-3.5" /> Add another row
             </Button>
-            {canAddDay && (
-              <Button variant="outline" size="sm" onClick={addDay}>
-                <Plus className="size-3.5" /> Add day
-              </Button>
-            )}
+            <AddDayMenu />
             <span className="text-[11px] text-muted-foreground">
               Tip: press Tab to move across fields, Shift+Tab to go back.
             </span>
@@ -303,11 +332,7 @@ export function TimesheetGrid() {
             <Button variant="outline" size="sm" className="flex-1" onClick={() => addRow()}>
               <Plus className="size-3.5" /> Add row
             </Button>
-            {canAddDay && (
-              <Button variant="outline" size="sm" className="flex-1" onClick={addDay}>
-                <Plus className="size-3.5" /> Add day
-              </Button>
-            )}
+            <AddDayMenu className="flex-1" />
           </div>
         )}
       </div>
