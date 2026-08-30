@@ -4,7 +4,6 @@ import { AlertCircle } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { MonthCoverage } from "@/components/MonthCoverage";
-import { QuickAdd } from "@/components/QuickAdd";
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SubmitDialog } from "@/components/SubmitDialog";
@@ -51,7 +50,6 @@ function TimesheetPage() {
       <div className="space-y-4 pb-2">
         <WeekNav />
         <MonthCoverage />
-        <QuickAdd />
 
         {saveError && (
           <p className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-[12px] font-medium text-destructive">

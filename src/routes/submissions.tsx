@@ -147,9 +147,9 @@ function Submissions() {
 
       {filtered.length === 0 ? (
         <div className="rounded-lg border border-dashed bg-surface px-6 py-12 text-center">
-          <p className="text-sm font-semibold">
+          <h2 className="text-sm font-bold">
             {rows.length === 0 ? "No timesheets yet" : "No weeks match these filters"}
-          </p>
+          </h2>
           <p className="mt-1 text-[13px] text-muted-foreground">
             {rows.length === 0
               ? "Once you save or submit a week it will appear here."

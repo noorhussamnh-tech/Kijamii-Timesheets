@@ -26,13 +26,14 @@ export function EntryField({
     readOnly,
     weekKey,
     config,
-    isDayLocked,
     reference,
     availableClients,
     recentDates,
     moveRowToDate,
   } = useTimesheet();
-  const disabled = readOnly || isDayLocked(row.workDate);
+  // The row's own status is the guard, not the day's: a day that has been
+  // submitted can still take new rows.
+  const disabled = readOnly || row.status !== "draft";
 
   const inputClass = cn(
     "w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-[13px] transition-colors",

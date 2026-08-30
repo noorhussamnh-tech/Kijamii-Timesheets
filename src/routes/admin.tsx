@@ -200,7 +200,7 @@ function AdminOverview() {
 
           {filtered.length === 0 ? (
             <div className="rounded-lg border border-dashed bg-surface px-6 py-12 text-center">
-              <p className="text-sm font-semibold">No employees match these filters</p>
+              <h2 className="text-sm font-bold">No employees match these filters</h2>
               <p className="mt-1 text-[13px] text-muted-foreground">
                 Only people who have completed onboarding appear here.
               </p>

@@ -5,14 +5,11 @@
  * one placing rows on a locked day and one placing them outside the week
  * entirely, and neither was visible from the UI until someone was stuck.
  */
-export function defaultEntryDateFor(
-  focusDate: string,
-  selectableDates: string[],
-  isLocked: (date: string) => boolean,
-): string | null {
-  // Today, when it is part of this week and still open.
-  if (selectableDates.includes(focusDate) && !isLocked(focusDate)) return focusDate;
-  // Otherwise the latest open day *in this week*: a row dated outside the week
-  // it is filed under is refused by the database.
-  return [...selectableDates].reverse().find((date) => !isLocked(date)) ?? null;
+export function defaultEntryDateFor(focusDate: string, selectableDates: string[]): string | null {
+  // Today, when it is part of this week. A day that has already been submitted
+  // still accepts new rows, so being locked is no longer a reason to skip it.
+  if (selectableDates.includes(focusDate)) return focusDate;
+  // Otherwise the latest day *in this week*: a row dated outside the week it is
+  // filed under is refused by the database.
+  return selectableDates[selectableDates.length - 1] ?? null;
 }

@@ -175,10 +175,25 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /*
+   * Headings carry their weight from here rather than from a utility class on
+   * every element, so a title is bold wherever it appears and in both themes.
+   * Tailwind's font-* utilities still win where a specific element needs to
+   * differ, because utilities sit in a later layer than base.
+   */
   h1,
   h2,
-  h3 {
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 800;
     letter-spacing: -0.012em;
+  }
+
+  /* Table headers read as titles too. */
+  th {
+    font-weight: 700;
   }
 }
 
@@ -191,7 +206,7 @@
 @utility label-xs {
   font-size: 0.6875rem;
   line-height: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-muted-foreground);

@@ -17,9 +17,10 @@ import { useTimesheet } from "@/lib/timesheet-store";
 import { cn } from "@/lib/utils";
 
 function RowActions({ row }: { row: TimesheetEntry }) {
-  const { duplicateRow, deleteRow, readOnly, isDayLocked } = useTimesheet();
-  if (readOnly || isDayLocked(row.workDate)) {
-    return <span className="text-[11px] text-muted-foreground">Locked</span>;
+  const { duplicateRow, deleteRow, readOnly } = useTimesheet();
+  // Only a submitted row is frozen. Other rows on the same day stay editable.
+  if (readOnly || row.status !== "draft") {
+    return <span className="text-[11px] text-muted-foreground">Submitted</span>;
   }
   return (
     <div className="flex items-center gap-0.5">
@@ -68,21 +69,22 @@ function DayHeading({ date }: { date: string }) {
         {formatHours(day?.hours ?? 0)}
         {day?.expected ? ` / ${formatHours(day.expected)}` : " · non-working day"}
       </span>
-      {locked ? (
+      {locked && (
         <span className="ml-2 rounded-full border border-success/30 bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">
-          Day submitted
+          Submitted
         </span>
-      ) : (
-        !readOnly && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ml-1 h-6 px-1.5 text-[11px]"
-            onClick={() => addRow(date)}
-          >
-            <Plus className="size-3" /> Row
-          </Button>
-        )
+      )}
+      {/* A submitted day still accepts new rows; only the rows already sent
+          are frozen. */}
+      {!readOnly && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="ml-1 h-6 px-1.5 text-[11px]"
+          onClick={() => addRow(date)}
+        >
+          <Plus className="size-3" /> Row
+        </Button>
       )}
     </>
   );
@@ -181,11 +183,11 @@ export function TimesheetGrid() {
     const startsToday = focusDate === toDateKey(new Date());
     return (
       <div className="rounded-lg border border-dashed bg-surface px-6 py-14 text-center">
-        <p className="text-sm font-semibold">
+        <h2 className="text-sm font-bold">
           {startsToday
             ? `Nothing logged for ${shortDayLabel(focusDate)} yet`
             : "No entries for this week yet"}
-        </p>
+        </h2>
         <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">
           {readOnly
             ? "Nothing was logged for this week."

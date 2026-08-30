@@ -84,8 +84,6 @@ interface TimesheetContextValue {
   isDayLocked: (date: string) => boolean;
 
   addRow: (date?: string) => void;
-  /** Appends a row already filled in by quick add. */
-  addQuickRow: (patch: Partial<TimesheetEntry>) => void;
   updateRow: (id: string, patch: Partial<TimesheetEntry>) => void;
   /** Re-dates a row, following it to another week when the date lives there. */
   moveRowToDate: (id: string, date: string) => Promise<void>;
@@ -402,8 +400,8 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
    * against, and the UI says so rather than producing a dead row.
    */
   const defaultEntryDate = useMemo(
-    () => defaultEntryDateFor(focusDate, selectableDates, isDayLocked),
-    [focusDate, selectableDates, isDayLocked],
+    () => defaultEntryDateFor(focusDate, selectableDates),
+    [focusDate, selectableDates],
   );
 
   const addRow = useCallback(
@@ -415,27 +413,18 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     [defaultEntryDate, mutate],
   );
 
-  /** Appends a row that quick add has already filled in. */
-  const addQuickRow = useCallback(
-    (patch: Partial<TimesheetEntry>) => {
-      const target = patch.workDate ?? defaultEntryDate;
-      if (!target) return;
-      mutate((rows) => [...rows, { ...emptyEntry(target), ...patch }]);
-    },
-    [defaultEntryDate, mutate],
-  );
-
   const updateRow = useCallback(
     (id: string, patch: Partial<TimesheetEntry>) => {
       mutate((rows) =>
         rows.map((row) => {
           if (row.id !== id) return row;
-          if (isDayLocked(row.workDate)) return row;
+          // A submitted row is frozen; others on the same day are not.
+          if (row.status !== "draft") return row;
           return { ...row, ...patch };
         }),
       );
     },
-    [mutate, isDayLocked],
+    [mutate],
   );
 
   /**
@@ -448,7 +437,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   const moveRowToDate = useCallback(
     async (id: string, date: string) => {
       const row = entriesRef.current.find((entry) => entry.id === id);
-      if (!row || isDayLocked(row.workDate)) return;
+      if (!row || row.status !== "draft") return;
 
       const targetWeek = weekKeyOf(parseDateKey(date));
       if (targetWeek === weekKey) {
@@ -466,7 +455,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       pendingInsert.current = { ...row, id: newEntryId(), workDate: date, status: "draft" };
       setWeekKeyState(targetWeek);
     },
-    [weekKey, isDayLocked, updateRow, persist],
+    [weekKey, updateRow, persist],
   );
 
   /** Duplicates always get a fresh id, so a copy never overwrites its source. */
@@ -488,7 +477,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
 
   const deleteRow = useCallback(
     (id: string) => {
-      mutate((rows) => rows.filter((row) => row.id !== id || isDayLocked(row.workDate)));
+      mutate((rows) => rows.filter((row) => row.id !== id || row.status !== "draft"));
     },
     [mutate, isDayLocked],
   );
@@ -649,7 +638,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       lockedDays,
       isDayLocked,
       addRow,
-      addQuickRow,
       updateRow,
       moveRowToDate,
       recentDates,
@@ -693,7 +681,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       lockedDays,
       isDayLocked,
       addRow,
-      addQuickRow,
       updateRow,
       moveRowToDate,
       recentDates,
