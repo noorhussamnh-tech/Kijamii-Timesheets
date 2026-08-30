@@ -77,3 +77,29 @@ describe("week arithmetic", () => {
     expect(isDateInWeek("2026-08-22", "2026-08-23")).toBe(false);
   });
 });
+
+describe("daily focus", () => {
+  /**
+   * Mirrors the store's focusDate rule: the screen opens on today when the
+   * viewed week contains it, and on the week start otherwise. Getting this
+   * wrong lands someone on Sunday on a Wednesday, which is the friction that
+   * stops a daily habit forming.
+   */
+  const focusDateFor = (week: string, today: Date) => {
+    const all = weekDates(week);
+    const key = toDateKey(today);
+    return all.includes(key) ? key : all[0]!;
+  };
+
+  it("opens on today when today is inside the viewed week", () => {
+    expect(focusDateFor("2026-08-23", parseDateKey("2026-08-26"))).toBe("2026-08-26");
+    // Including the first and last day of the week.
+    expect(focusDateFor("2026-08-23", parseDateKey("2026-08-23"))).toBe("2026-08-23");
+    expect(focusDateFor("2026-08-23", parseDateKey("2026-08-29"))).toBe("2026-08-29");
+  });
+
+  it("falls back to the week start when looking at another week", () => {
+    expect(focusDateFor("2026-08-16", parseDateKey("2026-08-26"))).toBe("2026-08-16");
+    expect(focusDateFor("2026-08-30", parseDateKey("2026-08-26"))).toBe("2026-08-30");
+  });
+});

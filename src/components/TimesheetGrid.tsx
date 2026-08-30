@@ -5,7 +5,7 @@ import { EntryField } from "@/components/EntryField";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatHours } from "@/lib/domain/totals";
-import { dayLabel, shortDayLabel } from "@/lib/domain/week";
+import { dayLabel, shortDayLabel, toDateKey } from "@/lib/domain/week";
 import type { TimesheetEntry } from "@/lib/domain/types";
 import { useTimesheet } from "@/lib/timesheet-store";
 import { cn } from "@/lib/utils";
@@ -40,13 +40,19 @@ function RowActions({ row }: { row: TimesheetEntry }) {
 }
 
 function DayHeading({ date }: { date: string }) {
-  const { totals, isDayLocked, readOnly, addRow } = useTimesheet();
+  const { totals, isDayLocked, readOnly, addRow, focusDate } = useTimesheet();
   const day = totals.byDay.find((entry) => entry.date === date);
   const locked = isDayLocked(date);
+  const isToday = date === focusDate && date === toDateKey(new Date());
 
   return (
     <>
       <span className="num">{dayLabel(date)}</span>
+      {isToday && (
+        <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-semibold text-brand">
+          Today
+        </span>
+      )}
       <span
         className={cn(
           "num ml-2 text-muted-foreground",
@@ -83,6 +89,7 @@ export function TimesheetGrid() {
     addRow,
     readOnly,
     visibleDates,
+    focusDate,
     addDay,
     loading,
     loadError,
@@ -117,17 +124,20 @@ export function TimesheetGrid() {
   }
 
   if (entries.length === 0) {
+    const startsToday = focusDate === toDateKey(new Date());
     return (
       <div className="rounded-lg border border-dashed bg-surface px-6 py-14 text-center">
-        <p className="text-sm font-semibold">No entries for this week yet</p>
+        <p className="text-sm font-semibold">
+          {startsToday ? `Nothing logged for ${shortDayLabel(focusDate)} yet` : "No entries for this week yet"}
+        </p>
         <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">
           {readOnly
             ? "Nothing was logged for this week."
-            : "Add your first row, or copy last week's entries and adjust the hours."}
+            : "Add a row, or copy last week's entries and adjust the hours."}
         </p>
         {!readOnly && (
-          <Button className="mt-4" size="sm" onClick={() => addRow(visibleDates[0])}>
-            <Plus className="size-3.5" /> Add first row
+          <Button className="mt-4" size="sm" onClick={() => addRow(focusDate)}>
+            <Plus className="size-3.5" /> {startsToday ? "Log today's hours" : "Add first row"}
           </Button>
         )}
       </div>

@@ -33,6 +33,7 @@ import {
   currentWeekKey,
   isFutureWeek,
   shiftWeek,
+  toDateKey,
   weekDates,
   type WeekKey,
 } from "@/lib/domain/week";
@@ -84,6 +85,8 @@ interface TimesheetContextValue {
   copyPreviousWeek: () => Promise<void>;
 
   visibleDates: string[];
+  /** The day the UI should foreground: today, or the week start. */
+  focusDate: string;
   addDay: () => void;
 
   saveState: SaveState;
@@ -306,6 +309,18 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
 
   const isDayLocked = useCallback((date: string) => lockedDays.includes(date), [lockedDays]);
 
+  /**
+   * The day the screen should open on. Logging time is meant to be a daily
+   * habit, so landing on Sunday when it is Wednesday means hunting for today
+   * before you can type -- enough friction to lose the habit.
+   */
+  const focusDate = useMemo(() => {
+    const all = weekDates(weekKey);
+    const today = toDateKey(new Date());
+    return all.includes(today) ? today : all[0]!;
+  }, [weekKey]);
+
+
   const mutate = useCallback(
     (fn: (rows: TimesheetEntry[]) => TimesheetEntry[]) => {
       if (readOnly) return;
@@ -316,11 +331,9 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
 
   const addRow = useCallback(
     (date?: string) => {
-      const dates = weekDates(weekKey);
-      const fallback = entriesRef.current[entriesRef.current.length - 1]?.workDate ?? dates[0]!;
-      mutate((rows) => [...rows, emptyEntry(date ?? fallback)]);
+      mutate((rows) => [...rows, emptyEntry(date ?? focusDate)]);
     },
-    [weekKey, mutate],
+    [focusDate, mutate],
   );
 
   const updateRow = useCallback(
@@ -364,9 +377,8 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     const all = weekDates(weekKey);
     const used = new Set(entries.map((row) => row.workDate));
     for (const date of extraDates) used.add(date);
-    const first = all[0]!;
-    return all.filter((date) => date === first || used.has(date));
-  }, [weekKey, entries, extraDates]);
+    return all.filter((date) => date === focusDate || used.has(date));
+  }, [weekKey, entries, extraDates, focusDate]);
 
   const addDay = useCallback(() => {
     const next = weekDates(weekKey).find((date) => !visibleDates.includes(date));
@@ -533,6 +545,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       copyPreviousDay,
       copyPreviousWeek,
       visibleDates,
+      focusDate,
       addDay,
       saveState,
       lastSavedAt,
@@ -571,6 +584,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       copyPreviousDay,
       copyPreviousWeek,
       visibleDates,
+      focusDate,
       addDay,
       saveState,
       lastSavedAt,
