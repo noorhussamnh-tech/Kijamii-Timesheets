@@ -117,7 +117,7 @@ export const exportWeekToSheets = createServerFn({ method: "POST" })
       // Every cell is escaped so a project note can never become a formula.
       const written = await appendRows(
         credentials,
-        TIMESHEET_ENTRIES_TAB,
+        credentials.tabName,
         entries.map((entry) => escapeRow(entryToRow(entry))),
       );
       return {

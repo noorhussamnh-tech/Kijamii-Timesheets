@@ -18,6 +18,9 @@ export interface SheetsCredentials {
   clientEmail: string;
   privateKey: string;
   spreadsheetId: string;
+  /** Which tab to append to. Any existing workbook can be targeted by
+   *  pointing this at a tab of its own; other tabs are never touched. */
+  tabName: string;
 }
 
 /** Reads credentials from the environment, or null when the export is off. */
@@ -31,6 +34,7 @@ export function readSheetsCredentials(): SheetsCredentials | null {
   return {
     clientEmail,
     spreadsheetId,
+    tabName: process.env["GOOGLE_SHEETS_TAB_NAME"] || "Timesheet_Entries",
     // Environment variables cannot hold real newlines, so they are written
     // escaped and restored here.
     privateKey: rawKey.replace(/\\n/g, "\n"),
