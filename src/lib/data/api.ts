@@ -387,6 +387,41 @@ export async function fetchExportRows(from: string, to: string): Promise<ExportR
   return rows ?? [];
 }
 
+/**
+ * One row of the "Egypt & UAE Time Dedication" feed: a person, a brand and a
+ * month. Employees who logged nothing in the range still appear, with no
+ * brand and zero hours, so the sheet keeps the whole roster.
+ */
+export interface TimeDedicationRow {
+  /** `employee|brand|month`, for a spreadsheet lookup. Null on a roster row. */
+  lookupKey: string | null;
+  employeeCode: string | null;
+  employeeName: string;
+  department: string | null;
+  market: string | null;
+  clientCode: string | null;
+  brandName: string | null;
+  /** `YYYY-MM`. */
+  month: string | null;
+  hours: number | string;
+}
+
+/**
+ * Hours by employee, brand and month for the agency job book. Admin-only and
+ * EG/UAE only, both enforced in the database: KSA keeps no timesheets, so
+ * there is no tab for it to feed.
+ */
+export async function fetchTimeDedicationRows(
+  from: string,
+  to: string,
+): Promise<TimeDedicationRow[]> {
+  const rows = await rpc<TimeDedicationRow[]>("ts_export_time_dedication", {
+    p_from: from,
+    p_to: to,
+  });
+  return rows ?? [];
+}
+
 /** The signed-in employee's own statistics. Scoped by the database to them. */
 export async function fetchMyStats(from: string, to: string): Promise<PersonalStats> {
   const data = await rpc<PersonalStats>("ts_my_stats", { p_from: from, p_to: to });
