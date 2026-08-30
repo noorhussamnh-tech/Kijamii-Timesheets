@@ -21,8 +21,16 @@ export function EntryField({
   row: TimesheetEntry;
   invalid?: boolean | undefined;
 }) {
-  const { updateRow, readOnly, weekKey, config, isDayLocked, reference, availableClients } =
-    useTimesheet();
+  const {
+    updateRow,
+    readOnly,
+    weekKey,
+    config,
+    isDayLocked,
+    reference,
+    availableClients,
+    selectableDates,
+  } = useTimesheet();
   const disabled = readOnly || isDayLocked(row.workDate);
 
   const inputClass = cn(
@@ -33,7 +41,12 @@ export function EntryField({
   );
 
   switch (field.kind) {
-    case "date":
+    case "date": {
+      // A day that has not happened cannot be logged against, so it is offered
+      // as disabled rather than left selectable and rejected on submit. An
+      // existing future-dated row keeps its option so the value still shows,
+      // marked so the person can see why it needs changing.
+      const days = weekDates(weekKey);
       return (
         <select
           value={row.workDate}
@@ -43,13 +56,18 @@ export function EntryField({
           onChange={(event) => updateRow(row.id, { workDate: event.target.value })}
           className={cn(inputClass, "num min-w-[104px]")}
         >
-          {weekDates(weekKey).map((date) => (
-            <option key={date} value={date}>
-              {shortDayLabel(date)}
-            </option>
-          ))}
+          {days.map((date) => {
+            const upcoming = !selectableDates.includes(date);
+            return (
+              <option key={date} value={date} disabled={upcoming && date !== row.workDate}>
+                {shortDayLabel(date)}
+                {upcoming ? " · upcoming" : ""}
+              </option>
+            );
+          })}
         </select>
       );
+    }
 
     case "client": {
       const selected = availableClients.find((client) => client.id === row.clientId);

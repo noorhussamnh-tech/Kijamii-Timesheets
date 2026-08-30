@@ -103,3 +103,35 @@ describe("daily focus", () => {
     expect(focusDateFor("2026-08-30", parseDateKey("2026-08-26"))).toBe("2026-08-30");
   });
 });
+
+describe("selectable days", () => {
+  /**
+   * Mirrors the store's selectableDates rule. Offering a day that cannot be
+   * submitted, then rejecting it at submit time, is a trap; the future is
+   * simply not selectable.
+   */
+  const selectableFor = (week: string, today: Date) =>
+    weekDates(week).filter((date) => !isFutureDate(date, today));
+
+  it("stops at today within the current week", () => {
+    // Wednesday 2026-08-26, in the week beginning Sunday 2026-08-23.
+    expect(selectableFor("2026-08-23", parseDateKey("2026-08-26"))).toEqual([
+      "2026-08-23",
+      "2026-08-24",
+      "2026-08-25",
+      "2026-08-26",
+    ]);
+  });
+
+  it("allows every day of a week that has already passed", () => {
+    expect(selectableFor("2026-08-16", parseDateKey("2026-08-26"))).toHaveLength(7);
+  });
+
+  it("allows the whole week once its last day has arrived", () => {
+    expect(selectableFor("2026-08-23", parseDateKey("2026-08-29"))).toHaveLength(7);
+  });
+
+  it("allows only the first day on the Sunday a week begins", () => {
+    expect(selectableFor("2026-08-23", parseDateKey("2026-08-23"))).toEqual(["2026-08-23"]);
+  });
+});

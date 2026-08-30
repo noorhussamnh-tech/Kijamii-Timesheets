@@ -40,10 +40,13 @@ function RowActions({ row }: { row: TimesheetEntry }) {
 }
 
 function DayHeading({ date }: { date: string }) {
-  const { totals, isDayLocked, readOnly, addRow, focusDate } = useTimesheet();
+  const { totals, isDayLocked, readOnly, addRow, focusDate, selectableDates } = useTimesheet();
   const day = totals.byDay.find((entry) => entry.date === date);
   const locked = isDayLocked(date);
   const isToday = date === focusDate && date === toDateKey(new Date());
+  // A day that has not happened yet cannot be submitted, so nothing invites
+  // adding to it. It only appears at all if a row was filed there earlier.
+  const upcoming = !selectableDates.includes(date);
 
   return (
     <>
@@ -51,6 +54,11 @@ function DayHeading({ date }: { date: string }) {
       {isToday && (
         <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-semibold text-brand">
           Today
+        </span>
+      )}
+      {upcoming && (
+        <span className="ml-2 rounded-full border border-warning/30 bg-warning-soft px-2 py-0.5 text-[10px] font-semibold text-warning">
+          Upcoming — move these to a day that has happened
         </span>
       )}
       <span
@@ -67,7 +75,8 @@ function DayHeading({ date }: { date: string }) {
           Day submitted
         </span>
       ) : (
-        !readOnly && (
+        !readOnly &&
+        !upcoming && (
           <Button
             variant="ghost"
             size="sm"

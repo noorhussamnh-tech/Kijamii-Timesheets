@@ -31,6 +31,7 @@ import { calculateTotals, type WeekTotals } from "@/lib/domain/totals";
 import { isBlankRow, validateWeek, type RowIssue, type WeekIssue } from "@/lib/domain/validation";
 import {
   currentWeekKey,
+  isFutureDate,
   isFutureWeek,
   shiftWeek,
   toDateKey,
@@ -84,6 +85,8 @@ interface TimesheetContextValue {
   copyPreviousWeek: () => Promise<void>;
 
   visibleDates: string[];
+  /** Days in this week that may be logged against: never the future. */
+  selectableDates: string[];
   /** The day the UI should foreground: today, or the week start. */
   focusDate: string;
   addDay: () => void;
@@ -313,6 +316,16 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
    * habit, so landing on Sunday when it is Wednesday means hunting for today
    * before you can type -- enough friction to lose the habit.
    */
+  /**
+   * Days in this week that can actually be logged against: everything up to
+   * today. Offering tomorrow only to reject it at submit time is a trap, so
+   * the future is never selectable in the first place.
+   */
+  const selectableDates = useMemo(
+    () => weekDates(weekKey).filter((date) => !isFutureDate(date)),
+    [weekKey],
+  );
+
   const focusDate = useMemo(() => {
     const all = weekDates(weekKey);
     const today = toDateKey(new Date());
@@ -379,9 +392,9 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   }, [weekKey, entries, extraDates, focusDate]);
 
   const addDay = useCallback(() => {
-    const next = weekDates(weekKey).find((date) => !visibleDates.includes(date));
+    const next = selectableDates.find((date) => !visibleDates.includes(date));
     if (next) setExtraDates((dates) => [...dates, next]);
-  }, [weekKey, visibleDates]);
+  }, [selectableDates, visibleDates]);
 
   /** Pulls last week's rows in as a fresh draft, remapped onto this week. */
   const copyPreviousWeek = useCallback(async () => {
@@ -519,6 +532,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       deleteRow,
       copyPreviousWeek,
       visibleDates,
+      selectableDates,
       focusDate,
       addDay,
       saveState,
@@ -557,6 +571,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       deleteRow,
       copyPreviousWeek,
       visibleDates,
+      selectableDates,
       focusDate,
       addDay,
       saveState,
