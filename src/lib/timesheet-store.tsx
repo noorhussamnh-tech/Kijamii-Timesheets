@@ -320,7 +320,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     return all.includes(today) ? today : all[0]!;
   }, [weekKey]);
 
-
   const mutate = useCallback(
     (fn: (rows: TimesheetEntry[]) => TimesheetEntry[]) => {
       if (readOnly) return;

@@ -128,7 +128,9 @@ export function TimesheetGrid() {
     return (
       <div className="rounded-lg border border-dashed bg-surface px-6 py-14 text-center">
         <p className="text-sm font-semibold">
-          {startsToday ? `Nothing logged for ${shortDayLabel(focusDate)} yet` : "No entries for this week yet"}
+          {startsToday
+            ? `Nothing logged for ${shortDayLabel(focusDate)} yet`
+            : "No entries for this week yet"}
         </p>
         <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">
           {readOnly
