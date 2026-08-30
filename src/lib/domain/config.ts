@@ -99,7 +99,7 @@ export const EG_UAE_CONFIG: TimesheetConfig = {
   label: "Egypt + UAE Timesheet",
   expectedWeeklyHours: 40,
   hoursStep: 0.25,
-  maxHoursPerDay: 24,
+  maxHoursPerDay: 16,
   // Sunday to Thursday.
   workDays: [0, 1, 2, 3, 4],
   fields: sharedFields,
@@ -114,7 +114,7 @@ export const KSA_CONFIG: TimesheetConfig = {
   label: "KSA Timesheet",
   expectedWeeklyHours: 40,
   hoursStep: 0.25,
-  maxHoursPerDay: 24,
+  maxHoursPerDay: 16,
   workDays: [0, 1, 2, 3, 4],
   fields: sharedFields,
 };

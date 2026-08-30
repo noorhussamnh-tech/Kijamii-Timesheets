@@ -33,7 +33,7 @@ export const Route = createFileRoute("/timesheet")({
 });
 
 function TimesheetPage() {
-  const { rowIssues, weekIssues, showErrors, readOnly, saveError, isFuture } = useTimesheet();
+  const { rowIssues, weekIssues, showErrors, readOnly, saveError } = useTimesheet();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitDate, setSubmitDate] = useState<string | null>(null);
@@ -52,12 +52,6 @@ function TimesheetPage() {
         <WeekNav />
         <MonthCoverage />
         <QuickAdd />
-
-        {isFuture && (
-          <p className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-[12px] font-medium text-warning">
-            This week has not started yet, so it cannot be filled in.
-          </p>
-        )}
 
         {saveError && (
           <p className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-[12px] font-medium text-destructive">
@@ -89,7 +83,8 @@ function TimesheetPage() {
         {!readOnly && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="ml-auto text-[11px] text-muted-foreground">
-              <span className="text-brand">*</span> Required · Hours in 0.25 steps · Max 24h per day
+              <span className="text-brand">*</span> Required · Hours in 0.25 steps · Up to 16h per
+              day
             </span>
           </div>
         )}

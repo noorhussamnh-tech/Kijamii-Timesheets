@@ -43,10 +43,9 @@ export function EntryField({
 
   switch (field.kind) {
     case "date": {
-      // Dates reach back beyond the viewed week: on a Sunday the current week
-      // holds one usable day, and logging last Thursday should not require
-      // finding the week arrows first. Choosing a date in another week moves
-      // the row there.
+      // Every date is offered, in this week or a nearby one. Nothing is
+      // withheld: weekends get worked and a day can be filled in whenever.
+      // Choosing a date in another week moves the row there.
       const grouped = new Map<string, string[]>();
       for (const date of recentDates) {
         const key = weekKeyOf(parseDateKey(date));
@@ -63,10 +62,9 @@ export function EntryField({
           onChange={(event) => void moveRowToDate(row.id, event.target.value)}
           className={cn(inputClass, "num min-w-[104px]")}
         >
-          {/* A row already filed on a future date keeps its value visible so
-              it can be corrected rather than silently blanking. */}
+          {/* A date outside the offered window still shows its own value. */}
           {!recentDates.includes(row.workDate) && (
-            <option value={row.workDate}>{shortDayLabel(row.workDate)} · upcoming</option>
+            <option value={row.workDate}>{shortDayLabel(row.workDate)}</option>
           )}
           {weeks.map(([week, dates]) => (
             <optgroup

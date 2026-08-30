@@ -187,7 +187,9 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   const config = configById(employee?.configuration ?? null);
   const expectedWeeklyHours = employee?.expectedWeeklyHours ?? config.expectedWeeklyHours;
   const isFuture = isFutureWeek(weekKey);
-  const readOnly = status !== "draft" || isFuture;
+  // Only a submitted week is read-only. Being ahead of today is not a reason
+  // to lock somebody out of their own timesheet.
+  const readOnly = status !== "draft";
 
   const serialised = useMemo(() => JSON.stringify(entries), [entries]);
   const dirty = serialised !== savedSnapshot;
@@ -346,20 +348,17 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
    * today. Offering tomorrow only to reject it at submit time is a trap, so
    * the future is never selectable in the first place.
    */
-  const selectableDates = useMemo(
-    () => weekDates(weekKey).filter((date) => !isFutureDate(date)),
-    [weekKey],
-  );
+  // Every day of the week, with no date withheld: people work weekends, and a
+  // day can be filled in whenever suits them.
+  const selectableDates = useMemo(() => weekDates(weekKey), [weekKey]);
 
   /**
    * Dates the Date field may offer, reaching back three weeks.
    *
-   * Confining it to the viewed week meant that on a Sunday -- the first day of
-   * the week -- there was exactly one date to choose from and no obvious way
-   * to log the previous Thursday. The window covers this month and the last,
-   * so anything within the month being submitted can be reached. Picking a
-   * date from another week moves the row there, which the person should not
-   * have to think about.
+   * Covers this month and the last, plus the whole of the viewed week, so
+   * anything within the month being submitted can be reached. Picking a date
+   * from another week moves the row there, which the person should not have
+   * to think about.
    */
   const recentDates = useMemo(() => {
     const today = new Date();
@@ -370,10 +369,8 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     for (let cursor = earliest; cursor <= today; cursor = addDays(cursor, 1)) {
       out.push(toDateKey(cursor));
     }
-    // Days later in the viewed week are still offered when they have happened.
-    for (const date of weekDates(weekKey)) {
-      if (!isFutureDate(date) && !out.includes(date)) out.push(date);
-    }
+    // Plus the whole of the viewed week, whichever way it falls.
+    for (const date of weekDates(weekKey)) out.push(date);
     return [...new Set(out)].sort();
   }, [weekKey]);
 

@@ -5,8 +5,7 @@ import { useTimesheet } from "@/lib/timesheet-store";
 import { currentWeekKey, weekKeyOf, weekNumberLabel, weekRangeLabel } from "@/lib/domain/week";
 
 export function WeekNav() {
-  const { weekKey, goWeek, goCurrentWeek, copyPreviousWeek, setWeekKey, readOnly, isFuture } =
-    useTimesheet();
+  const { weekKey, goWeek, goCurrentWeek, copyPreviousWeek, setWeekKey, readOnly } = useTimesheet();
 
   const thisWeek = currentWeekKey();
   const atCurrentWeek = weekKey === thisWeek;
@@ -21,14 +20,7 @@ export function WeekNav() {
           <p className="num truncate text-[13px] font-semibold">{weekRangeLabel(weekKey)}</p>
           <p className="truncate text-[11px] text-muted-foreground">{weekNumberLabel(weekKey)}</p>
         </div>
-        {/* A week that has not started cannot be filled in, so stop there. */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => goWeek(1)}
-          disabled={atCurrentWeek}
-          aria-label="Next week"
-        >
+        <Button variant="outline" size="icon" onClick={() => goWeek(1)} aria-label="Next week">
           <ChevronRight className="size-4" />
         </Button>
         <Button variant="ghost" size="sm" onClick={goCurrentWeek} disabled={atCurrentWeek}>
@@ -40,7 +32,6 @@ export function WeekNav() {
           Jump to date
           <input
             type="date"
-            max={thisWeek}
             value={weekKey}
             onChange={(event) => {
               const value = event.target.value;
@@ -56,7 +47,7 @@ export function WeekNav() {
           variant="outline"
           size="sm"
           onClick={() => void copyPreviousWeek()}
-          disabled={readOnly || isFuture}
+          disabled={readOnly}
         >
           <CopyPlus className="size-3.5" /> Copy previous week
         </Button>

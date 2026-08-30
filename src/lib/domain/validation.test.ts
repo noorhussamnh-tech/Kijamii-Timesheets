@@ -7,11 +7,9 @@ import {
   validateHours,
   validateWeek,
 } from "./validation";
-import { parseDateKey } from "./week";
 import type { TimesheetEntry } from "./types";
 
 const WEEK = "2026-08-23";
-const TODAY = parseDateKey("2026-08-26");
 
 function entry(overrides: Partial<TimesheetEntry> = {}): TimesheetEntry {
   return {
@@ -32,7 +30,7 @@ function entry(overrides: Partial<TimesheetEntry> = {}): TimesheetEntry {
 
 describe("hours validation", () => {
   it("accepts quarter-hour increments and rejects anything else", () => {
-    for (const value of [0.25, 0.5, 1, 4.75, 7.25, 23.75, 24]) {
+    for (const value of [0.25, 0.5, 1, 4.75, 7.25, 15.75, 16]) {
       expect(isQuarterHour(value)).toBe(true);
       expect(validateHours(value)).toBeNull();
     }
@@ -58,9 +56,9 @@ describe("hours validation", () => {
     expect(validateHours(Number.POSITIVE_INFINITY)).toBe("hours");
   });
 
-  it("rejects more than 24 hours on one row", () => {
-    expect(validateHours(24)).toBeNull();
-    expect(validateHours(24.25)).toBe("hours");
+  it("rejects more than 16 hours on one row", () => {
+    expect(validateHours(16)).toBeNull();
+    expect(validateHours(16.25)).toBe("hours");
   });
 });
 
@@ -94,12 +92,12 @@ describe("row completeness", () => {
 
 describe("week validation", () => {
   it("passes a complete week", () => {
-    const result = validateWeek([entry()], WEEK, { today: TODAY });
+    const result = validateWeek([entry()], WEEK);
     expect(result.ok).toBe(true);
   });
 
   it("requires at least one entry", () => {
-    const result = validateWeek([], WEEK, { today: TODAY });
+    const result = validateWeek([], WEEK);
     expect(result.ok).toBe(false);
     expect(result.weekIssues[0]?.code).toBe("no_entries");
   });
@@ -113,39 +111,41 @@ describe("week validation", () => {
       task: "",
       hours: "",
     });
-    const result = validateWeek([entry(), blank], WEEK, { today: TODAY });
+    const result = validateWeek([entry(), blank], WEEK, {});
     expect(result.ok).toBe(true);
     expect(result.rowIssues).toEqual([]);
   });
 
-  it("flags a day totalling more than 24 hours across several rows", () => {
+  it("flags a day totalling more than 16 hours across several rows", () => {
     const rows = [
-      entry({ id: "a", hours: 12 }),
-      entry({ id: "b", hours: 12 }),
+      entry({ id: "a", hours: 8 }),
+      entry({ id: "b", hours: 8 }),
       entry({ id: "c", hours: 1 }),
     ];
-    const result = validateWeek(rows, WEEK, { today: TODAY });
+    const result = validateWeek(rows, WEEK);
     expect(result.ok).toBe(false);
-    expect(result.weekIssues.some((i) => i.code === "day_over_24h")).toBe(true);
+    expect(result.weekIssues.some((i) => i.code === "day_over_limit")).toBe(true);
   });
 
-  it("allows exactly 24 hours in a day", () => {
-    const rows = [entry({ id: "a", hours: 12 }), entry({ id: "b", hours: 12 })];
-    expect(validateWeek(rows, WEEK, { today: TODAY }).ok).toBe(true);
+  it("allows exactly 16 hours in a day", () => {
+    const rows = [entry({ id: "a", hours: 8 }), entry({ id: "b", hours: 8 })];
+    expect(validateWeek(rows, WEEK).ok).toBe(true);
   });
 
-  it("rejects a future date", () => {
-    const result = validateWeek([entry({ workDate: "2026-08-27" })], WEEK, { today: TODAY });
-    expect(result.ok).toBe(false);
-    expect(result.weekIssues.some((i) => i.code === "future_date")).toBe(true);
+  it("accepts a date that has not arrived yet", () => {
+    // People fill days in ahead of time, and weekends get worked. The only
+    // date rule left is that a row belongs to the week it is filed under.
+    expect(validateWeek([entry({ workDate: "2026-08-27" })], WEEK).ok).toBe(true);
   });
 
-  it("accepts today", () => {
-    expect(validateWeek([entry({ workDate: "2026-08-26" })], WEEK, { today: TODAY }).ok).toBe(true);
+  it("accepts a weekend day", () => {
+    // 2026-08-28 is a Friday and 2026-08-29 a Saturday.
+    expect(validateWeek([entry({ workDate: "2026-08-28" })], WEEK).ok).toBe(true);
+    expect(validateWeek([entry({ workDate: "2026-08-29" })], WEEK).ok).toBe(true);
   });
 
   it("rejects a date outside the selected week", () => {
-    const result = validateWeek([entry({ workDate: "2026-09-02" })], WEEK, { today: TODAY });
+    const result = validateWeek([entry({ workDate: "2026-09-02" })], WEEK);
     expect(result.ok).toBe(false);
     expect(result.weekIssues.some((i) => i.code === "date_outside_week")).toBe(true);
   });
@@ -156,14 +156,14 @@ describe("week validation", () => {
       entry({ id: "bad", workDate: "2026-08-25", serviceId: "" }),
     ];
     // The whole week is invalid because of the second row...
-    expect(validateWeek(rows, WEEK, { today: TODAY }).ok).toBe(false);
+    expect(validateWeek(rows, WEEK).ok).toBe(false);
     // ...but submitting only the first day is fine.
-    expect(validateWeek(rows, WEEK, { scope: "2026-08-24", today: TODAY }).ok).toBe(true);
+    expect(validateWeek(rows, WEEK, { scope: "2026-08-24" }).ok).toBe(true);
   });
 
   it("reports the offending row so the UI can highlight it", () => {
     const rows = [entry({ id: "broken", hours: "" })];
-    const result = validateWeek(rows, WEEK, { today: TODAY });
+    const result = validateWeek(rows, WEEK);
     expect(result.rowIssues).toHaveLength(1);
     expect(result.rowIssues[0]?.entryId).toBe("broken");
     expect(result.rowIssues[0]?.fields).toContain("hours");

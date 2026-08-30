@@ -6,11 +6,12 @@
  * copy that actually decides. Keeping the messages here means the two layers
  * agree on wording as well as on outcome.
  */
-import { isDateInWeek, isFutureDate, dayLabel } from "./week";
+import { isDateInWeek, dayLabel } from "./week";
 import type { TimesheetEntry } from "./types";
 
 export const HOURS_STEP = 0.25;
-export const MAX_HOURS_PER_DAY = 24;
+/** People work long days sometimes; beyond this it is a typo, not a shift. */
+export const MAX_HOURS_PER_DAY = 16;
 
 export interface RowIssue {
   entryId: string;
@@ -19,7 +20,7 @@ export interface RowIssue {
 }
 
 export interface WeekIssue {
-  code: "no_entries" | "day_over_24h" | "future_date" | "date_outside_week";
+  code: "no_entries" | "day_over_limit" | "date_outside_week";
   date?: string;
   message: string;
 }
@@ -82,9 +83,9 @@ function hoursOf(entry: TimesheetEntry): number {
 export function validateWeek(
   entries: TimesheetEntry[],
   weekStart: string,
-  options: { scope?: string; today?: Date } = {},
+  options: { scope?: string } = {},
 ): ValidationResult {
-  const { scope, today = new Date() } = options;
+  const { scope } = options;
   const inScope = scope ? entries.filter((e) => e.workDate === scope) : entries;
 
   const rowIssues: RowIssue[] = [];
@@ -122,21 +123,17 @@ export function validateWeek(
   for (const [date, total] of perDay) {
     if (total > MAX_HOURS_PER_DAY) {
       weekIssues.push({
-        code: "day_over_24h",
+        code: "day_over_limit",
         date,
-        message: `${dayLabel(date)} totals ${total} hours, which is more than a day.`,
+        message: `${dayLabel(date)} totals ${total} hours. The most that can be logged in a day is ${MAX_HOURS_PER_DAY}.`,
       });
     }
   }
 
+  // Dates are otherwise unrestricted: weekends are worked, and a day can be
+  // filled in whenever suits. The only rule left is that a row belongs to the
+  // week it is filed under, which the database enforces too.
   for (const date of perDay.keys()) {
-    if (isFutureDate(date, today)) {
-      weekIssues.push({
-        code: "future_date",
-        date,
-        message: "You cannot log hours against a future date.",
-      });
-    }
     if (!isDateInWeek(date, weekStart)) {
       weekIssues.push({
         code: "date_outside_week",
