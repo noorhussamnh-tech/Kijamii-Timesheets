@@ -11,6 +11,7 @@
  * because it needs a service-account key. That lives in a server function.
  */
 import { requireSupabaseBrowserClient } from "@/lib/supabase/browser";
+import type { PersonalStats } from "@/lib/domain/insights";
 import type {
   AdminEmployeeStatus,
   ClientOption,
@@ -383,4 +384,32 @@ export interface ExportRow {
 export async function fetchExportRows(from: string, to: string): Promise<ExportRow[]> {
   const rows = await rpc<ExportRow[]>("ts_export_range", { p_from: from, p_to: to });
   return rows ?? [];
+}
+
+/** The signed-in employee's own statistics. Scoped by the database to them. */
+export async function fetchMyStats(from: string, to: string): Promise<PersonalStats> {
+  const data = await rpc<PersonalStats>("ts_my_stats", { p_from: from, p_to: to });
+  // Postgres returns numerics as strings; the insight maths needs real numbers.
+  return {
+    ...data,
+    totalHours: Number(data.totalHours),
+    billableHours: Number(data.billableHours),
+    entryCount: Number(data.entryCount),
+    daysLogged: Number(data.daysLogged),
+    distinctClients: Number(data.distinctClients),
+    distinctServices: Number(data.distinctServices),
+    longestStreak: Number(data.longestStreak),
+    previousTotal: Number(data.previousTotal),
+    expectedWeeklyHours: Number(data.expectedWeeklyHours),
+    busiestDay: data.busiestDay
+      ? { ...data.busiestDay, hours: Number(data.busiestDay.hours) }
+      : null,
+    topClient: data.topClient ? { ...data.topClient, hours: Number(data.topClient.hours) } : null,
+    topService: data.topService
+      ? { ...data.topService, hours: Number(data.topService.hours) }
+      : null,
+    topTask: data.topTask ? { ...data.topTask, hours: Number(data.topTask.hours) } : null,
+    clients: (data.clients ?? []).map((c) => ({ ...c, hours: Number(c.hours) })),
+    byWeekday: (data.byWeekday ?? []).map((d) => ({ dow: Number(d.dow), hours: Number(d.hours) })),
+  };
 }

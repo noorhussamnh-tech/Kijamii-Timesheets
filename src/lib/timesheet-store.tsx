@@ -81,7 +81,6 @@ interface TimesheetContextValue {
   updateRow: (id: string, patch: Partial<TimesheetEntry>) => void;
   duplicateRow: (id: string) => void;
   deleteRow: (id: string) => void;
-  copyPreviousDay: () => void;
   copyPreviousWeek: () => Promise<void>;
 
   visibleDates: string[];
@@ -384,29 +383,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     if (next) setExtraDates((dates) => [...dates, next]);
   }, [weekKey, visibleDates]);
 
-  /** Copies the most recent day that has rows onto the next empty day. */
-  const copyPreviousDay = useCallback(() => {
-    const rows = entriesRef.current;
-    if (rows.length === 0) return;
-    const dates = weekDates(weekKey);
-    const withRows = dates.filter((date) => rows.some((row) => row.workDate === date));
-    const source = withRows[withRows.length - 1];
-    if (!source) return;
-
-    const target = dates.find((date) => dates.indexOf(date) > dates.indexOf(source));
-    if (!target || isDayLocked(target)) return;
-
-    const copies = rows
-      .filter((row) => row.workDate === source)
-      .map<TimesheetEntry>((row) => ({
-        ...row,
-        id: newEntryId(),
-        workDate: target,
-        status: "draft",
-      }));
-    if (copies.length > 0) mutate((current) => [...current, ...copies]);
-  }, [weekKey, mutate, isDayLocked]);
-
   /** Pulls last week's rows in as a fresh draft, remapped onto this week. */
   const copyPreviousWeek = useCallback(async () => {
     if (readOnly) return;
@@ -541,7 +517,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       updateRow,
       duplicateRow,
       deleteRow,
-      copyPreviousDay,
       copyPreviousWeek,
       visibleDates,
       focusDate,
@@ -580,7 +555,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       updateRow,
       duplicateRow,
       deleteRow,
-      copyPreviousDay,
       copyPreviousWeek,
       visibleDates,
       focusDate,

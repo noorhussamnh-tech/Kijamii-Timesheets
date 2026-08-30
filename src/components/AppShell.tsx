@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { CalendarClock, ClipboardList, LogOut, Menu, ShieldCheck } from "lucide-react";
+import { CalendarClock, ClipboardList, LogOut, Menu, ShieldCheck, Sparkles } from "lucide-react";
 
 import { AuthGate } from "@/components/AuthGate";
 import { KijamiiMark } from "@/components/KijamiiMark";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { to: "/timesheet", label: "My Timesheet", icon: CalendarClock, adminOnly: false },
   { to: "/submissions", label: "Previous Submissions", icon: ClipboardList, adminOnly: false },
+  { to: "/insights", label: "My Time", icon: Sparkles, adminOnly: false },
   { to: "/admin", label: "Admin Overview", icon: ShieldCheck, adminOnly: true },
 ] as const;
 

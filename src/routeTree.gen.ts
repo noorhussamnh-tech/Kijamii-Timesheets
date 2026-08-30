@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as SubmissionsRouteImport } from './routes/submissions'
 import { Route as SubmittedRouteImport } from './routes/submitted'
 import { Route as TimesheetRouteImport } from './routes/timesheet'
@@ -24,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsRoute = InsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SubmissionsRoute = SubmissionsRouteImport.update({
@@ -50,6 +56,7 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/insights': typeof InsightsRoute
   '/submissions': typeof SubmissionsRoute
   '/submitted': typeof SubmittedRoute
   '/timesheet': typeof TimesheetRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/insights': typeof InsightsRoute
   '/submissions': typeof SubmissionsRoute
   '/submitted': typeof SubmittedRoute
   '/timesheet': typeof TimesheetRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/insights': typeof InsightsRoute
   '/submissions': typeof SubmissionsRoute
   '/submitted': typeof SubmittedRoute
   '/timesheet': typeof TimesheetRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/insights'
     | '/submissions'
     | '/submitted'
     | '/timesheet'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/insights'
     | '/submissions'
     | '/submitted'
     | '/timesheet'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/insights'
     | '/submissions'
     | '/submitted'
     | '/timesheet'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  InsightsRoute: typeof InsightsRoute
   SubmissionsRoute: typeof SubmissionsRoute
   SubmittedRoute: typeof SubmittedRoute
   TimesheetRoute: typeof TimesheetRoute
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights': {
+      id: '/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof InsightsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/submissions': {
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  InsightsRoute: InsightsRoute,
   SubmissionsRoute: SubmissionsRoute,
   SubmittedRoute: SubmittedRoute,
   TimesheetRoute: TimesheetRoute,

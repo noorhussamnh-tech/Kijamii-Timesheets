@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertCircle, CopyPlus } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { SaveIndicator } from "@/components/SaveIndicator";
@@ -31,8 +31,7 @@ export const Route = createFileRoute("/timesheet")({
 });
 
 function TimesheetPage() {
-  const { rowIssues, weekIssues, showErrors, copyPreviousDay, readOnly, saveError, isFuture } =
-    useTimesheet();
+  const { rowIssues, weekIssues, showErrors, readOnly, saveError, isFuture } = useTimesheet();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitDate, setSubmitDate] = useState<string | null>(null);
@@ -85,9 +84,6 @@ function TimesheetPage() {
 
         {!readOnly && (
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={copyPreviousDay}>
-              <CopyPlus className="size-3.5" /> Copy entries from previous day
-            </Button>
             <span className="ml-auto text-[11px] text-muted-foreground">
               <span className="text-brand">*</span> Required · Hours in 0.25 steps · Max 24h per day
             </span>
