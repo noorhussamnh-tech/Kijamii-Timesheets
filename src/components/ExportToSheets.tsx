@@ -14,6 +14,12 @@ type State =
 /**
  * Sends one week's submitted entries to the Google Sheet.
  *
+ * Not currently mounted: Kijamii's Workspace policy blocks sharing a
+ * spreadsheet with an external service account, so the CSV download is used
+ * instead. Kept because it is complete and tested -- re-enable by rendering it
+ * beside <ExportCsv /> in the admin toolbar and setting the three
+ * GOOGLE_* environment variables.
+ *
  * Disabled while a request is in flight so a double click cannot append the
  * same week twice. The export is additive, so re-running it deliberately does
  * append a second copy -- the button says so rather than pretending otherwise.

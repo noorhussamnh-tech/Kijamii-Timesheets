@@ -355,3 +355,32 @@ export async function fetchAdminWeek(weekStart: string): Promise<AdminEmployeeSt
     expectedHours: Number(row.expectedHours),
   }));
 }
+
+/** One exported row, flattened for a spreadsheet. */
+export interface ExportRow {
+  entryId: string;
+  employeeName: string;
+  employeeEmail: string;
+  market: string;
+  department: string | null;
+  weekStart: string;
+  workDate: string;
+  clientName: string | null;
+  serviceName: string | null;
+  projectType: string | null;
+  taskDescription: string | null;
+  hours: number | string;
+  notes: string | null;
+  billable: boolean;
+  status: string;
+  submittedAt: string | null;
+}
+
+/**
+ * Submitted entries between two dates, for the admin export. Drafts are
+ * excluded: unfinished work has no business in a management report.
+ */
+export async function fetchExportRows(from: string, to: string): Promise<ExportRow[]> {
+  const rows = await rpc<ExportRow[]>("ts_export_range", { p_from: from, p_to: to });
+  return rows ?? [];
+}
