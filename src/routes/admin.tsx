@@ -169,7 +169,7 @@ function AdminOverview() {
           </SelectContent>
         </Select>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <ExportCsv weekStart={week} />
+          <ExportCsv weekStart={week} market={market} department={department} />
         </div>
       </div>
 

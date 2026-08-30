@@ -95,3 +95,39 @@ describe("a real exported week", () => {
     expect(lines).toHaveLength(3);
   });
 });
+
+describe("column selection", () => {
+  /**
+   * Mirrors the picker: only the chosen columns reach the file, in the order
+   * they are defined rather than the order they were ticked.
+   */
+  const ALL = [
+    { key: "work_date", value: (r: { d: string; n: string; h: number }) => r.d },
+    { key: "employee_name", value: (r: { d: string; n: string; h: number }) => r.n },
+    { key: "hours", value: (r: { d: string; n: string; h: number }) => r.h },
+  ] as const;
+
+  const build = (selected: string[], rows: { d: string; n: string; h: number }[]) => {
+    const columns = ALL.filter((c) => selected.includes(c.key));
+    return toCsv(
+      columns.map((c) => c.key),
+      rows.map((row) => columns.map((c) => c.value(row))),
+    );
+  };
+
+  const rows = [{ d: "2026-08-24", n: "Noor Hussam", h: 4.25 }];
+
+  it("includes every column by default", () => {
+    expect(build(["work_date", "employee_name", "hours"], rows)).toBe(
+      "work_date,employee_name,hours\r\n2026-08-24,Noor Hussam,4.25",
+    );
+  });
+
+  it("drops the columns that are unticked", () => {
+    expect(build(["work_date", "hours"], rows)).toBe("work_date,hours\r\n2026-08-24,4.25");
+  });
+
+  it("keeps the defined order regardless of selection order", () => {
+    expect(build(["hours", "work_date"], rows)).toBe("work_date,hours\r\n2026-08-24,4.25");
+  });
+});
