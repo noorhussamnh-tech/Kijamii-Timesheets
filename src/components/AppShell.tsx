@@ -1,45 +1,46 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import {
-  CalendarClock,
-  Check,
-  ChevronDown,
-  ClipboardList,
-  LogOut,
-  Menu,
-  ShieldCheck,
-} from "lucide-react";
+import { CalendarClock, ClipboardList, LogOut, Menu, ShieldCheck } from "lucide-react";
+
+import { AuthGate } from "@/components/AuthGate";
 import { KijamiiMark } from "@/components/KijamiiMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { getVertical, verticals } from "@/data/reference";
-import { useTimesheet } from "@/lib/timesheet-store";
+import { useAuth } from "@/lib/auth";
+import { MARKET_LABELS } from "@/lib/domain/types";
 import { cn } from "@/lib/utils";
 
-const nav = [
-  { to: "/timesheet", label: "My Timesheet", icon: CalendarClock },
-  { to: "/submissions", label: "Previous Submissions", icon: ClipboardList },
-  { to: "/admin", label: "Admin Overview", icon: ShieldCheck },
+const NAV = [
+  { to: "/timesheet", label: "My Timesheet", icon: CalendarClock, adminOnly: false },
+  { to: "/submissions", label: "Previous Submissions", icon: ClipboardList, adminOnly: false },
+  { to: "/admin", label: "Admin Overview", icon: ShieldCheck, adminOnly: true },
 ] as const;
 
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const { employee } = useAuth();
+  const isAdmin = employee?.role === "admin";
+
   return (
     <nav className="flex flex-col gap-0.5">
-      {nav.map((item) => {
+      {NAV.filter((item) => !item.adminOnly || isAdmin).map((item) => {
         const active = pathname.startsWith(item.to);
         return (
           <Link
             key={item.to}
             to={item.to}
             onClick={onNavigate}
+            aria-current={active ? "page" : undefined}
             className={cn(
               "flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
               active
@@ -56,7 +57,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AppShell({
+function ShellChrome({
   title,
   description,
   actions,
@@ -67,14 +68,19 @@ export function AppShell({
   actions?: ReactNode | undefined;
   children: ReactNode;
 }) {
-  const { signedIn, authReady, signOut, employee, marketId, setMarketId } = useTimesheet();
+  const { employee, signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  useEffect(() => {
-    if (authReady && !signedIn) void navigate({ to: "/" });
-  }, [authReady, signedIn, navigate]);
+  const handleSignOut = async () => {
+    await signOut();
+    void navigate({ to: "/", replace: true });
+  };
 
+  // The market is shown as text, never as a control: people cannot reassign
+  // themselves, and every submitted row records the market it was filed under.
+  const marketLabel = employee?.primaryMarket ? MARKET_LABELS[employee.primaryMarket] : null;
+  const extraMarkets = (employee?.markets.length ?? 0) - 1;
 
   return (
     <div className="min-h-screen bg-background lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
@@ -88,14 +94,18 @@ export function AppShell({
         </div>
         <div className="rounded-lg bg-sidebar-accent/60 p-3">
           <p className="truncate text-[13px] font-semibold text-sidebar-accent-foreground">
-            {employee.name}
+            {employee?.fullName}
           </p>
-          <p className="truncate text-[11px] text-sidebar-foreground/60">{employee.email}</p>
+          <p className="truncate text-[11px] text-sidebar-foreground/60">{employee?.email}</p>
+          {marketLabel && (
+            <p className="mt-1 truncate text-[11px] text-sidebar-foreground/50">
+              {marketLabel}
+              {extraMarkets > 0 && ` +${extraMarkets}`}
+              {employee?.department ? ` · ${employee.department}` : ""}
+            </p>
+          )}
           <button
-            onClick={() => {
-              signOut();
-              void navigate({ to: "/" });
-            }}
+            onClick={() => void handleSignOut()}
             className="mt-2.5 inline-flex items-center gap-1.5 text-[12px] font-medium text-sidebar-foreground/70 transition-colors hover:text-sidebar-primary"
           >
             <LogOut className="size-3.5" /> Sign out
@@ -111,6 +121,7 @@ export function AppShell({
                 <SheetTrigger asChild>
                   <Button variant="outline" size="icon" className="shrink-0 lg:hidden">
                     <Menu className="size-4" />
+                    <span className="sr-only">Open navigation</span>
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[260px] bg-sidebar p-4">
@@ -118,6 +129,12 @@ export function AppShell({
                   <div className="space-y-6">
                     <KijamiiMark />
                     <NavLinks onNavigate={() => setMobileOpen(false)} />
+                    <button
+                      onClick={() => void handleSignOut()}
+                      className="inline-flex items-center gap-1.5 px-3 text-[12px] font-medium text-sidebar-foreground/70"
+                    >
+                      <LogOut className="size-3.5" /> Sign out
+                    </button>
                   </div>
                 </SheetContent>
               </Sheet>
@@ -129,44 +146,43 @@ export function AppShell({
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <span className="label-xs hidden sm:inline">Vertical</span>
-                    <span className="text-xs font-semibold">{getVertical(marketId).name}</span>
-                    <ChevronDown className="size-3.5 opacity-70" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {verticals.map((m) => (
-                    <DropdownMenuItem
-                      key={m.id}
-                      onClick={() => setMarketId(m.id)}
-                      className="flex items-center justify-between gap-2"
-                    >
-                      <span className={cn(marketId === m.id && "font-semibold")}>{m.name}</span>
-                      {marketId === m.id && <Check className="size-3.5 text-brand" />}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {marketLabel && (
+                <span className="hidden items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold sm:inline-flex">
+                  <span className="label-xs">Market</span>
+                  {marketLabel}
+                  {extraMarkets > 0 && (
+                    <span className="text-muted-foreground">+{extraMarkets}</span>
+                  )}
+                </span>
+              )}
               {actions}
               <ThemeToggle />
               <div className="hidden items-center gap-2 border-l pl-3 sm:flex">
                 <span className="grid size-8 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
-                  {employee.initials}
+                  {initialsOf(employee?.fullName ?? "")}
                 </span>
                 <div className="hidden leading-tight lg:block">
-                  <p className="text-[13px] font-semibold">{employee.name}</p>
+                  <p className="text-[13px] font-semibold">{employee?.fullName}</p>
                 </div>
               </div>
             </div>
           </div>
-
-
         </header>
         <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-6">{children}</main>
       </div>
     </div>
+  );
+}
+
+export function AppShell(props: {
+  title: string;
+  description?: string | undefined;
+  actions?: ReactNode | undefined;
+  children: ReactNode;
+}) {
+  return (
+    <AuthGate>
+      <ShellChrome {...props} />
+    </AuthGate>
   );
 }

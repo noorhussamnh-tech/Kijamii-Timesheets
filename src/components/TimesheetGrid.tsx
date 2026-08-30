@@ -1,21 +1,20 @@
 import { Fragment } from "react";
-import { format } from "date-fns";
-import { AlertCircle, Copy, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, Copy, Loader2, Plus, Trash2 } from "lucide-react";
+
 import { EntryField } from "@/components/EntryField";
 import { Button } from "@/components/ui/button";
-import { getClient } from "@/data/reference";
-import { serviceOptions, taskOptions, projectTypeOptions } from "@/data/timesheet-config";
-import type { TimesheetEntry } from "@/data/weeks";
-import { weekDays } from "@/data/weeks";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatHours } from "@/lib/domain/totals";
+import { dayLabel, shortDayLabel } from "@/lib/domain/week";
+import type { TimesheetEntry } from "@/lib/domain/types";
 import { useTimesheet } from "@/lib/timesheet-store";
 import { cn } from "@/lib/utils";
 
-const hm = (n: number) => `${n % 1 === 0 ? n : n.toFixed(2)}h`;
-
 function RowActions({ row }: { row: TimesheetEntry }) {
   const { duplicateRow, deleteRow, readOnly, isDayLocked } = useTimesheet();
-  if (readOnly || isDayLocked(row.date))
+  if (readOnly || isDayLocked(row.workDate)) {
     return <span className="text-[11px] text-muted-foreground">Locked</span>;
+  }
   return (
     <div className="flex items-center gap-0.5">
       <Button
@@ -40,36 +39,94 @@ function RowActions({ row }: { row: TimesheetEntry }) {
   );
 }
 
+function DayHeading({ date }: { date: string }) {
+  const { totals, isDayLocked, readOnly, addRow } = useTimesheet();
+  const day = totals.byDay.find((entry) => entry.date === date);
+  const locked = isDayLocked(date);
+
+  return (
+    <>
+      <span className="num">{dayLabel(date)}</span>
+      <span
+        className={cn(
+          "num ml-2 text-muted-foreground",
+          day && day.expected > 0 && day.hours < day.expected && "text-warning",
+        )}
+      >
+        {formatHours(day?.hours ?? 0)}
+        {day?.expected ? ` / ${formatHours(day.expected)}` : " · non-working day"}
+      </span>
+      {locked ? (
+        <span className="ml-2 rounded-full border border-success/30 bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">
+          Day submitted
+        </span>
+      ) : (
+        !readOnly && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-1 h-6 px-1.5 text-[11px]"
+            onClick={() => addRow(date)}
+          >
+            <Plus className="size-3" /> Row
+          </Button>
+        )
+      )}
+    </>
+  );
+}
+
 export function TimesheetGrid() {
   const {
     config,
     entries,
-    weekKey,
     addRow,
-    issues,
-    showErrors,
     readOnly,
-    totals,
-    marketId,
     visibleDates,
     addDay,
-    isDayLocked,
+    loading,
+    loadError,
+    reload,
+    issueFor,
+    reference,
   } = useTimesheet();
 
-  const days = weekDays(weekKey).filter((d) => visibleDates.includes(format(d, "yyyy-MM-dd")));
-  const canAddDay = visibleDates.length < 7;
-  const issueFor = (id: string) => (showErrors ? issues.find((i) => i.rowId === id) : undefined);
+  if (loading || !reference) {
+    return (
+      <div className="space-y-2 rounded-lg border bg-surface p-4 shadow-card">
+        <span className="sr-only">Loading this week</span>
+        {[0, 1, 2, 3].map((row) => (
+          <Skeleton key={row} className="h-9 w-full" />
+        ))}
+      </div>
+    );
+  }
 
-  if (!entries.length) {
+  if (loadError) {
+    return (
+      <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-6 py-10 text-center">
+        <p className="flex items-center justify-center gap-2 text-sm font-semibold text-destructive">
+          <AlertCircle className="size-4" /> This week could not be loaded
+        </p>
+        <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">{loadError}</p>
+        <Button className="mt-4" size="sm" variant="outline" onClick={reload}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+
+  if (entries.length === 0) {
     return (
       <div className="rounded-lg border border-dashed bg-surface px-6 py-14 text-center">
         <p className="text-sm font-semibold">No entries for this week yet</p>
         <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">
-          Add your first row, or copy last week's entries and adjust the hours — most weeks take
-          under five minutes.
+          {readOnly
+            ? "Nothing was logged for this week."
+            : "Add your first row, or copy last week's entries and adjust the hours."}
         </p>
         {!readOnly && (
-          <Button className="mt-4" size="sm" onClick={() => addRow(format(days[0]!, "yyyy-MM-dd"))}>
+          <Button className="mt-4" size="sm" onClick={() => addRow(visibleDates[0])}>
             <Plus className="size-3.5" /> Add first row
           </Button>
         )}
@@ -77,72 +134,45 @@ export function TimesheetGrid() {
     );
   }
 
+  const canAddDay = visibleDates.length < 7;
+
   return (
     <div className="space-y-4">
-      {/* Desktop / tablet table */}
+      {/* Desktop table */}
       <div className="hidden overflow-hidden rounded-lg border bg-surface shadow-card lg:block">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1080px] border-collapse text-left">
+          <table className="w-full min-w-[1020px] border-collapse text-left">
+            <caption className="sr-only">
+              Timesheet entries grouped by day. Use Tab to move between fields.
+            </caption>
             <thead>
               <tr className="border-b bg-surface-muted">
-                {config.fields.map((f) => (
-                  <th key={f.key} className={cn("label-xs px-2.5 py-2.5", f.width)}>
-                    {f.label}
-                    {f.required && <span className="ml-0.5 text-brand">*</span>}
+                {config.fields.map((field) => (
+                  <th key={field.key} scope="col" className={cn("label-xs px-2.5 py-2.5", field.width)}>
+                    {field.label}
+                    {field.required && <span className="ml-0.5 text-brand">*</span>}
                   </th>
                 ))}
-                <th className="label-xs w-[84px] px-2.5 py-2.5">Actions</th>
+                <th scope="col" className="label-xs w-[84px] px-2.5 py-2.5">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
-              {days.map((day) => {
-                const key = format(day, "yyyy-MM-dd");
-                const dayRows = entries.filter((r) => r.date === key);
-                const dayTotal = totals.byDay.find((d) => d.date === key);
+              {visibleDates.map((date) => {
+                const dayRows = entries.filter((row) => row.workDate === date);
                 return (
-                  <Fragment key={key}>
+                  <Fragment key={date}>
                     <tr className="border-b bg-background/70">
-                      <td
+                      <th
+                        scope="colgroup"
                         colSpan={config.fields.length + 1}
-                        className="px-2.5 py-1.5 text-[11px] font-semibold"
+                        className="px-2.5 py-1.5 text-left text-[11px] font-semibold"
                       >
-                        <span className="num">{format(day, "EEEE d MMM")}</span>
-                        <span
-                          className={cn(
-                            "num ml-2 text-muted-foreground",
-                            dayTotal &&
-                              dayTotal.expected > 0 &&
-                              dayTotal.hours < dayTotal.expected &&
-                              "text-warning",
-                          )}
-                        >
-                          {hm(dayTotal?.hours ?? 0)}
-                          {dayTotal?.expected ? ` / ${hm(dayTotal.expected)}` : " · non-working day"}
-                        </span>
-                        {isDayLocked(key) ? (
-                          <span className="ml-2 rounded-full border border-success/30 bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">
-                            Day submitted
-                          </span>
-                        ) : (
-                          !readOnly && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="ml-1 h-6 px-1.5 text-[11px]"
-                              onClick={() => addRow(key)}
-                            >
-                              <Plus className="size-3" /> Row
-                            </Button>
-                          )
-                        )}
-                      </td>
+                        <DayHeading date={date} />
+                      </th>
                     </tr>
-                    {!dayRows.length && !readOnly && (
-                <Button variant="outline" size="sm" className="w-full" onClick={() => addRow(key)}>
-                  <Plus className="size-3.5" /> Add row for {format(day, "EEE d MMM")}
-                </Button>
-              )}
-              {dayRows.map((row) => {
+                    {dayRows.map((row) => {
                       const issue = issueFor(row.id);
                       return (
                         <tr
@@ -152,12 +182,12 @@ export function TimesheetGrid() {
                             issue && "bg-destructive/5",
                           )}
                         >
-                          {config.fields.map((f) => (
-                            <td key={f.key} className={cn("px-1.5 py-1", f.width)}>
+                          {config.fields.map((field) => (
+                            <td key={field.key} className={cn("px-1.5 py-1", field.width)}>
                               <EntryField
-                                field={f}
+                                field={field}
                                 row={row}
-                                invalid={issue?.fields.includes(f.key)}
+                                invalid={issue?.fields.includes(field.key)}
                               />
                             </td>
                           ))}
@@ -174,7 +204,7 @@ export function TimesheetGrid() {
           </table>
         </div>
         {!readOnly && (
-          <div className="flex items-center gap-2 border-t bg-surface-muted px-2.5 py-2">
+          <div className="flex flex-wrap items-center gap-2 border-t bg-surface-muted px-2.5 py-2">
             <Button variant="ghost" size="sm" onClick={() => addRow()}>
               <Plus className="size-3.5" /> Add another row
             </Button>
@@ -190,32 +220,18 @@ export function TimesheetGrid() {
         )}
       </div>
 
-      {/* Mobile / small tablet cards — all fields preserved */}
+      {/* Mobile and tablet cards — every field is preserved, not truncated */}
       <div className="space-y-3 lg:hidden">
-        {days.map((day) => {
-          const key = format(day, "yyyy-MM-dd");
-          const dayRows = entries.filter((r) => r.date === key);
-          if (!dayRows.length) return null;
-          const dayTotal = totals.byDay.find((d) => d.date === key);
+        {visibleDates.map((date) => {
+          const dayRows = entries.filter((row) => row.workDate === date);
           return (
-            <section key={key} className="space-y-2">
-              <header className="flex items-center justify-between px-0.5">
-                <p className="num flex items-center gap-2 text-[12px] font-semibold">
-                  {format(day, "EEEE d MMM")}
-                  {isDayLocked(key) && (
-                    <span className="rounded-full border border-success/30 bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">
-                      Submitted
-                    </span>
-                  )}
-                </p>
-                <p className="num text-[12px] text-muted-foreground">
-                  {hm(dayTotal?.hours ?? 0)}
-                  {dayTotal?.expected ? ` / ${hm(dayTotal.expected)}` : ""}
-                </p>
+            <section key={date} className="space-y-2">
+              <header className="flex flex-wrap items-center gap-x-2 px-0.5 text-[12px] font-semibold">
+                <DayHeading date={date} />
               </header>
-              {!dayRows.length && !readOnly && (
-                <Button variant="outline" size="sm" className="w-full" onClick={() => addRow(key)}>
-                  <Plus className="size-3.5" /> Add row for {format(day, "EEE d MMM")}
+              {dayRows.length === 0 && !readOnly && (
+                <Button variant="outline" size="sm" className="w-full" onClick={() => addRow(date)}>
+                  <Plus className="size-3.5" /> Add row for {shortDayLabel(date)}
                 </Button>
               )}
               {dayRows.map((row) => {
@@ -229,22 +245,16 @@ export function TimesheetGrid() {
                     )}
                   >
                     <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
-                      {config.fields.map((f) => (
-                        <div
-                          key={f.key}
-                          className={cn(
-                            "min-w-0",
-                            (f.key === "task" || f.key === "notes") && "col-span-2",
-                          )}
-                        >
+                      {config.fields.map((field) => (
+                        <div key={field.key} className={cn("min-w-0", field.wide && "col-span-2")}>
                           <p className="label-xs mb-0.5">
-                            {f.label}
-                            {f.required && <span className="ml-0.5 text-brand">*</span>}
+                            {field.label}
+                            {field.required && <span className="ml-0.5 text-brand">*</span>}
                           </p>
                           <EntryField
-                            field={f}
+                            field={field}
                             row={row}
-                            invalid={issue?.fields.includes(f.key)}
+                            invalid={issue?.fields.includes(field.key)}
                           />
                         </div>
                       ))}
@@ -279,22 +289,9 @@ export function TimesheetGrid() {
 
       {readOnly && (
         <p className="text-[12px] text-muted-foreground">
-          Submitted week for {marketId} — entries are read-only.
+          This week has been submitted and is read-only.
         </p>
       )}
-      {/* Screen-reader friendly summary of the selected row context */}
-      <span className="sr-only">
-        {entries
-          .map(
-            (r) =>
-              `${getClient(r.clientId)?.name ?? ""} ${
-                serviceOptions.find((s) => s.id === r.serviceId)?.name ?? ""
-              } ${projectTypeOptions.find((p) => p.id === r.projectType)?.name ?? ""} ${
-                taskOptions.find((t) => t.id === r.task)?.name ?? ""
-              } ${r.notes}`,
-          )
-          .join(", ")}
-      </span>
     </div>
   );
 }

@@ -1,3 +1,18 @@
+/**
+ * Timesheet state.
+ *
+ * Rows live in React state while they are being edited and are persisted by a
+ * debounced autosave. Three rules matter here:
+ *
+ *   1. "Saved" is only ever shown after the database confirms a write. A
+ *      failed save says so and offers a retry; it never lies.
+ *   2. Each save carries an incrementing revision. The database rejects any
+ *      revision that is not newer than the one it holds, so a slow request
+ *      cannot overwrite newer edits when it finally lands.
+ *   3. Edits made while a save is in flight are not lost: the save that
+ *      returns compares against what is on screen and reschedules if the two
+ *      have diverged.
+ */
 import {
   createContext,
   useCallback,
@@ -8,400 +23,554 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { format } from "date-fns";
-import { configs, type TimesheetFormConfig } from "@/data/timesheet-config";
-import {
-  clientsForVertical,
-  currentEmployee,
-  getMarket,
-  type Employee,
-  type MarketId,
-} from "@/data/reference";
 
-
-import { seedEntries, seedSubmissions, thisWeekKey } from "@/data/sample";
+import { useAuth } from "@/lib/auth";
+import * as api from "@/lib/data/api";
+import { configById, type TimesheetConfig } from "@/lib/domain/config";
+import { calculateTotals, type WeekTotals } from "@/lib/domain/totals";
+import { isBlankRow, validateWeek, type RowIssue, type WeekIssue } from "@/lib/domain/validation";
 import {
-  emptyEntry,
+  currentWeekKey,
   isFutureWeek,
-  newRowId,
-  shiftWeekKey,
-  weekDays,
-  type SubmissionStatus,
-  type TimesheetEntry,
-  type WeekSubmission,
-} from "@/data/weeks";
+  shiftWeek,
+  weekDates,
+  type WeekKey,
+} from "@/lib/domain/week";
+import type {
+  ClientOption,
+  ReferenceData,
+  SubmissionStatus,
+  TimesheetEntry,
+} from "@/lib/domain/types";
 
-export interface RowIssue {
-  rowId: string;
-  fields: string[];
-  message: string;
+const AUTOSAVE_DEBOUNCE_MS = 1200;
+
+export type SaveState = "idle" | "saving" | "saved" | "error";
+
+export interface SubmitOutcome {
+  ok: boolean;
+  alreadySubmitted: boolean;
+  totalHours: number;
+  submittedAt: string | null;
+  weekStart: WeekKey;
 }
 
-interface Ctx {
-  signedIn: boolean;
-  authReady: boolean;
-  signIn: () => void;
-  signOut: () => void;
-  employee: Employee;
-  marketId: MarketId;
-  setMarketId: (m: MarketId) => void;
-  config: TimesheetFormConfig;
-  weekKey: string;
-  setWeekKey: (k: string) => void;
+interface TimesheetContextValue {
+  weekKey: WeekKey;
+  setWeekKey: (key: WeekKey) => void;
   goWeek: (delta: number) => void;
   goCurrentWeek: () => void;
   isFuture: boolean;
+
+  loading: boolean;
+  loadError: string | null;
+  reload: () => void;
+
+  config: TimesheetConfig;
+  reference: ReferenceData | null;
+  availableClients: ClientOption[];
+
   entries: TimesheetEntry[];
-  entriesFor: (weekKey: string) => TimesheetEntry[];
-  submissions: Record<string, WeekSubmission>;
   status: SubmissionStatus;
   readOnly: boolean;
-  lastSavedAt?: string | undefined;
-  dirty: boolean;
+  lockedDays: string[];
+  isDayLocked: (date: string) => boolean;
+
   addRow: (date?: string) => void;
   updateRow: (id: string, patch: Partial<TimesheetEntry>) => void;
   duplicateRow: (id: string) => void;
   deleteRow: (id: string) => void;
-  submittedDays: Record<string, string>;
-  isDayLocked: (date: string) => boolean;
-  submitDay: (date: string) => void;
+  copyPreviousDay: () => void;
+  copyPreviousWeek: () => Promise<void>;
+
   visibleDates: string[];
   addDay: () => void;
-  copyPreviousDay: () => void;
-  copyPreviousWeek: () => void;
-  clearUnsaved: () => void;
-  saveDraft: () => void;
-  submitWeek: () => void;
-  reopenDraft: () => void;
+
+  saveState: SaveState;
+  lastSavedAt: string | null;
+  saveError: string | null;
+  dirty: boolean;
+  saveDraft: () => Promise<void>;
+
+  submitting: boolean;
+  submitWeek: () => Promise<SubmitOutcome | null>;
+  submitDay: (date: string) => Promise<SubmitOutcome | null>;
+  lastSubmission: SubmitOutcome | null;
+
   showErrors: boolean;
-  setShowErrors: (v: boolean) => void;
-  issues: RowIssue[];
-  totals: {
-    total: number;
-    billable: number;
-    nonBillable: number;
-    expected: number;
-    missing: number;
-    byDay: { date: string; hours: number; expected: number }[];
-  };
-  lastSubmission?: { weekKey: string; hours: number; at: string } | undefined;
+  setShowErrors: (value: boolean) => void;
+  rowIssues: RowIssue[];
+  weekIssues: WeekIssue[];
+  issueFor: (entryId: string) => RowIssue | undefined;
+
+  totals: WeekTotals;
 }
 
-// Cached on globalThis so a hot-module reload (which re-evaluates this file)
-// reuses the same context object instead of creating a second identity, which
-// would make consumers throw "must be used inside TimesheetProvider".
-const globalStore = globalThis as unknown as {
-  __kijamiiTimesheetContext?: ReturnType<typeof createContext<Ctx | null>>;
-};
-const TimesheetContext =
-  globalStore.__kijamiiTimesheetContext ??
-  (globalStore.__kijamiiTimesheetContext = createContext<Ctx | null>(null));
+const TimesheetContext = createContext<TimesheetContextValue | null>(null);
+
+/** Client-side row identity. Server rows keep the id the database gave them. */
+function newEntryId(): string {
+  return crypto.randomUUID();
+}
+
+function emptyEntry(date: string): TimesheetEntry {
+  return {
+    id: newEntryId(),
+    workDate: date,
+    clientId: "",
+    clientOther: "",
+    serviceId: "",
+    projectType: "",
+    task: "",
+    projectNote: "",
+    hours: "",
+    billable: true,
+    status: "draft",
+  };
+}
 
 export function TimesheetProvider({ children }: { children: ReactNode }) {
-  const [signedIn, setSignedIn] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
+  const { status: authStatus, employee } = useAuth();
+  const ready = authStatus === "ready" && employee !== null;
 
-  useEffect(() => {
-    try {
-      if (window.localStorage.getItem("kijamii-signed-in") === "1") setSignedIn(true);
-    } catch {
-      /* storage unavailable */
-    }
-    setAuthReady(true);
-  }, []);
-  const [marketId, setMarketId] = useState<MarketId>(currentEmployee.marketId);
-  const [weekKey, setWeekKey] = useState(thisWeekKey);
-  const [entriesByWeek, setEntriesByWeek] = useState<Record<string, TimesheetEntry[]>>(() =>
-    seedEntries(),
-  );
-  const [savedSnapshot, setSavedSnapshot] = useState<Record<string, string>>({});
-  const [submissions, setSubmissions] = useState<Record<string, WeekSubmission>>(() =>
-    seedSubmissions(),
-  );
-  const [submittedDays, setSubmittedDays] = useState<Record<string, string>>({});
+  const [weekKey, setWeekKeyState] = useState<WeekKey>(() => currentWeekKey());
+  const [entries, setEntries] = useState<TimesheetEntry[]>([]);
+  const [status, setStatus] = useState<SubmissionStatus>("draft");
+  const [lockedDays, setLockedDays] = useState<string[]>([]);
+  const [extraDates, setExtraDates] = useState<string[]>([]);
+
+  const [reference, setReference] = useState<ReferenceData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [lastSubmission, setLastSubmission] = useState<SubmitOutcome | null>(null);
   const [showErrors, setShowErrors] = useState(false);
-  const [lastSubmission, setLastSubmission] = useState<Ctx["lastSubmission"]>();
-  const autosave = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const market = getMarket(marketId);
-  const config = configs[market.config];
-  const entries = useMemo(() => entriesByWeek[weekKey] ?? [], [entriesByWeek, weekKey]);
-  const submission = submissions[weekKey];
-  const status: SubmissionStatus = submission?.status ?? "draft";
-  const readOnly = status === "submitted";
+  // Serialised snapshot of what the database last confirmed, used to decide
+  // whether anything still needs saving.
+  const [savedSnapshot, setSavedSnapshot] = useState<string>("[]");
+
+  const revision = useRef(0);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const inFlight = useRef(false);
+  const entriesRef = useRef(entries);
+  entriesRef.current = entries;
+
+  const config = configById(employee?.configuration ?? null);
+  const expectedWeeklyHours = employee?.expectedWeeklyHours ?? config.expectedWeeklyHours;
   const isFuture = isFutureWeek(weekKey);
+  const readOnly = status !== "draft" || isFuture;
 
-  const serialized = JSON.stringify(entries);
-  const dirty = (savedSnapshot[weekKey] ?? serialized) !== serialized;
+  const serialised = useMemo(() => JSON.stringify(entries), [entries]);
+  const dirty = serialised !== savedSnapshot;
 
-  const markSaved = useCallback(
-    (key: string, rows: TimesheetEntry[]) => {
-      setSavedSnapshot((s) => ({ ...s, [key]: JSON.stringify(rows) }));
-      setSubmissions((s) => ({
-        ...s,
-        [key]: {
-          weekKey: key,
-          status: s[key]?.status ?? "draft",
-          submittedAt: s[key]?.submittedAt,
-          note: s[key]?.note,
-          lastSavedAt: new Date().toISOString(),
-        },
-      }));
+  // ------------------------------------------------------------- loading
+
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const data = await api.fetchReferenceData();
+        if (!cancelled) setReference(data);
+      } catch (cause) {
+        if (!cancelled) {
+          setLoadError(
+            cause instanceof Error ? cause.message : "Could not load clients and services.",
+          );
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+
+    setLoading(true);
+    setLoadError(null);
+    clearTimeout(saveTimer.current);
+
+    void (async () => {
+      try {
+        const week = await api.fetchWeek(weekKey);
+        if (cancelled) return;
+        setEntries(week.entries);
+        setSavedSnapshot(JSON.stringify(week.entries));
+        setStatus(week.submission?.status ?? "draft");
+        setLockedDays(week.lockedDays);
+        setLastSavedAt(week.submission?.updatedAt ?? null);
+        revision.current = week.submission?.revision ?? 0;
+        setSaveState("idle");
+        setSaveError(null);
+        setShowErrors(false);
+        setExtraDates([]);
+      } catch (cause) {
+        if (!cancelled) {
+          setLoadError(cause instanceof Error ? cause.message : "Could not load this week.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, weekKey, reloadKey]);
+
+  // -------------------------------------------------------------- saving
+
+  const persist = useCallback(
+    async (rows: TimesheetEntry[]): Promise<boolean> => {
+      if (inFlight.current) return false;
+      inFlight.current = true;
+      setSaveState("saving");
+      setSaveError(null);
+
+      const attempted = JSON.stringify(rows);
+      revision.current += 1;
+
+      try {
+        // Blank rows are a UI convenience and are not worth a database row.
+        const result = await api.saveDraft(
+          weekKey,
+          rows.filter((row) => !isBlankRow(row)),
+          revision.current,
+        );
+
+        if (result.stale) {
+          // A newer save already landed; this one is simply obsolete.
+          revision.current = result.revision;
+          return false;
+        }
+
+        revision.current = result.revision;
+        setLastSavedAt(result.savedAt);
+        setSavedSnapshot(attempted);
+        // Only claim "Saved" when nothing has changed since this save began.
+        setSaveState(JSON.stringify(entriesRef.current) === attempted ? "saved" : "idle");
+        return true;
+      } catch (cause) {
+        setSaveState("error");
+        setSaveError(
+          cause instanceof api.ApiError
+            ? cause.message
+            : "Could not save. Your changes are still here — check your connection and retry.",
+        );
+        return false;
+      } finally {
+        inFlight.current = false;
+      }
     },
-    [],
+    [weekKey],
   );
 
-  // Autosave: represented in the UI via the "Saved" indicator.
+  // Debounced autosave. Deliberately keyed on the serialised rows so that
+  // typing a character at a time produces one request, not one per keystroke.
   useEffect(() => {
-    if (readOnly || !dirty) return;
-    clearTimeout(autosave.current);
-    autosave.current = setTimeout(() => markSaved(weekKey, entries), 1200);
-    return () => clearTimeout(autosave.current);
-  }, [serialized, dirty, readOnly, weekKey, entries, markSaved]);
+    if (!ready || loading || readOnly || !dirty) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      void persist(entriesRef.current);
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return () => clearTimeout(saveTimer.current);
+  }, [serialised, dirty, ready, loading, readOnly, persist]);
 
-  const mutate = (fn: (rows: TimesheetEntry[]) => TimesheetEntry[]) =>
-    setEntriesByWeek((prev) => ({ ...prev, [weekKey]: fn(prev[weekKey] ?? []) }));
+  // A tab closing mid-edit should not silently drop work.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = (event: BeforeUnloadEvent) => {
+      if (dirty && !readOnly) event.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty, readOnly]);
 
-  const addRow = (date?: string) => {
-    const days = weekDays(weekKey);
-    const fallback = format(days[0]!, "yyyy-MM-dd");
-    const last = entries[entries.length - 1]?.date;
-    mutate((rows) => [...rows, emptyEntry(date ?? last ?? fallback, marketId)]);
-  };
+  const saveDraft = useCallback(async () => {
+    clearTimeout(saveTimer.current);
+    await persist(entriesRef.current);
+  }, [persist]);
 
-  const updateRow = (id: string, patch: Partial<TimesheetEntry>) =>
-    mutate((rows) =>
-      rows.map((r) => {
-        if (r.id !== id) return r;
-        const next = { ...r, ...patch };
-        if (typeof next.hours === "number" && next.hours < 0) next.hours = 0;
-        return next;
-      }),
-    );
+  // ------------------------------------------------------------ mutation
 
-  const duplicateRow = (id: string) =>
-    mutate((rows) => {
-      const i = rows.findIndex((r) => r.id === id);
-      if (i < 0) return rows;
-      const clone = { ...rows[i]!, id: newRowId() };
-      return [...rows.slice(0, i + 1), clone, ...rows.slice(i + 1)];
-    });
+  const isDayLocked = useCallback(
+    (date: string) => lockedDays.includes(date),
+    [lockedDays],
+  );
 
-  const deleteRow = (id: string) => mutate((rows) => rows.filter((r) => r.id !== id));
+  const mutate = useCallback(
+    (fn: (rows: TimesheetEntry[]) => TimesheetEntry[]) => {
+      if (readOnly) return;
+      setEntries((rows) => fn(rows));
+    },
+    [readOnly],
+  );
 
-  const copyPreviousDay = () => {
-    if (!entries.length) return;
-    const dates = [...new Set(entries.map((r) => r.date))].sort();
-    const lastDate = dates[dates.length - 1]!;
-    const prevDate = dates[dates.length - 2] ?? lastDate;
-    const source = entries.filter((r) => r.date === prevDate);
-    const days = weekDays(weekKey).map((d) => format(d, "yyyy-MM-dd"));
-    const target = days[Math.min(days.indexOf(lastDate) + (prevDate === lastDate ? 1 : 0), 6)]!;
-    mutate((rows) => [
-      ...rows,
-      ...source.map((r) => ({
-        ...r,
-        id: newRowId(),
-        date: target,
-      })),
-    ]);
-  };
+  const addRow = useCallback(
+    (date?: string) => {
+      const dates = weekDates(weekKey);
+      const fallback = entriesRef.current[entriesRef.current.length - 1]?.workDate ?? dates[0]!;
+      mutate((rows) => [...rows, emptyEntry(date ?? fallback)]);
+    },
+    [weekKey, mutate],
+  );
 
-  const copyPreviousWeek = () => {
-    const prev = entriesByWeek[shiftWeekKey(weekKey, -1)] ?? [];
-    if (!prev.length) return;
-    const days = weekDays(weekKey).map((d) => format(d, "yyyy-MM-dd"));
-    mutate((rows) => [
-      ...rows,
-      ...prev.map((r) => {
-        const dayIndex = new Date(r.date).getDay();
-        return {
-          ...r,
-          id: newRowId(),
-          date: days[dayIndex]!,
+  const updateRow = useCallback(
+    (id: string, patch: Partial<TimesheetEntry>) => {
+      mutate((rows) =>
+        rows.map((row) => {
+          if (row.id !== id) return row;
+          if (isDayLocked(row.workDate)) return row;
+          return { ...row, ...patch };
+        }),
+      );
+    },
+    [mutate, isDayLocked],
+  );
+
+  /** Duplicates always get a fresh id, so a copy never overwrites its source. */
+  const duplicateRow = useCallback(
+    (id: string) => {
+      mutate((rows) => {
+        const index = rows.findIndex((row) => row.id === id);
+        if (index < 0) return rows;
+        const copy: TimesheetEntry = {
+          ...rows[index]!,
+          id: newEntryId(),
+          status: "draft",
         };
-      }),
-    ]);
-  };
+        return [...rows.slice(0, index + 1), copy, ...rows.slice(index + 1)];
+      });
+    },
+    [mutate],
+  );
+
+  const deleteRow = useCallback(
+    (id: string) => {
+      mutate((rows) => rows.filter((row) => row.id !== id || isDayLocked(row.workDate)));
+    },
+    [mutate, isDayLocked],
+  );
 
   const visibleDates = useMemo(() => {
-    const all = weekDays(weekKey).map((d) => format(d, "yyyy-MM-dd"));
-    const withRows = new Set(entries.map((r) => r.date));
+    const all = weekDates(weekKey);
+    const used = new Set(entries.map((row) => row.workDate));
+    for (const date of extraDates) used.add(date);
     const first = all[0]!;
-    return all.filter((d) => d === first || withRows.has(d));
-  }, [weekKey, entries]);
+    return all.filter((date) => date === first || used.has(date));
+  }, [weekKey, entries, extraDates]);
 
-  const addDay = () => {
-    const all = weekDays(weekKey).map((d) => format(d, "yyyy-MM-dd"));
-    const next = all.find((d) => !visibleDates.includes(d));
-    if (!next) return;
-    mutate((rows) => [...rows, emptyEntry(next, marketId)]);
-  };
+  const addDay = useCallback(() => {
+    const next = weekDates(weekKey).find((date) => !visibleDates.includes(date));
+    if (next) setExtraDates((dates) => [...dates, next]);
+  }, [weekKey, visibleDates]);
 
-  const isDayLocked = (date: string) => Boolean(submittedDays[date]);
+  /** Copies the most recent day that has rows onto the next empty day. */
+  const copyPreviousDay = useCallback(() => {
+    const rows = entriesRef.current;
+    if (rows.length === 0) return;
+    const dates = weekDates(weekKey);
+    const withRows = dates.filter((date) => rows.some((row) => row.workDate === date));
+    const source = withRows[withRows.length - 1];
+    if (!source) return;
 
-  const submitDay = (date: string) => {
-    setSubmittedDays((s) => ({ ...s, [date]: new Date().toISOString() }));
-    setShowErrors(false);
-  };
+    const target = dates.find((date) => dates.indexOf(date) > dates.indexOf(source));
+    if (!target || isDayLocked(target)) return;
 
-  const clearUnsaved = () => {
-    const snap = savedSnapshot[weekKey];
-    if (!snap) return;
-    setEntriesByWeek((prev) => ({ ...prev, [weekKey]: JSON.parse(snap) as TimesheetEntry[] }));
-    setShowErrors(false);
-  };
-
-  const saveDraft = () => markSaved(weekKey, entries);
-
-  const issues = useMemo<RowIssue[]>(() => {
-    const out: RowIssue[] = [];
-    const required = config.fields.filter((f) => f.required);
-    for (const row of entries) {
-      const missing: string[] = [];
-      for (const f of required) {
-        const v = row[f.key as keyof TimesheetEntry];
-        if (f.key === "billable") continue;
-        if (f.key === "hours") {
-          if (v === "" || v === null || Number(v) <= 0) missing.push("hours");
-          else if (Math.round(Number(v) * 100) % 25 !== 0) missing.push("hours");
-        } else if (!v) missing.push(f.key);
-      }
-      if (missing.length) {
-        const labels = missing.map(
-          (k) => config.fields.find((f) => f.key === k)?.label ?? k,
-        );
-        out.push({
-          rowId: row.id,
-          fields: missing,
-          message: missing.includes("hours")
-            ? `Add ${labels.join(", ")} — hours must be greater than 0 in 0.25 steps.`
-            : `Add ${labels.join(", ")} to complete this row.`,
-        });
-      }
-    }
-    return out;
-  }, [entries, config]);
-
-  const totals = useMemo(() => {
-    const num = (v: number | "") => (typeof v === "number" ? v : 0);
-    const total = entries.reduce((s, r) => s + num(r.hours), 0);
-    const billable = entries.filter((r) => r.billable).reduce((s, r) => s + num(r.hours), 0);
-    const byDay = weekDays(weekKey).map((d) => {
-      const key = format(d, "yyyy-MM-dd");
-      return {
-        date: key,
-        hours: entries.filter((r) => r.date === key).reduce((s, r) => s + num(r.hours), 0),
-        expected: market.workDays.includes(d.getDay()) ? market.expectedDailyHours : 0,
-      };
-    });
-    return {
-      total,
-      billable,
-      nonBillable: total - billable,
-      expected: config.expectedWeeklyHours,
-      missing: Math.max(0, config.expectedWeeklyHours - total),
-      byDay,
-    };
-  }, [entries, weekKey, market, config]);
-
-  const submitWeek = () => {
-    setSubmissions((s) => ({
-      ...s,
-      [weekKey]: {
-        weekKey,
-        status: "submitted",
-        submittedAt: new Date().toISOString(),
-        lastSavedAt: new Date().toISOString(),
-      },
-    }));
-    setSavedSnapshot((s) => ({ ...s, [weekKey]: JSON.stringify(entries) }));
-    setLastSubmission({ weekKey, hours: totals.total, at: new Date().toISOString() });
-    setShowErrors(false);
-  };
-
-  const reopenDraft = () =>
-    setSubmissions((s) => ({
-      ...s,
-      [weekKey]: { ...(s[weekKey] ?? { weekKey }), status: "draft" },
-    }));
-
-  const value: Ctx = {
-    signedIn,
-    authReady,
-    signIn: () => {
-      setSignedIn(true);
-      try {
-        window.localStorage.setItem("kijamii-signed-in", "1");
-      } catch {
-        /* storage unavailable */
-      }
-    },
-    signOut: () => {
-      setSignedIn(false);
-      try {
-        window.localStorage.removeItem("kijamii-signed-in");
-      } catch {
-        /* storage unavailable */
-      }
-    },
-    employee: currentEmployee,
-    marketId,
-    setMarketId: (m) => {
-      setMarketId(m);
-      // Stamp the registered vertical on the rows and drop clients that do not
-      // belong to the newly selected vertical.
-      const allowed = new Set(clientsForVertical(m).map((c) => c.id));
-      setEntriesByWeek((prev) => ({
-        ...prev,
-        [weekKey]: (prev[weekKey] ?? []).map((r) => ({
-          ...r,
-          verticalId: m,
-          clientId: allowed.has(r.clientId) ? r.clientId : "",
-          clientOther: allowed.has(r.clientId) ? r.clientOther : "",
-        })),
+    const copies = rows
+      .filter((row) => row.workDate === source)
+      .map<TimesheetEntry>((row) => ({
+        ...row,
+        id: newEntryId(),
+        workDate: target,
+        status: "draft",
       }));
-    },
+    if (copies.length > 0) mutate((current) => [...current, ...copies]);
+  }, [weekKey, mutate, isDayLocked]);
 
-    config,
-    weekKey,
-    setWeekKey,
-    goWeek: (delta) => setWeekKey((k) => shiftWeekKey(k, delta)),
-    goCurrentWeek: () => setWeekKey(thisWeekKey),
-    isFuture,
-    entries,
-    entriesFor: (k) => entriesByWeek[k] ?? [],
-    submissions,
-    status,
-    readOnly,
-    lastSavedAt: submission?.lastSavedAt,
-    dirty,
-    addRow,
-    updateRow,
-    duplicateRow,
-    deleteRow,
-    submittedDays,
-    isDayLocked,
-    submitDay,
-    visibleDates,
-    addDay,
-    copyPreviousDay,
-    copyPreviousWeek,
-    clearUnsaved,
-    saveDraft,
-    submitWeek,
-    reopenDraft,
-    showErrors,
-    setShowErrors,
-    issues,
-    totals,
-    lastSubmission,
-  };
+  /** Pulls last week's rows in as a fresh draft, remapped onto this week. */
+  const copyPreviousWeek = useCallback(async () => {
+    if (readOnly) return;
+    const previous = shiftWeek(weekKey, -1);
+    try {
+      const week = await api.fetchWeek(previous);
+      const sourceDates = weekDates(previous);
+      const targetDates = weekDates(weekKey);
+      const copies = week.entries.map<TimesheetEntry>((row) => {
+        const index = sourceDates.indexOf(row.workDate);
+        return {
+          ...row,
+          id: newEntryId(),
+          workDate: targetDates[index >= 0 ? index : 0]!,
+          status: "draft",
+        };
+      });
+      if (copies.length > 0) mutate((current) => [...current, ...copies]);
+    } catch (cause) {
+      setSaveError(
+        cause instanceof Error ? cause.message : "Could not copy last week's entries.",
+      );
+    }
+  }, [weekKey, readOnly, mutate]);
+
+  // ---------------------------------------------------------- validation
+
+  const validation = useMemo(
+    () => validateWeek(entries, weekKey),
+    [entries, weekKey],
+  );
+
+  const issueFor = useCallback(
+    (entryId: string) =>
+      showErrors ? validation.rowIssues.find((issue) => issue.entryId === entryId) : undefined,
+    [showErrors, validation],
+  );
+
+  const totals = useMemo(
+    () => calculateTotals(entries, weekKey, config, expectedWeeklyHours),
+    [entries, weekKey, config, expectedWeeklyHours],
+  );
+
+  // ------------------------------------------------------------- submit
+
+  const runSubmit = useCallback(
+    async (scope: string | null): Promise<SubmitOutcome | null> => {
+      if (submitting) return null;
+
+      const result = validateWeek(entriesRef.current, weekKey, {
+        ...(scope ? { scope } : {}),
+      });
+      if (!result.ok) {
+        setShowErrors(true);
+        return null;
+      }
+
+      setSubmitting(true);
+      try {
+        // Flush pending edits first so the server submits what is on screen.
+        clearTimeout(saveTimer.current);
+        if (JSON.stringify(entriesRef.current) !== savedSnapshot) {
+          const ok = await persist(entriesRef.current);
+          if (!ok && saveState === "error") return null;
+        }
+
+        const response = scope
+          ? await api.submitDay(weekKey, scope)
+          : await api.submitWeek(weekKey);
+
+        if (response.ok === false) {
+          setShowErrors(true);
+          setSaveError(response.problems?.[0]?.message ?? "This week is not ready to submit.");
+          return null;
+        }
+
+        const outcome: SubmitOutcome = {
+          ok: true,
+          alreadySubmitted: Boolean(response.alreadySubmitted),
+          totalHours: response.totalHours ?? totals.total,
+          submittedAt: response.submittedAt ?? null,
+          weekStart: weekKey,
+        };
+
+        if (scope) {
+          setLockedDays((days) => (days.includes(scope) ? days : [...days, scope]));
+        } else {
+          setStatus("submitted");
+          setLastSubmission(outcome);
+        }
+        setShowErrors(false);
+        setReloadKey((key) => key + 1);
+        return outcome;
+      } catch (cause) {
+        setSaveError(
+          cause instanceof api.ApiError ? cause.message : "Could not submit. Please try again.",
+        );
+        return null;
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [submitting, weekKey, savedSnapshot, persist, saveState, totals.total],
+  );
+
+  const submitWeek = useCallback(() => runSubmit(null), [runSubmit]);
+  const submitDay = useCallback((date: string) => runSubmit(date), [runSubmit]);
+
+  // ------------------------------------------------------------ context
+
+  const availableClients = useMemo(() => {
+    if (!reference || !employee) return [];
+    return api.clientsForEmployee(reference.clients, employee.markets);
+  }, [reference, employee]);
+
+  const setWeekKey = useCallback((key: WeekKey) => setWeekKeyState(key), []);
+
+  const value = useMemo<TimesheetContextValue>(
+    () => ({
+      weekKey,
+      setWeekKey,
+      goWeek: (delta) => setWeekKeyState((key) => shiftWeek(key, delta)),
+      goCurrentWeek: () => setWeekKeyState(currentWeekKey()),
+      isFuture,
+      loading,
+      loadError,
+      reload: () => setReloadKey((key) => key + 1),
+      config,
+      reference,
+      availableClients,
+      entries,
+      status,
+      readOnly,
+      lockedDays,
+      isDayLocked,
+      addRow,
+      updateRow,
+      duplicateRow,
+      deleteRow,
+      copyPreviousDay,
+      copyPreviousWeek,
+      visibleDates,
+      addDay,
+      saveState,
+      lastSavedAt,
+      saveError,
+      dirty,
+      saveDraft,
+      submitting,
+      submitWeek,
+      submitDay,
+      lastSubmission,
+      showErrors,
+      setShowErrors,
+      rowIssues: validation.rowIssues,
+      weekIssues: validation.weekIssues,
+      issueFor,
+      totals,
+    }),
+    [
+      weekKey, setWeekKey, isFuture, loading, loadError, config, reference, availableClients,
+      entries, status, readOnly, lockedDays, isDayLocked, addRow, updateRow, duplicateRow,
+      deleteRow, copyPreviousDay, copyPreviousWeek, visibleDates, addDay, saveState, lastSavedAt,
+      saveError, dirty, saveDraft, submitting, submitWeek, submitDay, lastSubmission, showErrors,
+      validation, issueFor, totals,
+    ],
+  );
 
   return <TimesheetContext.Provider value={value}>{children}</TimesheetContext.Provider>;
 }
 
-export function useTimesheet() {
+export function useTimesheet(): TimesheetContextValue {
   const ctx = useContext(TimesheetContext);
   if (!ctx) throw new Error("useTimesheet must be used inside TimesheetProvider");
   return ctx;

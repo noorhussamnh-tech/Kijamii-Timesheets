@@ -1,13 +1,17 @@
-import { format } from "date-fns";
 import { SearchSelect } from "@/components/SearchSelect";
-import { clientsForVertical, getClient } from "@/data/reference";
-import type { FieldDef } from "@/data/timesheet-config";
-import type { TimesheetEntry } from "@/data/weeks";
-import { weekDays } from "@/data/weeks";
-import { cn } from "@/lib/utils";
+import type { FieldDef } from "@/lib/domain/config";
+import type { TimesheetEntry } from "@/lib/domain/types";
+import { shortDayLabel, weekDates } from "@/lib/domain/week";
 import { useTimesheet } from "@/lib/timesheet-store";
+import { cn } from "@/lib/utils";
 
-
+/**
+ * Renders one cell of the grid from its field definition.
+ *
+ * Everything is driven by the configuration and by reference data loaded from
+ * the database, so adding a field to a region's config is enough to make it
+ * appear -- no branch in here needs to change.
+ */
 export function EntryField({
   field,
   row,
@@ -17,59 +21,84 @@ export function EntryField({
   row: TimesheetEntry;
   invalid?: boolean | undefined;
 }) {
-  const { updateRow, readOnly, marketId, weekKey, config, isDayLocked } = useTimesheet();
-  const disabled = readOnly || isDayLocked(row.date);
+  const { updateRow, readOnly, weekKey, config, isDayLocked, reference, availableClients } =
+    useTimesheet();
+  const disabled = readOnly || isDayLocked(row.workDate);
 
   const inputClass = cn(
     "w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-[13px] transition-colors",
     "hover:border-border-strong hover:bg-surface-muted focus:border-transparent focus:bg-surface focus:outline-2 focus:outline-ring focus:-outline-offset-1",
     invalid && "border-destructive/50 bg-destructive/5",
-    disabled && "pointer-events-none",
+    disabled && "pointer-events-none opacity-80",
   );
 
-
   switch (field.kind) {
-    case "date": {
-      const days = weekDays(weekKey);
+    case "date":
       return (
         <select
-          value={row.date}
+          value={row.workDate}
           disabled={disabled}
-          onChange={(e) => updateRow(row.id, { date: e.target.value })}
+          aria-label="Date"
+          aria-invalid={invalid}
+          onChange={(event) => updateRow(row.id, { workDate: event.target.value })}
           className={cn(inputClass, "num min-w-[104px]")}
         >
-          {days.map((d) => (
-            <option key={d.toISOString()} value={format(d, "yyyy-MM-dd")}>
-              {format(d, "EEE d MMM")}
+          {weekDates(weekKey).map((date) => (
+            <option key={date} value={date}>
+              {shortDayLabel(date)}
             </option>
           ))}
         </select>
       );
-    }
+
     case "client": {
-      const options = clientsForVertical(marketId).map((c) => ({ id: c.id, name: c.name }));
-      const isOther = getClient(row.clientId)?.other === true;
+      const selected = availableClients.find((client) => client.id === row.clientId);
       return (
         <div className="space-y-1">
           <SearchSelect
             value={row.clientId}
-            options={options}
+            options={availableClients.map((client) => ({
+              id: client.id,
+              name: client.name,
+              ...(client.sector ? { meta: client.sector } : {}),
+            }))}
             placeholder="Select client"
-            onChange={(id) => updateRow(row.id, { clientId: id, clientOther: "" })}
+            emptyText="No clients match"
             disabled={disabled}
             invalid={invalid}
+            onChange={(id) => updateRow(row.id, { clientId: id, clientOther: "" })}
           />
-          {isOther && (
+          {selected?.isOther && (
             <input
               type="text"
-              value={row.clientOther ?? ""}
+              value={row.clientOther}
               disabled={disabled}
+              maxLength={200}
               placeholder="Type client name"
-              onChange={(e) => updateRow(row.id, { clientOther: e.target.value })}
+              aria-label="Client name"
+              onChange={(event) => updateRow(row.id, { clientOther: event.target.value })}
               className={cn(inputClass, "border-border-strong")}
             />
           )}
         </div>
+      );
+    }
+
+    case "reference": {
+      const options = field.source && reference ? reference[field.source] : [];
+      const key = field.key as "serviceId" | "projectType" | "task";
+      // Service is stored by id; project type and task are stored by name.
+      const value = row[key];
+      return (
+        <SearchSelect
+          value={value}
+          options={key === "serviceId" ? options : options.map((o) => ({ id: o.name, name: o.name }))}
+          placeholder={`Select ${field.label.toLowerCase()}`}
+          emptyText="No matches"
+          disabled={disabled}
+          invalid={invalid}
+          onChange={(id) => updateRow(row.id, { [key]: id } as Partial<TimesheetEntry>)}
+        />
       );
     }
 
@@ -83,66 +112,66 @@ export function EntryField({
           step={config.hoursStep}
           value={row.hours}
           disabled={disabled}
-          onChange={(e) => {
-            const v = e.target.value;
-            updateRow(row.id, {
-              hours: v === "" ? "" : Math.min(config.maxHoursPerDay, Math.max(0, Number(v))),
-            });
-          }}
+          aria-label="Hours"
+          aria-invalid={invalid}
           placeholder="0.00"
+          onChange={(event) => {
+            const raw = event.target.value;
+            updateRow(row.id, { hours: raw === "" ? "" : Number(raw) });
+          }}
+          // Snapping on blur rather than on change keeps typing "1.5" possible.
+          onBlur={(event) => {
+            const raw = event.target.value;
+            if (raw === "") return;
+            const snapped = Math.min(
+              config.maxHoursPerDay,
+              Math.max(0, Math.round(Number(raw) * 4) / 4),
+            );
+            if (snapped !== Number(raw)) updateRow(row.id, { hours: snapped });
+          }}
           className={cn(inputClass, "num min-w-[64px] text-right")}
         />
       );
+
     case "billable":
       return (
         <div className="flex items-center gap-1 rounded-md bg-surface-muted p-0.5">
           {[
-            { v: true, label: "Billable" },
-            { v: false, label: "Non-bill." },
-          ].map((o) => (
+            { value: true, label: "Billable" },
+            { value: false, label: "Non-bill." },
+          ].map((option) => (
             <button
-              key={o.label}
+              key={option.label}
               type="button"
               disabled={disabled}
-              onClick={() => updateRow(row.id, { billable: o.v })}
+              aria-pressed={row.billable === option.value}
+              onClick={() => updateRow(row.id, { billable: option.value })}
               className={cn(
                 "flex-1 rounded px-1.5 py-1 text-[11px] font-semibold transition-colors",
-                row.billable === o.v
+                row.billable === option.value
                   ? "bg-surface text-foreground shadow-card"
                   : "text-muted-foreground hover:text-foreground",
                 disabled && "pointer-events-none",
               )}
             >
-              {o.label}
+              {option.label}
             </button>
           ))}
         </div>
       );
-    case "select": {
-      const key = field.key as "costCenter" | "location" | "projectType" | "task" | "serviceId";
-      return (
-        <SearchSelect
-          value={(row[key] as string) ?? ""}
-          options={field.options ?? []}
-          placeholder={`Select ${field.label.toLowerCase()}`}
-          onChange={(id) => updateRow(row.id, { [key]: id })}
-          disabled={disabled}
-          invalid={invalid}
-        />
-      );
-    }
-    default: {
-      const key = field.key as "task" | "notes";
+
+    default:
       return (
         <input
           type="text"
-          value={row[key] ?? ""}
+          value={row.projectNote}
           disabled={disabled}
+          maxLength={500}
+          aria-label={field.label}
           placeholder={field.hint ?? "Optional"}
-          onChange={(e) => updateRow(row.id, { [key]: e.target.value })}
+          onChange={(event) => updateRow(row.id, { projectNote: event.target.value })}
           className={inputClass}
         />
       );
-    }
   }
 }
