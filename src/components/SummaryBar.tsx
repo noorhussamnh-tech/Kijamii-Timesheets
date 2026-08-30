@@ -1,5 +1,6 @@
 import { ChevronUp, Loader2, Save, Send } from "lucide-react";
 
+import { ProgressRing } from "@/components/ProgressRing";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,8 +55,8 @@ export function SummaryBar({
   return (
     <div className="sticky bottom-0 z-20 -mx-4 border-t bg-surface/95 px-4 py-3 shadow-raised backdrop-blur sm:-mx-6 sm:px-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="grid grid-cols-3 gap-x-4 gap-y-3 sm:grid-cols-5 lg:gap-6">
-          <Stat label="Total" value={formatHours(totals.total)} />
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+          <ProgressRing value={totals.total} target={totals.expected} />
           <Stat label="Billable" value={formatHours(totals.billable)} />
           <Stat label="Non-billable" value={formatHours(totals.nonBillable)} />
           <Stat

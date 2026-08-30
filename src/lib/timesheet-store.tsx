@@ -79,6 +79,8 @@ interface TimesheetContextValue {
   isDayLocked: (date: string) => boolean;
 
   addRow: (date?: string) => void;
+  /** Appends a row already filled in by quick add. */
+  addQuickRow: (patch: Partial<TimesheetEntry>) => void;
   updateRow: (id: string, patch: Partial<TimesheetEntry>) => void;
   duplicateRow: (id: string) => void;
   deleteRow: (id: string) => void;
@@ -350,6 +352,14 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     [focusDate, mutate],
   );
 
+  /** Appends a row that quick add has already filled in. */
+  const addQuickRow = useCallback(
+    (patch: Partial<TimesheetEntry>) => {
+      mutate((rows) => [...rows, { ...emptyEntry(patch.workDate ?? focusDate), ...patch }]);
+    },
+    [focusDate, mutate],
+  );
+
   const updateRow = useCallback(
     (id: string, patch: Partial<TimesheetEntry>) => {
       mutate((rows) =>
@@ -543,6 +553,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       lockedDays,
       isDayLocked,
       addRow,
+      addQuickRow,
       updateRow,
       duplicateRow,
       deleteRow,
@@ -583,6 +594,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       lockedDays,
       isDayLocked,
       addRow,
+      addQuickRow,
       updateRow,
       duplicateRow,
       deleteRow,

@@ -11,6 +11,7 @@
  * because it needs a service-account key. That lives in a server function.
  */
 import { requireSupabaseBrowserClient } from "@/lib/supabase/browser";
+import type { DayCoverage } from "@/lib/domain/coverage";
 import type { PersonalStats } from "@/lib/domain/insights";
 import type {
   AdminEmployeeStatus,
@@ -412,4 +413,10 @@ export async function fetchMyStats(from: string, to: string): Promise<PersonalSt
     clients: (data.clients ?? []).map((c) => ({ ...c, hours: Number(c.hours) })),
     byWeekday: (data.byWeekday ?? []).map((d) => ({ dow: Number(d.dow), hours: Number(d.hours) })),
   };
+}
+
+/** Hours per day for the signed-in employee, for the month coverage strip. */
+export async function fetchMyLoggedDays(from: string, to: string): Promise<DayCoverage[]> {
+  const rows = await rpc<DayCoverage[]>("ts_my_logged_days", { p_from: from, p_to: to });
+  return (rows ?? []).map((row) => ({ date: row.date, hours: Number(row.hours) }));
 }
