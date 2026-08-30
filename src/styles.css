@@ -22,6 +22,7 @@
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-heading: var(--heading);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
   --color-card: var(--card);
@@ -71,6 +72,9 @@
 
   --background: oklch(0.973 0.003 250);
   --foreground: oklch(0.219 0.014 260);
+  /* Headings sit darker than body text so titles carry real weight on a
+     light background, where the slate foreground reads as grey. */
+  --heading: oklch(0.16 0.008 260);
   --surface: oklch(1 0 0);
   --surface-muted: oklch(0.966 0.004 250);
 
@@ -124,6 +128,8 @@
 .dark {
   --background: oklch(0.155 0.008 265);
   --foreground: oklch(0.93 0.006 255);
+  /* On dark the body colour is already bright; headings go a touch brighter. */
+  --heading: oklch(0.985 0.002 255);
   --surface: oklch(0.19 0.009 265);
   --surface-muted: oklch(0.175 0.009 265);
 
@@ -187,12 +193,14 @@
   h4,
   h5,
   h6 {
+    color: var(--color-heading);
     font-weight: 800;
-    letter-spacing: -0.012em;
+    letter-spacing: -0.02em;
   }
 
-  /* Table headers read as titles too. */
+  /* Column headers are titles too, and were the greyest thing on the page. */
   th {
+    color: var(--color-heading);
     font-weight: 700;
   }
 }
@@ -207,6 +215,16 @@
   font-size: 0.6875rem;
   line-height: 1rem;
   font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-heading);
+}
+
+/* The muted variant, for the few labels that genuinely are secondary. */
+@utility label-xs-muted {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-muted-foreground);

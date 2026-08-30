@@ -104,6 +104,8 @@ interface TimesheetContextValue {
   addDay: (date?: string) => void;
   /** Days that have happened but are not currently on screen. */
   hiddenDates: string[];
+  /** Rows per day, so a hidden day can show it already holds work. */
+  rowCountByDate: Map<string, number>;
 
   saveState: SaveState;
   lastSavedAt: string | null;
@@ -482,10 +484,22 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     [mutate, isDayLocked],
   );
 
+  /**
+   * Which days the grid shows.
+   *
+   * In the current week only today appears, plus anything explicitly revealed
+   * with Add day: the screen is for logging today, and six other days of
+   * scaffolding is noise. Days that already hold entries are still one click
+   * away in the Add day list, which says how many rows are waiting there.
+   *
+   * A past week is different -- you are reviewing it, not filling it in -- so
+   * every day that has entries is shown.
+   */
   const visibleDates = useMemo(() => {
     const all = weekDates(weekKey);
-    const used = new Set(entries.map((row) => row.workDate));
-    for (const date of extraDates) used.add(date);
+    const reviewing = weekKey !== currentWeekKey();
+    const used = new Set(extraDates);
+    if (reviewing) for (const row of entries) used.add(row.workDate);
     return all.filter((date) => date === focusDate || used.has(date));
   }, [weekKey, entries, extraDates, focusDate]);
 
@@ -497,6 +511,13 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     () => selectableDates.filter((date) => !visibleDates.includes(date)),
     [selectableDates, visibleDates],
   );
+
+  /** How many rows sit on each day, so a hidden day can say it is not empty. */
+  const rowCountByDate = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const row of entries) counts.set(row.workDate, (counts.get(row.workDate) ?? 0) + 1);
+    return counts;
+  }, [entries]);
 
   const addDay = useCallback(
     (date?: string) => {
@@ -650,6 +671,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       defaultEntryDate,
       addDay,
       hiddenDates,
+      rowCountByDate,
       saveState,
       lastSavedAt,
       saveError,
@@ -692,6 +714,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       focusDate,
       addDay,
       hiddenDates,
+      rowCountByDate,
       saveState,
       lastSavedAt,
       saveError,

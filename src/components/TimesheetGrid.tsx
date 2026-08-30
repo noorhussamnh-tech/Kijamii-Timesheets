@@ -95,7 +95,7 @@ function DayHeading({ date }: { date: string }) {
  * catching up on Thursday reaches Monday in one click instead of three.
  */
 function AddDayMenu({ className }: { className?: string | undefined }) {
-  const { hiddenDates, addDay } = useTimesheet();
+  const { hiddenDates, addDay, rowCountByDate } = useTimesheet();
   if (hiddenDates.length === 0) return null;
 
   return (
@@ -106,11 +106,21 @@ function AddDayMenu({ className }: { className?: string | undefined }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-52">
-        {hiddenDates.map((date) => (
-          <DropdownMenuItem key={date} onClick={() => addDay(date)} className="text-[13px]">
-            {dayLabel(date)}
-          </DropdownMenuItem>
-        ))}
+        {hiddenDates.map((date) => {
+          // A hidden day may already hold work; say so rather than letting it
+          // look empty just because it is off screen.
+          const rows = rowCountByDate.get(date) ?? 0;
+          return (
+            <DropdownMenuItem key={date} onClick={() => addDay(date)} className="text-[13px]">
+              {dayLabel(date)}
+              {rows > 0 && (
+                <span className="num ml-auto text-[11px] text-muted-foreground">
+                  {rows} row{rows === 1 ? "" : "s"}
+                </span>
+              )}
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
