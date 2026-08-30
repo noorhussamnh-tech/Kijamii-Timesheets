@@ -27,6 +27,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import * as api from "@/lib/data/api";
 import { configById, type TimesheetConfig } from "@/lib/domain/config";
+import { defaultEntryDateFor } from "@/lib/domain/entry-target";
 import { calculateTotals, type WeekTotals } from "@/lib/domain/totals";
 import { isBlankRow, validateWeek, type RowIssue, type WeekIssue } from "@/lib/domain/validation";
 import { addDays, startOfMonth, subMonths } from "date-fns";
@@ -99,8 +100,8 @@ interface TimesheetContextValue {
   selectableDates: string[];
   /** The day the UI should foreground: today, or the week start. */
   focusDate: string;
-  /** Where a new row lands: the most recent day that is not locked. */
-  defaultEntryDate: string;
+  /** Where a new row lands, or null when this week has no open day. */
+  defaultEntryDate: string | null;
   /** Reveals a day. Without an argument, the earliest one still hidden. */
   addDay: (date?: string) => void;
   /** Days that have happened but are not currently on screen. */
@@ -391,21 +392,28 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   );
 
   /**
-   * Where a new row lands when no day was named.
+   * Where a new row lands when no day was named, or null when this week has
+   * nowhere to put one.
    *
    * Not simply today: submitting a day locks it, and a row created on a locked
-   * day is read-only the instant it appears. So this falls back to the most
-   * recent day that is still open, and only then to today.
+   * day is read-only the instant it appears. The search stays inside the
+   * viewed week, because an entry belongs to the week it is filed under and a
+   * row dated outside it would be refused by the database.
+   *
+   * Null is a real answer, not a failure: on the Sunday a week begins, if that
+   * Sunday is already submitted then the week genuinely has no day left to log
+   * against, and the UI says so rather than producing a dead row.
    */
-  const defaultEntryDate = useMemo(() => {
-    if (!isDayLocked(focusDate)) return focusDate;
-    const open = [...recentDates].reverse().find((date) => !isDayLocked(date));
-    return open ?? focusDate;
-  }, [focusDate, recentDates, isDayLocked]);
+  const defaultEntryDate = useMemo(
+    () => defaultEntryDateFor(focusDate, selectableDates, isDayLocked),
+    [focusDate, selectableDates, isDayLocked],
+  );
 
   const addRow = useCallback(
     (date?: string) => {
-      mutate((rows) => [...rows, emptyEntry(date ?? defaultEntryDate)]);
+      const target = date ?? defaultEntryDate;
+      if (!target) return;
+      mutate((rows) => [...rows, emptyEntry(target)]);
     },
     [defaultEntryDate, mutate],
   );
@@ -413,7 +421,9 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   /** Appends a row that quick add has already filled in. */
   const addQuickRow = useCallback(
     (patch: Partial<TimesheetEntry>) => {
-      mutate((rows) => [...rows, { ...emptyEntry(patch.workDate ?? defaultEntryDate), ...patch }]);
+      const target = patch.workDate ?? defaultEntryDate;
+      if (!target) return;
+      mutate((rows) => [...rows, { ...emptyEntry(target), ...patch }]);
     },
     [defaultEntryDate, mutate],
   );

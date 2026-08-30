@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { AlertCircle, Copy, Loader2, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, ChevronLeft, Copy, Lock, Plus, Trash2 } from "lucide-react";
 
 import { EntryField } from "@/components/EntryField";
 import { Button } from "@/components/ui/button";
@@ -123,6 +123,28 @@ function AddDayMenu({ className }: { className?: string | undefined }) {
   );
 }
 
+/**
+ * Shown when every day of this week that has happened is already submitted.
+ *
+ * That is a real state, not an error -- on the Sunday a week begins, one
+ * submitted day is the whole week. Saying so and offering the way back beats
+ * an "Add row" button that produces a row nobody can edit.
+ */
+function NothingToAdd() {
+  const { goWeek } = useTimesheet();
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Lock className="size-3.5 shrink-0 text-muted-foreground" />
+      <span className="text-[12px] text-muted-foreground">
+        Everything logged so far this week has been submitted.
+      </span>
+      <Button variant="outline" size="sm" onClick={() => goWeek(-1)}>
+        <ChevronLeft className="size-3.5" /> Go to last week
+      </Button>
+    </div>
+  );
+}
+
 export function TimesheetGrid() {
   const {
     config,
@@ -180,9 +202,11 @@ export function TimesheetGrid() {
         </p>
         {!readOnly && (
           <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <Button size="sm" onClick={() => addRow(defaultEntryDate)}>
-              <Plus className="size-3.5" /> {startsToday ? "Log today's hours" : "Add first row"}
-            </Button>
+            {defaultEntryDate && (
+              <Button size="sm" onClick={() => addRow(defaultEntryDate)}>
+                <Plus className="size-3.5" /> {startsToday ? "Log today's hours" : "Add first row"}
+              </Button>
+            )}
             {/* Catching up on the whole week starts from an earlier day. */}
             <AddDayMenu />
           </div>
@@ -264,13 +288,19 @@ export function TimesheetGrid() {
         </div>
         {!readOnly && (
           <div className="flex flex-wrap items-center gap-2 border-t bg-surface-muted px-2.5 py-2">
-            <Button variant="ghost" size="sm" onClick={() => addRow()}>
-              <Plus className="size-3.5" /> Add another row
-            </Button>
-            <AddDayMenu />
-            <span className="text-[11px] text-muted-foreground">
-              Tip: press Tab to move across fields, Shift+Tab to go back.
-            </span>
+            {defaultEntryDate ? (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => addRow()}>
+                  <Plus className="size-3.5" /> Add another row
+                </Button>
+                <AddDayMenu />
+                <span className="text-[11px] text-muted-foreground">
+                  Tip: press Tab to move across fields, Shift+Tab to go back.
+                </span>
+              </>
+            ) : (
+              <NothingToAdd />
+            )}
           </div>
         )}
       </div>
@@ -328,14 +358,17 @@ export function TimesheetGrid() {
             </section>
           );
         })}
-        {!readOnly && (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => addRow()}>
-              <Plus className="size-3.5" /> Add row
-            </Button>
-            <AddDayMenu className="flex-1" />
-          </div>
-        )}
+        {!readOnly &&
+          (defaultEntryDate ? (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => addRow()}>
+                <Plus className="size-3.5" /> Add row
+              </Button>
+              <AddDayMenu className="flex-1" />
+            </div>
+          ) : (
+            <NothingToAdd />
+          ))}
       </div>
 
       {readOnly && (

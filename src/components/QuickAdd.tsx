@@ -31,7 +31,8 @@ export function QuickAdd() {
     [text, sources],
   );
 
-  if (readOnly || !reference) return null;
+  // Nothing to add to when every day of this week is submitted.
+  if (readOnly || !reference || !defaultEntryDate) return null;
 
   const commit = () => {
     if (!parsed) return;
