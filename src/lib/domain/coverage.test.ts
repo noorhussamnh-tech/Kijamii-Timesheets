@@ -132,3 +132,47 @@ describe("describing the gaps", () => {
     expect(describeMissing([])).toBe("");
   });
 });
+
+describe("the date window offered by the Date field", () => {
+  /**
+   * Mirrors the store's recentDates rule: back to the start of last month, so
+   * anything within the month being submitted can be reached. Confining it to
+   * the viewed week left exactly one option on a Sunday.
+   */
+  const windowFor = (today: string) => {
+    const t = parseDateKey(today);
+    const earliest = new Date(t.getFullYear(), t.getMonth() - 1, 1);
+    const out: string[] = [];
+    for (let c = earliest; c <= t; c = new Date(c.getFullYear(), c.getMonth(), c.getDate() + 1)) {
+      out.push(
+        `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, "0")}-${String(
+          c.getDate(),
+        ).padStart(2, "0")}`,
+      );
+    }
+    return out;
+  };
+
+  it("reaches every day of the current month", () => {
+    const dates = windowFor("2026-08-30");
+    for (const day of ["2026-08-01", "2026-08-15", "2026-08-27", "2026-08-30"]) {
+      expect(dates).toContain(day);
+    }
+  });
+
+  it("still reaches last month on the first of a new one", () => {
+    const dates = windowFor("2026-09-01");
+    expect(dates).toContain("2026-08-31");
+    expect(dates).toContain("2026-08-01");
+  });
+
+  it("offers more than one day on the Sunday a week begins", () => {
+    // The bug: the viewed week held only Sunday, so there was nothing to pick.
+    expect(windowFor("2026-08-30").length).toBeGreaterThan(30);
+  });
+
+  it("never reaches into the future", () => {
+    const dates = windowFor("2026-08-30");
+    expect(dates.every((d) => d <= "2026-08-30")).toBe(true);
+  });
+});

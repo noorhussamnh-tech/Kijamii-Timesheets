@@ -66,8 +66,8 @@ export function SummaryBar({
    * submitted after the fact -- catching up on Thursday still lets Monday be
    * closed off separately.
    */
-  const submittableDays = selectableDates.filter(
-    (date) => !isDayLocked(date) && entries.some((row) => row.workDate === date),
+  const daysWithEntries = selectableDates.filter((date) =>
+    entries.some((row) => row.workDate === date),
   );
 
   return (
@@ -118,16 +118,30 @@ export function SummaryBar({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" side="top" className="w-64">
-                  {submittableDays.length > 0 && (
+                  {daysWithEntries.length > 0 && (
                     <>
                       <DropdownMenuLabel className="label-xs">
                         Submit a single day
                       </DropdownMenuLabel>
-                      {submittableDays.map((date) => (
-                        <DropdownMenuItem key={date} onClick={() => onSubmitDay(date)}>
-                          {dayLabel(date)}
-                        </DropdownMenuItem>
-                      ))}
+                      {/* A day already submitted stays listed but disabled, so
+                          an empty-looking menu never leaves someone guessing. */}
+                      {daysWithEntries.map((date) => {
+                        const locked = isDayLocked(date);
+                        return (
+                          <DropdownMenuItem
+                            key={date}
+                            disabled={locked}
+                            onClick={() => !locked && onSubmitDay(date)}
+                          >
+                            {dayLabel(date)}
+                            {locked && (
+                              <span className="ml-auto text-[11px] text-muted-foreground">
+                                submitted
+                              </span>
+                            )}
+                          </DropdownMenuItem>
+                        );
+                      })}
                       <DropdownMenuSeparator />
                     </>
                   )}

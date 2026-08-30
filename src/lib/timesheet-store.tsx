@@ -29,6 +29,8 @@ import * as api from "@/lib/data/api";
 import { configById, type TimesheetConfig } from "@/lib/domain/config";
 import { calculateTotals, type WeekTotals } from "@/lib/domain/totals";
 import { isBlankRow, validateWeek, type RowIssue, type WeekIssue } from "@/lib/domain/validation";
+import { addDays, startOfMonth, subMonths } from "date-fns";
+
 import {
   currentWeekKey,
   isFutureDate,
@@ -36,6 +38,8 @@ import {
   shiftWeek,
   toDateKey,
   weekDates,
+  weekKeyOf,
+  parseDateKey,
   type WeekKey,
 } from "@/lib/domain/week";
 import type {
@@ -82,6 +86,10 @@ interface TimesheetContextValue {
   /** Appends a row already filled in by quick add. */
   addQuickRow: (patch: Partial<TimesheetEntry>) => void;
   updateRow: (id: string, patch: Partial<TimesheetEntry>) => void;
+  /** Re-dates a row, following it to another week when the date lives there. */
+  moveRowToDate: (id: string, date: string) => Promise<void>;
+  /** Dates the Date field may offer, reaching back beyond this week. */
+  recentDates: string[];
   duplicateRow: (id: string) => void;
   deleteRow: (id: string) => void;
   copyPreviousWeek: () => Promise<void>;
@@ -170,6 +178,8 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   const inFlight = useRef(false);
   const entriesRef = useRef(entries);
   entriesRef.current = entries;
+  // A row on its way to a different week, inserted once that week loads.
+  const pendingInsert = useRef<TimesheetEntry | null>(null);
 
   const config = configById(employee?.configuration ?? null);
   const expectedWeeklyHours = employee?.expectedWeeklyHours ?? config.expectedWeeklyHours;
@@ -215,7 +225,14 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       try {
         const week = await api.fetchWeek(weekKey);
         if (cancelled) return;
-        setEntries(week.entries);
+        const staged = pendingInsert.current;
+        const belongsHere = staged && weekKeyOf(parseDateKey(staged.workDate)) === weekKey;
+        const loaded = belongsHere && staged ? [...week.entries, staged] : week.entries;
+        if (belongsHere) pendingInsert.current = null;
+
+        setEntries(loaded);
+        // The staged row is not saved yet, so the snapshot records the week as
+        // it arrived. That leaves it dirty, and autosave persists it.
         setSavedSnapshot(JSON.stringify(week.entries));
         setStatus(week.submission?.status ?? "draft");
         setLockedDays(week.lockedDays);
@@ -331,6 +348,32 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     [weekKey],
   );
 
+  /**
+   * Dates the Date field may offer, reaching back three weeks.
+   *
+   * Confining it to the viewed week meant that on a Sunday -- the first day of
+   * the week -- there was exactly one date to choose from and no obvious way
+   * to log the previous Thursday. The window covers this month and the last,
+   * so anything within the month being submitted can be reached. Picking a
+   * date from another week moves the row there, which the person should not
+   * have to think about.
+   */
+  const recentDates = useMemo(() => {
+    const today = new Date();
+    // Back to the start of last month, so the whole of the current month is
+    // always reachable -- including on the 1st, when "this month" is one day.
+    const earliest = startOfMonth(subMonths(today, 1));
+    const out: string[] = [];
+    for (let cursor = earliest; cursor <= today; cursor = addDays(cursor, 1)) {
+      out.push(toDateKey(cursor));
+    }
+    // Days later in the viewed week are still offered when they have happened.
+    for (const date of weekDates(weekKey)) {
+      if (!isFutureDate(date) && !out.includes(date)) out.push(date);
+    }
+    return [...new Set(out)].sort();
+  }, [weekKey]);
+
   const focusDate = useMemo(() => {
     const all = weekDates(weekKey);
     const today = toDateKey(new Date());
@@ -371,6 +414,37 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       );
     },
     [mutate, isDayLocked],
+  );
+
+  /**
+   * Re-dates a row, following it to another week if the new date lives there.
+   *
+   * The database ties an entry to the week it is filed under, so a row cannot
+   * simply change date across a week boundary. Instead the current week is
+   * saved without it and the row is staged to reappear in the target week.
+   */
+  const moveRowToDate = useCallback(
+    async (id: string, date: string) => {
+      const row = entriesRef.current.find((entry) => entry.id === id);
+      if (!row || isDayLocked(row.workDate)) return;
+
+      const targetWeek = weekKeyOf(parseDateKey(date));
+      if (targetWeek === weekKey) {
+        updateRow(id, { workDate: date });
+        return;
+      }
+
+      const remaining = entriesRef.current.filter((entry) => entry.id !== id);
+      // Persist the removal before leaving, or the row would come back on
+      // the next load and exist in two weeks at once.
+      clearTimeout(saveTimer.current);
+      setEntries(remaining);
+      await persist(remaining);
+
+      pendingInsert.current = { ...row, id: newEntryId(), workDate: date, status: "draft" };
+      setWeekKeyState(targetWeek);
+    },
+    [weekKey, isDayLocked, updateRow, persist],
   );
 
   /** Duplicates always get a fresh id, so a copy never overwrites its source. */
@@ -555,6 +629,8 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       addRow,
       addQuickRow,
       updateRow,
+      moveRowToDate,
+      recentDates,
       duplicateRow,
       deleteRow,
       copyPreviousWeek,
@@ -596,6 +672,8 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       addRow,
       addQuickRow,
       updateRow,
+      moveRowToDate,
+      recentDates,
       duplicateRow,
       deleteRow,
       copyPreviousWeek,

@@ -1,7 +1,7 @@
 import { SearchSelect } from "@/components/SearchSelect";
 import type { FieldDef } from "@/lib/domain/config";
 import type { TimesheetEntry } from "@/lib/domain/types";
-import { shortDayLabel, weekDates } from "@/lib/domain/week";
+import { parseDateKey, shortDayLabel, weekKeyOf } from "@/lib/domain/week";
 import { useTimesheet } from "@/lib/timesheet-store";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,8 @@ export function EntryField({
     isDayLocked,
     reference,
     availableClients,
-    selectableDates,
+    recentDates,
+    moveRowToDate,
   } = useTimesheet();
   const disabled = readOnly || isDayLocked(row.workDate);
 
@@ -42,29 +43,46 @@ export function EntryField({
 
   switch (field.kind) {
     case "date": {
-      // A day that has not happened cannot be logged against, so it is offered
-      // as disabled rather than left selectable and rejected on submit. An
-      // existing future-dated row keeps its option so the value still shows,
-      // marked so the person can see why it needs changing.
-      const days = weekDates(weekKey);
+      // Dates reach back beyond the viewed week: on a Sunday the current week
+      // holds one usable day, and logging last Thursday should not require
+      // finding the week arrows first. Choosing a date in another week moves
+      // the row there.
+      const grouped = new Map<string, string[]>();
+      for (const date of recentDates) {
+        const key = weekKeyOf(parseDateKey(date));
+        grouped.set(key, [...(grouped.get(key) ?? []), date]);
+      }
+      const weeks = [...grouped.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
+
       return (
         <select
           value={row.workDate}
           disabled={disabled}
           aria-label="Date"
           aria-invalid={invalid}
-          onChange={(event) => updateRow(row.id, { workDate: event.target.value })}
+          onChange={(event) => void moveRowToDate(row.id, event.target.value)}
           className={cn(inputClass, "num min-w-[104px]")}
         >
-          {days.map((date) => {
-            const upcoming = !selectableDates.includes(date);
-            return (
-              <option key={date} value={date} disabled={upcoming && date !== row.workDate}>
-                {shortDayLabel(date)}
-                {upcoming ? " · upcoming" : ""}
-              </option>
-            );
-          })}
+          {/* A row already filed on a future date keeps its value visible so
+              it can be corrected rather than silently blanking. */}
+          {!recentDates.includes(row.workDate) && (
+            <option value={row.workDate}>{shortDayLabel(row.workDate)} · upcoming</option>
+          )}
+          {weeks.map(([week, dates]) => (
+            <optgroup
+              key={week}
+              label={week === weekKey ? "This week" : `Week of ${shortDayLabel(week)}`}
+            >
+              {dates
+                .slice()
+                .sort((a, b) => (a < b ? 1 : -1))
+                .map((date) => (
+                  <option key={date} value={date}>
+                    {shortDayLabel(date)}
+                  </option>
+                ))}
+            </optgroup>
+          ))}
         </select>
       );
     }
