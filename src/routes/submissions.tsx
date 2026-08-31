@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
-import { AlertCircle, Eye } from "lucide-react";
+import { AlertCircle, Pencil } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -227,7 +227,7 @@ function Submissions() {
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <Button variant="ghost" size="sm" onClick={() => open(row.weekStart)}>
-                          <Eye className="size-3.5" /> View
+                          <Pencil className="size-3.5" /> Edit
                         </Button>
                       </td>
                     </tr>
@@ -275,7 +275,7 @@ function Submissions() {
                   className="mt-2.5 w-full"
                   onClick={() => open(row.weekStart)}
                 >
-                  <Eye className="size-3.5" /> View week
+                  <Pencil className="size-3.5" /> Edit week
                 </Button>
               </article>
             ))}
