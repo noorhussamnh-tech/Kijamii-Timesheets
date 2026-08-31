@@ -29,6 +29,13 @@ export type AuthStatus =
   | "signedOut"
   /** Authenticated with Google but no active roster record. */
   | "unauthorized"
+  /**
+   * Signed in, but the profile lookup itself failed -- a dropped connection
+   * rather than a verdict about the person. Kept separate from
+   * "unauthorized" because telling somebody their account is barred when the
+   * network merely blinked is both wrong and alarming.
+   */
+  | "error"
   /** Authorized, but has not chosen their markets yet. */
   | "onboarding"
   | "ready"
@@ -53,6 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resolved, setResolved] = useState(false);
+  // True only when the lookup itself failed, as distinct from it having
+  // returned "no such employee".
+  const [lookupFailed, setLookupFailed] = useState(false);
   // Guards against a slow employee lookup landing after a sign-out.
   const loadToken = useRef(0);
 
@@ -60,15 +70,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = ++loadToken.current;
     if (!active) {
       setEmployee(null);
+      setLookupFailed(false);
       return;
     }
-    try {
-      const record = await fetchCurrentEmployee();
-      if (token === loadToken.current) setEmployee(record);
-    } catch (cause) {
-      if (token === loadToken.current) {
-        setEmployee(null);
-        setError(cause instanceof Error ? cause.message : "Could not load your profile.");
+
+    // A few attempts before concluding anything. A phone that loses its
+    // connection for a moment during the redirect back from Google is the
+    // common case, and the wrong conclusion to draw from it is that the
+    // person is not allowed in.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const record = await fetchCurrentEmployee();
+        if (token !== loadToken.current) return;
+        setEmployee(record);
+        setLookupFailed(false);
+        setError(null);
+        return;
+      } catch (cause) {
+        if (token !== loadToken.current) return;
+        if (attempt === 2) {
+          // Note what failed, but do not claim to know whether they are
+          // authorized -- we never got an answer either way.
+          setEmployee(null);
+          setLookupFailed(true);
+          setError(cause instanceof Error ? cause.message : "Could not load your profile.");
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 400 * 2 ** attempt));
       }
     }
   }, []);
@@ -121,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     loadToken.current++;
     setEmployee(null);
+    setLookupFailed(false);
     setSession(null);
     await supabase.auth.signOut();
   }, [supabase]);
@@ -133,10 +162,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!SUPABASE_CONFIGURED) return "misconfigured";
     if (!resolved) return "loading";
     if (!session) return "signedOut";
+    if (lookupFailed) return "error";
     if (!employee || !employee.active) return "unauthorized";
     if (!employee.onboarded) return "onboarding";
     return "ready";
-  }, [resolved, session, employee]);
+  }, [resolved, session, employee, lookupFailed]);
 
   const value = useMemo<AuthContextValue>(
     () => ({ status, session, employee, error, signIn, signOut, refreshEmployee }),

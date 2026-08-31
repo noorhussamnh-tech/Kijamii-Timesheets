@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { Loader2, RefreshCw, ShieldAlert, WifiOff } from "lucide-react";
 
 import { KijamiiMark } from "@/components/KijamiiMark";
 import { Onboarding } from "@/components/Onboarding";
@@ -31,7 +31,7 @@ function Centered({ children }: { children: ReactNode }) {
 const CONFIRMED_KEY = "kijamii-markets-confirmed";
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { status, employee, signOut } = useAuth();
+  const { status, employee, signOut, refreshEmployee } = useAuth();
   const navigate = useNavigate();
   const [confirmed, setConfirmed] = useState(true);
 
@@ -86,6 +86,38 @@ export function AuthGate({ children }: { children: ReactNode }) {
         <p className="flex items-center justify-center gap-2 text-[13px] text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Redirecting to sign in…
         </p>
+      </Centered>
+    );
+  }
+
+  // The lookup never came back. Say that, rather than passing it off as a
+  // decision about this person -- and give them the one action that helps.
+  if (status === "error") {
+    return (
+      <Centered>
+        <KijamiiMark tone="light" className="justify-center" />
+        <div className="mt-6 rounded-xl border bg-surface p-6 shadow-card">
+          <span className="mx-auto grid size-10 place-items-center rounded-full bg-warning-soft">
+            <WifiOff className="size-5 text-warning" />
+          </span>
+          <h1 className="mt-4 text-base font-bold">We could not load your profile</h1>
+          <p className="mt-2 text-[13px] text-muted-foreground">
+            You are signed in. Something went wrong reaching Timesheets — usually a dropped
+            connection. Your work is safe.
+          </p>
+          <div className="mt-5 flex items-center justify-center gap-2">
+            <Button size="sm" onClick={() => void refreshEmployee()}>
+              <RefreshCw className="size-3.5" /> Try again
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void signOut().then(() => navigate({ to: "/", replace: true }))}
+            >
+              Sign out
+            </Button>
+          </div>
+        </div>
       </Centered>
     );
   }
