@@ -23,6 +23,15 @@ import { cn } from "@/lib/utils";
  * but changeable whenever the work changes. Entries already logged keep the
  * market that applied when they were written.
  */
+/**
+ * Departments that exist in every market, annotated as such.
+ *
+ * A hint rather than a rule: the person still picks their markets separately,
+ * and the department they choose is the same record whichever market they work
+ * in. It is here to answer "is this the Egypt one?" before somebody asks.
+ */
+const CROSS_MARKET_DEPARTMENTS = new Set(["account management", "creative"]);
+
 export function Onboarding({ onDone }: { onDone?: () => void }) {
   const { employee, refreshEmployee, signOut } = useAuth();
   // Pre-filled from the profile, so returning simply means confirming.
@@ -164,6 +173,9 @@ export function Onboarding({ onDone }: { onDone?: () => void }) {
                 {departments.map((option) => (
                   <SelectItem key={option.id} value={option.name}>
                     {option.name}
+                    {CROSS_MARKET_DEPARTMENTS.has(option.name.toLowerCase()) && (
+                      <span className="ml-2 text-[11px] text-muted-foreground">EG · UAE · KSA</span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
