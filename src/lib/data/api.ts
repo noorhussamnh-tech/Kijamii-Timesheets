@@ -36,10 +36,17 @@ export class ApiError extends Error {
   }
 }
 
+/*
+ * Messages for the refusals the database can still make.
+ *
+ * `week_already_submitted` and `future_week` used to live here and have been
+ * removed: nothing raises them any more, because a submitted week can be
+ * edited and re-submitted and a week ahead of today can be filled in. Leaving
+ * the strings behind would have kept a promise the app no longer makes, ready
+ * to reappear the next time an unrelated error was matched loosely.
+ */
 const FRIENDLY_ERRORS: Record<string, string> = {
   not_authorized: "Your account is not authorized to access Kijamii Timesheets.",
-  week_already_submitted: "This week has already been submitted and can no longer be edited.",
-  future_week: "You cannot fill in a week that has not started yet.",
   week_must_start_sunday: "Weeks run Sunday to Saturday.",
   no_draft: "There is nothing saved for this week yet.",
   already_onboarded: "Your profile has already been set up.",
