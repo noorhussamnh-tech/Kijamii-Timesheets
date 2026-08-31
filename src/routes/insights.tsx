@@ -7,7 +7,11 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
+import { Confetti } from "@/components/Confetti";
+import { HoursByAccount } from "@/components/HoursByAccount";
 import { fetchMyStats } from "@/lib/data/api";
+import { milestoneFor, wryLine, type Milestone } from "@/lib/domain/milestones";
+import { CATEGORICAL } from "@/lib/viz/palette";
 import {
   averageHoursPerEntry,
   averageHoursPerLoggedDay,
@@ -88,33 +92,40 @@ function BigStat({
 }
 
 /** Horizontal bars, which read faster than a pie for ranked comparison. */
-function ClientBars({ stats }: { stats: PersonalStats }) {
-  const max = Math.max(...stats.clients.map((c) => c.hours), 1);
-  if (stats.clients.length === 0) return null;
+/**
+ * Which milestones this browser has already celebrated.
+ *
+ * localStorage rather than the database: a celebration is a moment in the
+ * interface, not a fact about the person, and it is not worth a column or a
+ * round trip. The cost is that a new browser may replay one burst, which is a
+ * far smaller failure than never celebrating at all because storage was
+ * unavailable.
+ */
+const SEEN_KEY = "kijamii-milestones-seen";
 
-  return (
-    <section className="rounded-xl border bg-surface p-4 shadow-card">
-      <h2 className="text-sm font-bold">Where your hours went</h2>
-      <ul className="mt-3 space-y-2">
-        {stats.clients.map((client) => (
-          <li key={client.name ?? "unknown"} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-medium">{client.name ?? "Unnamed"}</p>
-              <div
-                className="mt-1 h-1.5 rounded-full bg-brand/80"
-                style={{ width: `${Math.max((client.hours / max) * 100, 3)}%` }}
-                // The bar is decorative; the number beside it carries the value.
-                aria-hidden
-              />
-            </div>
-            <span className="num self-center text-[13px] font-semibold text-muted-foreground">
-              {formatHours(client.hours)}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+function readSeen(): Set<string> {
+  try {
+    const raw = window.localStorage.getItem(SEEN_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return new Set(
+      Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [],
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+/** Returns the milestone to celebrate now, and records it as spent. */
+function claimMilestone(stats: PersonalStats): Milestone | null {
+  const seen = readSeen();
+  const milestone = milestoneFor(stats, seen);
+  if (!milestone) return null;
+  try {
+    window.localStorage.setItem(SEEN_KEY, JSON.stringify([...seen, milestone.id]));
+  } catch {
+    // Storage unavailable: show it anyway. A repeated celebration beats none.
+  }
+  return milestone;
 }
 
 function Insights() {
@@ -122,6 +133,7 @@ function Insights() {
   const [period, setPeriod] = useState<Period>("month");
   const [stats, setStats] = useState<PersonalStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [celebrating, setCelebrating] = useState<Milestone | null>(null);
 
   const range = useMemo(() => rangeFor(period, new Date()), [period]);
 
@@ -134,7 +146,9 @@ function Insights() {
 
     void fetchMyStats(range.from, range.to)
       .then((data) => {
-        if (!cancelled) setStats(data);
+        if (cancelled) return;
+        setStats(data);
+        setCelebrating(claimMilestone(data));
       })
       .catch((cause: unknown) => {
         if (!cancelled) {
@@ -193,6 +207,7 @@ function Insights() {
     );
   }
 
+  const confettiColors = CATEGORICAL.map((slot) => slot.light);
   const personality = workPersonality(stats);
   const trivia = buildTrivia(stats);
   const weekday = busiestWeekday(stats);
@@ -221,24 +236,60 @@ function Insights() {
     <div className="space-y-4">
       {periodPicker}
 
-      {/* The headline: a light-hearted read on the shape of the period. */}
-      <section className="overflow-hidden rounded-xl border bg-sidebar p-6 shadow-card">
-        <p className="label-xs text-sidebar-foreground/50">
-          {format(new Date(range.from), "d MMM")} – {format(new Date(range.to), "d MMM yyyy")}
-        </p>
-        <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-sidebar-accent-foreground">
-          {personality.title}
-        </h2>
-        <p className="mt-2 max-w-lg text-[13px] leading-relaxed text-sidebar-foreground/70">
-          {personality.blurb}
-        </p>
+      {celebrating && <Confetti fire palette={confettiColors} />}
+
+      {celebrating && (
+        <section className="rounded-xl border border-brand/30 bg-brand-soft px-4 py-3 dark:bg-brand-soft/25">
+          <p className="text-sm font-bold text-brand">{celebrating.title}</p>
+          <p className="mt-0.5 text-[13px] text-foreground/80">{celebrating.line}</p>
+        </section>
+      )}
+
+      {/* The headline: a light-hearted read on the shape of the period.
+          The gradient is drawn from the chart palette rather than from the
+          brand accent, so it belongs to the same page as the chart below and
+          reads as deliberate in either theme. */}
+      <section className="relative overflow-hidden rounded-xl border bg-sidebar p-6 shadow-card">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-16 -top-24 size-64 rounded-full opacity-40 blur-3xl"
+          style={{ background: "radial-gradient(circle, #4a3aa7 0%, transparent 70%)" }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-28 -left-10 size-56 rounded-full opacity-30 blur-3xl"
+          style={{ background: "radial-gradient(circle, #eb6834 0%, transparent 70%)" }}
+        />
+        <div className="relative">
+          <p className="label-xs text-sidebar-foreground/50">
+            {format(new Date(range.from), "d MMM")} – {format(new Date(range.to), "d MMM yyyy")}
+          </p>
+          <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-sidebar-accent-foreground">
+            {personality.title}
+          </h2>
+          <p className="mt-2 max-w-lg text-[13px] leading-relaxed text-sidebar-foreground/70">
+            {personality.blurb}
+          </p>
+          <p className="mt-3 max-w-lg border-t border-sidebar-border pt-3 text-[12px] leading-relaxed text-sidebar-foreground/55">
+            {personality.description}
+          </p>
+        </div>
       </section>
 
+      {/* Proportions first. Totals still exist below, deliberately smaller:
+          how your time divided up is the useful question, and how many hours
+          you sat at a desk is the one that invites a pointless comparison. */}
+      <HoursByAccount rows={stats.clients} />
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <BigStat value={formatHours(stats.totalHours)} label="Hours logged" tone="brand" />
-        <BigStat value={`${Math.round(billableShare(stats) * 100)}%`} label="Billable" />
+        <BigStat
+          value={`${Math.round(billableShare(stats) * 100)}%`}
+          label="Billable"
+          tone="brand"
+        />
         <BigStat value={String(stats.daysLogged)} label="Days logged" />
         <BigStat value={String(stats.distinctClients)} label="Clients touched" />
+        <BigStat value={String(stats.longestStreak)} label="Longest streak" />
       </div>
 
       {trivia.length > 0 && (
@@ -251,8 +302,6 @@ function Insights() {
           ))}
         </section>
       )}
-
-      <ClientBars stats={stats} />
 
       <section className="grid gap-3 md:grid-cols-3">
         <div className="rounded-xl border bg-surface p-4 shadow-card">
@@ -277,6 +326,8 @@ function Insights() {
           {formatHours(stats.busiestDay.hours)}.
         </p>
       )}
+
+      <p className="text-center text-[12px] italic text-muted-foreground">{wryLine()}</p>
 
       <p className="text-center text-[11px] text-muted-foreground">
         Only you can see this page. It is built from what you logged yourself.

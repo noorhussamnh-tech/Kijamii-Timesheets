@@ -31,7 +31,10 @@ export interface PersonalStats {
 export interface WorkPersonality {
   id: string;
   title: string;
+  /** The line about this particular week, with this person's own numbers in it. */
   blurb: string;
+  /** What the label means in general, independent of the numbers. */
+  description: string;
 }
 
 const round = (value: number) => Math.round(value * 100) / 100;
@@ -82,6 +85,7 @@ export function workPersonality(stats: PersonalStats): WorkPersonality {
       id: "unwritten",
       title: "The Unwritten",
       blurb: "Nothing logged yet. Your story starts with the first row.",
+      description: "Everyone starts here. One row is enough to leave.",
     };
   }
 
@@ -94,6 +98,8 @@ export function workPersonality(stats: PersonalStats): WorkPersonality {
       id: "devoted",
       title: "The Devoted",
       blurb: `${Math.round(share * 100)}% of your time went to ${stats.topClient.name}. You go deep, not wide.`,
+      description:
+        "Most of your hours belong to one account. You know it better than anyone — and it would notice if you stopped.",
     };
   }
 
@@ -102,6 +108,8 @@ export function workPersonality(stats: PersonalStats): WorkPersonality {
       id: "juggler",
       title: "The Juggler",
       blurb: `${stats.distinctClients} different clients. Switching costs are real — hopefully you got a coffee out of it.`,
+      description:
+        "Your week spans many accounts. Breadth is a skill, and context-switching is the tax it charges.",
     };
   }
 
@@ -110,6 +118,8 @@ export function workPersonality(stats: PersonalStats): WorkPersonality {
       id: "deep-worker",
       title: "The Deep Worker",
       blurb: `Your average session ran ${perEntry} hours. Long, uninterrupted blocks.`,
+      description:
+        "You work in long stretches rather than fragments. Whatever you are protecting your calendar with, keep doing it.",
     };
   }
 
@@ -118,6 +128,8 @@ export function workPersonality(stats: PersonalStats): WorkPersonality {
       id: "sprinter",
       title: "The Sprinter",
       blurb: `${stats.entryCount} entries averaging ${perEntry}h each. Lots of small, fast pieces.`,
+      description:
+        "Many short pieces rather than a few long ones. Fast turnarounds — worth checking none of them wanted a longer run.",
     };
   }
 
@@ -126,6 +138,8 @@ export function workPersonality(stats: PersonalStats): WorkPersonality {
       id: "metronome",
       title: "The Metronome",
       blurb: `${stats.longestStreak} days logged in a row. Relentlessly consistent.`,
+      description:
+        "You log without being asked, day after day. This is the rarest habit here and the one everything else depends on.",
     };
   }
 
@@ -134,6 +148,8 @@ export function workPersonality(stats: PersonalStats): WorkPersonality {
       id: "polymath",
       title: "The Polymath",
       blurb: `${stats.distinctServices} different services. You do a bit of everything.`,
+      description:
+        "Your hours cross several kinds of work. Useful to a team, and easy to become the person everyone asks.",
     };
   }
 
@@ -142,6 +158,8 @@ export function workPersonality(stats: PersonalStats): WorkPersonality {
       id: "focused",
       title: "The Focused",
       blurb: "Roughly one thing at a time. Rare, and underrated.",
+      description:
+        "About one account a day. Fewer switches, more finished things — an underrated way to work.",
     };
   }
 
@@ -149,6 +167,8 @@ export function workPersonality(stats: PersonalStats): WorkPersonality {
     id: "steady",
     title: "The Steady Hand",
     blurb: `${round(stats.totalHours)} hours across ${stats.daysLogged} days. Reliable, no drama.`,
+    description:
+      "No extreme in any direction. The pattern most weeks have, and the one most work actually gets done in.",
   };
 }
 
