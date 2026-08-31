@@ -15,6 +15,7 @@ import type { DayCoverage } from "@/lib/domain/coverage";
 import type { PersonalStats } from "@/lib/domain/insights";
 import type {
   AdminEmployeeStatus,
+  EntryScope,
   ClientOption,
   Employee,
   Market,
@@ -219,6 +220,7 @@ interface RawEntry {
   serviceId: string | null;
   projectType: string | null;
   task: string | null;
+  scope: EntryScope | null;
   projectNote: string | null;
   hours: number | string | null;
   billable: boolean;
@@ -234,6 +236,7 @@ function toEntry(raw: RawEntry): TimesheetEntry {
     serviceId: raw.serviceId ?? "",
     projectType: raw.projectType ?? "",
     task: raw.task ?? "",
+    scope: raw.scope ?? "in_scope",
     projectNote: raw.projectNote ?? "",
     hours: raw.hours === null || raw.hours === "" ? "" : Number(raw.hours),
     billable: raw.billable,
@@ -291,6 +294,7 @@ export async function saveDraft(
     service_id: entry.serviceId || null,
     project_type: entry.projectType || null,
     task: entry.task || null,
+    scope: entry.scope,
     project_note: entry.projectNote || null,
     hours: entry.hours === "" ? null : String(entry.hours),
     billable: entry.billable,
@@ -385,6 +389,7 @@ export interface ExportRow {
   serviceName: string | null;
   projectType: string | null;
   taskDescription: string | null;
+  scope: EntryScope | null;
   hours: number | string;
   notes: string | null;
   billable: boolean;

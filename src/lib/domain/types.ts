@@ -52,6 +52,14 @@ export interface ReferenceData {
 }
 
 /** A single row of the timesheet grid. */
+/** Whether an hour fell inside what the client contracted for. */
+export type EntryScope = "in_scope" | "out_of_scope";
+
+export const SCOPE_LABELS: Record<EntryScope, string> = {
+  in_scope: "In Scope",
+  out_of_scope: "Out of Scope",
+};
+
 export interface TimesheetEntry {
   id: string;
   workDate: string;
@@ -60,6 +68,7 @@ export interface TimesheetEntry {
   serviceId: string;
   projectType: string;
   task: string;
+  scope: EntryScope;
   projectNote: string;
   /** Empty string while the field is blank; drafts may hold incomplete rows. */
   hours: number | "";

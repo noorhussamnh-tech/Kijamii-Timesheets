@@ -20,6 +20,7 @@ function entry(overrides: Partial<TimesheetEntry> = {}): TimesheetEntry {
     serviceId: "service-1",
     projectType: "Campaign",
     task: "Copy",
+    scope: "in_scope",
     projectNote: "",
     hours: 4,
     billable: true,

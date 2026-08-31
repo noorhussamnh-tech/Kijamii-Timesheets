@@ -12,9 +12,16 @@
 import type { Market, TimesheetConfigId } from "./types";
 
 export type FieldKey =
-  "workDate" | "clientId" | "serviceId" | "projectType" | "projectNote" | "hours" | "billable";
+  | "workDate"
+  | "clientId"
+  | "serviceId"
+  | "projectType"
+  | "scope"
+  | "projectNote"
+  | "hours"
+  | "billable";
 
-export type FieldKind = "date" | "client" | "reference" | "text" | "hours" | "billable";
+export type FieldKind = "date" | "client" | "reference" | "choice" | "text" | "hours" | "billable";
 
 export interface FieldDef {
   key: FieldKey;
@@ -23,6 +30,12 @@ export interface FieldDef {
   required: boolean;
   /** Which reference list feeds a `reference` field. */
   source?: "services" | "projectTypes" | "taskTypes";
+  /**
+   * The fixed options of a `choice` field. Unlike a `reference` field these
+   * live in the configuration rather than in operational data, because they
+   * are a rule the agency sets, not a list that grows.
+   */
+  choices?: readonly { value: string; label: string }[];
   width: string;
   /** Placeholder shown in the input. */
   hint?: string;
@@ -70,6 +83,17 @@ const sharedFields: FieldDef[] = [
     source: "projectTypes",
     required: true,
     width: "min-w-[170px]",
+  },
+  {
+    key: "scope",
+    label: "Scope",
+    kind: "choice",
+    required: true,
+    width: "min-w-[150px]",
+    choices: [
+      { value: "in_scope", label: "In Scope" },
+      { value: "out_of_scope", label: "Out of Scope" },
+    ],
   },
   {
     key: "projectNote",

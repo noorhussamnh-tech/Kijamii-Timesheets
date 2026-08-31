@@ -29,6 +29,11 @@ const COLUMNS = [
   { key: "task_description", label: "Task", value: (r: ExportRow) => r.taskDescription },
   { key: "hours", label: "Hours", value: (r: ExportRow) => Number(r.hours) },
   {
+    key: "scope",
+    label: "Scope",
+    value: (r: ExportRow) => (r.scope === "out_of_scope" ? "Out of Scope" : "In Scope"),
+  },
+  {
     key: "billing_type",
     label: "Billable",
     value: (r: ExportRow) => (r.billable ? "Billable" : "Non-billable"),

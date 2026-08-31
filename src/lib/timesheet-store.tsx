@@ -142,6 +142,7 @@ function emptyEntry(date: string): TimesheetEntry {
     serviceId: "",
     projectType: "",
     task: "",
+    scope: "in_scope",
     projectNote: "",
     hours: "",
     billable: true,
