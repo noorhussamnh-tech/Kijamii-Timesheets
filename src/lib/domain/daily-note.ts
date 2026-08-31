@@ -73,6 +73,18 @@ export function dailyNote(coverage: MonthCoverage, today: Date = new Date()): Da
     };
   }
 
+  // A month one or two working days old is not a month somebody is behind on.
+  // Without this, every person in the company opens the first of the month to
+  // the most remedial line in the file, which is both untrue and a poor way to
+  // start four weeks of asking them for something.
+  if (logged.length === 0 && workingDaysSoFar <= 2) {
+    return {
+      emoji: "✨",
+      text: "New month, clean slate. Whatever you log today sets the tone for it.",
+      tone: "invite",
+    };
+  }
+
   if (logged.length === 0) {
     return {
       emoji: "🌱",

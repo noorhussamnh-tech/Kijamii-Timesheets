@@ -21,18 +21,30 @@ export function DailyNote({ coverage }: { coverage: MonthCoverage | null }) {
   const note = dailyNote(coverage);
 
   return (
-    <p
+    <div
       className={cn(
-        "flex items-start gap-2.5 text-[15px] leading-relaxed font-semibold",
-        note.tone === "praise" && "text-heading",
-        note.tone === "steady" && "text-foreground/85",
-        note.tone === "invite" && "text-foreground/85",
+        "flex items-center gap-3 rounded-xl border px-4 py-3 shadow-card",
+        // Tinted by tone rather than uniformly, so the difference between
+        // "you are on top of this" and "there is something to do" is legible
+        // before the sentence is read.
+        note.tone === "praise" && "border-success/30 bg-success-soft",
+        note.tone === "steady" && "border-warning/30 bg-warning-soft",
+        note.tone === "invite" && "border-brand/30 bg-brand-soft",
       )}
     >
-      <span aria-hidden="true" className="text-lg leading-tight">
+      <span aria-hidden="true" className="text-2xl leading-none">
         {note.emoji}
       </span>
-      <span className="min-w-0">{note.text}</span>
-    </p>
+      <p
+        className={cn(
+          "min-w-0 text-[17px] leading-snug font-bold tracking-tight",
+          note.tone === "praise" && "text-success",
+          note.tone === "steady" && "text-warning",
+          note.tone === "invite" && "text-brand",
+        )}
+      >
+        {note.text}
+      </p>
+    </div>
   );
 }

@@ -22,6 +22,15 @@ describe("dailyNote", () => {
     expect(note.text).toMatch(/fresh month/i);
   });
 
+  it("does not call anybody behind on the first days of a month", () => {
+    const note = dailyNote(
+      coverage({ workingDaysSoFar: 1, missing: ["2026-09-01"], completion: 0 }),
+      DAY,
+    );
+    expect(note.tone).toBe("invite");
+    expect(note.text).toMatch(/clean slate/i);
+  });
+
   it("invites rather than scolds when nothing is logged", () => {
     const note = dailyNote(
       coverage({ workingDaysSoFar: 8, missing: Array(8).fill("d"), completion: 0 }),
