@@ -13,6 +13,9 @@
 @theme inline {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  /* One display face, used for the work personality and nothing else. It is
+     allowed to have a bit of character precisely because it appears once. */
+  --font-display: "Space Grotesk", "Plus Jakarta Sans", ui-sans-serif, sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -244,4 +247,12 @@
 @utility field-cell-focus {
   outline: 2px solid var(--color-ring);
   outline-offset: -1px;
+}
+
+/* The personality label on My Time. A separate face so the one playful thing
+   on the page looks deliberate rather than like a heading that got away. */
+@utility persona {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }

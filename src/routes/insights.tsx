@@ -303,7 +303,7 @@ function Insights() {
           <p className="label-xs text-sidebar-foreground/50">
             {format(new Date(range.from), "d MMM")} – {format(new Date(range.to), "d MMM yyyy")}
           </p>
-          <h2 className="mt-2 text-2xl font-extrabold tracking-tight" style={{ color: accent }}>
+          <h2 className="persona mt-2 text-3xl" style={{ color: accent }}>
             {personality.title}
           </h2>
           <p className="mt-2 max-w-lg text-[13px] leading-relaxed text-sidebar-foreground/70">
