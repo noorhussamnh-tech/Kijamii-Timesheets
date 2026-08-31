@@ -4,6 +4,7 @@ import { endOfMonth, startOfMonth } from "date-fns";
 import { AlertCircle } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { Confetti } from "@/components/Confetti";
 import { DailyNote } from "@/components/DailyNote";
 import { MonthCoverage } from "@/components/MonthCoverage";
 import { SaveIndicator } from "@/components/SaveIndicator";
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { fetchMyLoggedDays } from "@/lib/data/api";
 import { monthCoverage, type DayCoverage } from "@/lib/domain/coverage";
+import { CATEGORICAL } from "@/lib/viz/palette";
 import { toDateKey } from "@/lib/domain/week";
 import { useTimesheet } from "@/lib/timesheet-store";
 
@@ -42,6 +44,10 @@ function TimesheetPage() {
   const { status: authStatus } = useAuth();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Submitting is the moment somebody actually finishes something here, so it
+  // is the moment worth marking. Unlike the milestones on My Time this is not
+  // rationed: sending your week is an achievement every week.
+  const [justSubmitted, setJustSubmitted] = useState(0);
   const [submitDate, setSubmitDate] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -83,6 +89,9 @@ function TimesheetPage() {
 
   return (
     <>
+      {justSubmitted > 0 && (
+        <Confetti key={justSubmitted} fire palette={CATEGORICAL.map((slot) => slot.light)} />
+      )}
       <div className="space-y-4 pb-2">
         <DailyNote coverage={coverage} />
         <WeekNav />
@@ -133,7 +142,13 @@ function TimesheetPage() {
         onOpenChange={setConfirmOpen}
         date={submitDate}
         onConfirmed={() => {
-          if (!submitDate) void navigate({ to: "/submitted" });
+          if (!submitDate) {
+            void navigate({ to: "/submitted" });
+            return;
+          }
+          // A day was sent and the person stays on this page to see it. The
+          // counter keys the burst so submitting twice fires twice.
+          setJustSubmitted((n) => n + 1);
         }}
       />
     </>

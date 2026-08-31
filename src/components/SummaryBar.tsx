@@ -106,22 +106,31 @@ export function SummaryBar({
               {daysWithEntries.length > 0 && (
                 <>
                   <DropdownMenuLabel className="label-xs">Submit a single day</DropdownMenuLabel>
-                  {/* A day already submitted stays listed but disabled, so
-                          an empty-looking menu never leaves someone guessing. */}
+                  {/* A day can be submitted again. Adding rows to a day that
+                      was already sent is allowed, so refusing to send them
+                      would be a dead end: the rows would sit there forever
+                      with no way out. What decides the state here is whether
+                      anything on the day is still a draft, never whether the
+                      day was submitted before. */}
                   {daysWithEntries.map((date) => {
-                    const locked = isDayLocked(date);
+                    const pending = entries.filter(
+                      (row) => row.workDate === date && row.status === "draft",
+                    ).length;
+                    const sentBefore = isDayLocked(date);
                     return (
                       <DropdownMenuItem
                         key={date}
-                        disabled={locked}
-                        onClick={() => !locked && onSubmitDay(date)}
+                        disabled={pending === 0}
+                        onClick={() => pending > 0 && onSubmitDay(date)}
                       >
                         {dayLabel(date)}
-                        {locked && (
-                          <span className="ml-auto text-[11px] text-muted-foreground">
-                            submitted
-                          </span>
-                        )}
+                        <span className="ml-auto text-[11px] text-muted-foreground">
+                          {pending === 0
+                            ? "sent"
+                            : sentBefore
+                              ? `${pending} new`
+                              : `${pending} row${pending === 1 ? "" : "s"}`}
+                        </span>
                       </DropdownMenuItem>
                     );
                   })}

@@ -150,7 +150,6 @@ function Insights() {
       .then((data) => {
         if (cancelled) return;
         setStats(data);
-        setCelebrating(claimMilestone(data));
       })
       .catch((cause: unknown) => {
         if (!cancelled) {
@@ -162,6 +161,29 @@ function Insights() {
       cancelled = true;
     };
   }, [authStatus, range.from, range.to]);
+
+  // Milestones are read from everything the person has ever logged, not from
+  // the period on screen. Opening a fresh month should not un-achieve a first
+  // entry made last month, and the previous version did exactly that: the page
+  // defaults to this month, so on the 1st nobody had ever logged anything.
+  useEffect(() => {
+    if (authStatus !== "ready") return;
+    let cancelled = false;
+
+    const today = new Date();
+    const from = new Date(today.getFullYear() - 3, 0, 1);
+    void fetchMyStats(toDateKey(from), toDateKey(today))
+      .then((lifetime) => {
+        if (!cancelled) setCelebrating(claimMilestone(lifetime));
+      })
+      .catch(() => {
+        // No celebration is a fine outcome; an error here is not worth showing.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authStatus]);
 
   const periodPicker = (
     <div className="flex flex-wrap gap-1.5">
@@ -209,7 +231,6 @@ function Insights() {
     );
   }
 
-  const confettiColors = CATEGORICAL.map((slot) => slot.light);
   const personality = workPersonality(stats);
   // Each personality keeps its own hue, so the card is recognisably yours
   // rather than the same slab of brand colour everyone else sees.
@@ -217,11 +238,21 @@ function Insights() {
   const trivia = buildTrivia(stats);
   const weekday = busiestWeekday(stats);
   const firstName = employee?.fullName?.split(" ")[0] ?? "there";
+  const confettiColors = CATEGORICAL.map((slot) => slot.light);
 
   if (stats.entryCount === 0) {
     return (
       <div className="space-y-4">
         {periodPicker}
+        {/* A milestone belongs to the person, not to the period on screen, so
+            it is celebrated even while looking at a month they did not work. */}
+        {celebrating && <Confetti fire palette={confettiColors} />}
+        {celebrating && (
+          <section className="rounded-xl border border-brand/30 bg-brand-soft px-4 py-3">
+            <p className="text-sm font-bold text-brand">{celebrating.title}</p>
+            <p className="mt-0.5 text-[13px] text-foreground/80">{celebrating.line}</p>
+          </section>
+        )}
         <div className="rounded-xl border border-dashed bg-surface px-6 py-16 text-center">
           <Sparkles className="mx-auto size-6 text-brand" />
           <h2 className="mt-3 text-base font-bold">Nothing to show yet, {firstName}</h2>
