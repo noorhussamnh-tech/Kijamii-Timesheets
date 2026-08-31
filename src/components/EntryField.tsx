@@ -136,7 +136,7 @@ export function EntryField({
     case "choice": {
       // A short, fixed set: a plain select rather than the searchable list
       // used for the reference fields, which can run to dozens of options.
-      const value = String(row[field.key as "scope"]);
+      const value = row[field.key as "scope"] ?? "";
       return (
         <select
           value={value}
@@ -144,10 +144,14 @@ export function EntryField({
           aria-label={field.label}
           aria-invalid={invalid}
           onChange={(event) =>
-            updateRow(row.id, { [field.key]: event.target.value } as Partial<TimesheetEntry>)
+            updateRow(row.id, {
+              [field.key]: event.target.value === "" ? null : event.target.value,
+            } as Partial<TimesheetEntry>)
           }
-          className={cn(inputClass, "min-w-[130px]")}
+          className={cn(inputClass, "min-w-[130px]", value === "" && "text-muted-foreground")}
         >
+          {/* Nothing is preselected: the classification has to be chosen. */}
+          <option value="">Select {field.label.toLowerCase()}</option>
           {(field.choices ?? []).map((choice) => (
             <option key={choice.value} value={choice.value}>
               {choice.label}

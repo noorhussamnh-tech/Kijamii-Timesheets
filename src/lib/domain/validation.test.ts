@@ -67,9 +67,9 @@ describe("row completeness", () => {
   it("treats an untouched row as blank", () => {
     const blank = entry({
       clientId: "",
-      serviceId: "",
       projectType: "",
       task: "",
+      scope: null,
       hours: "",
     });
     expect(isBlankRow(blank)).toBe(true);
@@ -80,7 +80,7 @@ describe("row completeness", () => {
 
   it("lists every missing required field", () => {
     expect(missingFields(entry())).toEqual([]);
-    expect(missingFields(entry({ serviceId: "", hours: "" }))).toEqual(["serviceId", "hours"]);
+    expect(missingFields(entry({ scope: null, hours: "" }))).toEqual(["scope", "hours"]);
   });
 
   it("accepts a free-text client name in place of a client id", () => {
@@ -107,9 +107,9 @@ describe("week validation", () => {
     const blank = entry({
       id: "row-2",
       clientId: "",
-      serviceId: "",
       projectType: "",
       task: "",
+      scope: null,
       hours: "",
     });
     const result = validateWeek([entry(), blank], WEEK, {});
@@ -154,7 +154,7 @@ describe("week validation", () => {
   it("scopes validation to a single day for per-day submission", () => {
     const rows = [
       entry({ id: "good", workDate: "2026-08-24" }),
-      entry({ id: "bad", workDate: "2026-08-25", serviceId: "" }),
+      entry({ id: "bad", workDate: "2026-08-25", scope: null }),
     ];
     // The whole week is invalid because of the second row...
     expect(validateWeek(rows, WEEK).ok).toBe(false);

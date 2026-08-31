@@ -137,7 +137,6 @@ describe("configuration selection", () => {
       "hours",
       "projectType",
       "scope",
-      "serviceId",
       "workDate",
     ]);
   });

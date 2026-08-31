@@ -68,7 +68,8 @@ export interface TimesheetEntry {
   serviceId: string;
   projectType: string;
   task: string;
-  scope: EntryScope;
+  /** Null until the person chooses. Never assumed. */
+  scope: EntryScope | null;
   projectNote: string;
   /** Empty string while the field is blank; drafts may hold incomplete rows. */
   hours: number | "";

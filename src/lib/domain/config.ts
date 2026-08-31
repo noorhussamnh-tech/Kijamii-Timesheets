@@ -12,14 +12,7 @@
 import type { Market, TimesheetConfigId } from "./types";
 
 export type FieldKey =
-  | "workDate"
-  | "clientId"
-  | "serviceId"
-  | "projectType"
-  | "scope"
-  | "projectNote"
-  | "hours"
-  | "billable";
+  "workDate" | "clientId" | "projectType" | "scope" | "projectNote" | "hours" | "billable";
 
 export type FieldKind = "date" | "client" | "reference" | "choice" | "text" | "hours" | "billable";
 
@@ -56,8 +49,13 @@ export interface TimesheetConfig {
 }
 
 /**
- * What people actually fill in: Date, Client, Service, Project Type and Hours,
+ * What people actually fill in: Date, Client, Project Type, Scope and Hours,
  * with free-text Notes that nobody has to write.
+ *
+ * Service is absent because it is no longer a question: it follows from the
+ * employee's department, and the database stamps it on save. That makes it a
+ * second name for Department rather than a fact of its own -- the cost of
+ * asking one fewer question of seventy people every day.
  *
  * There is deliberately no Job field -- Kijamii has no job-numbering system --
  * and no Task field: it asked people to classify work a second time, after
@@ -68,14 +66,6 @@ export interface TimesheetConfig {
 const sharedFields: FieldDef[] = [
   { key: "workDate", label: "Date", kind: "date", required: true, width: "w-[150px]" },
   { key: "clientId", label: "Client name", kind: "client", required: true, width: "min-w-[190px]" },
-  {
-    key: "serviceId",
-    label: "Service",
-    kind: "reference",
-    source: "services",
-    required: true,
-    width: "min-w-[180px]",
-  },
   {
     key: "projectType",
     label: "Project Type",

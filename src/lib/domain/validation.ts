@@ -36,7 +36,6 @@ export function isBlankRow(entry: TimesheetEntry): boolean {
   return (
     !entry.clientId &&
     !entry.clientOther.trim() &&
-    !entry.serviceId &&
     !entry.projectType &&
     !entry.projectNote.trim() &&
     entry.hours === ""
@@ -64,8 +63,9 @@ export function missingFields(entry: TimesheetEntry): string[] {
   const missing: string[] = [];
   if (!entry.workDate) missing.push("workDate");
   if (!entry.clientId && !entry.clientOther.trim()) missing.push("clientId");
-  if (!entry.serviceId) missing.push("serviceId");
   if (!entry.projectType) missing.push("projectType");
+  // Scope has no default: an unanswered row is unclassified, not in-scope.
+  if (!entry.scope) missing.push("scope");
   if (validateHours(entry.hours)) missing.push("hours");
   return missing;
 }

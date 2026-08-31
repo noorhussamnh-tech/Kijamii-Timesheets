@@ -31,7 +31,8 @@ const COLUMNS = [
   {
     key: "scope",
     label: "Scope",
-    value: (r: ExportRow) => (r.scope === "out_of_scope" ? "Out of Scope" : "In Scope"),
+    value: (r: ExportRow) =>
+      r.scope === "out_of_scope" ? "Out of Scope" : r.scope === "in_scope" ? "In Scope" : "",
   },
   {
     key: "billing_type",

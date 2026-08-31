@@ -1,0 +1,64 @@
+-- Four changes that arrived together.
+--
+-- 1. Strategy joins the project types.
+--
+-- 2. Technology and Operations leave the department list; Studio and Sports
+--    join it. Deactivated rather than deleted, so anyone already recorded
+--    under them keeps a department that still resolves to a name.
+--
+-- 3. Service stops being asked and starts being derived from the department.
+--    That is a real trade: Creative covered Art & Design, Copywriting and
+--    Motion, and collapsing it to one value loses that distinction. What it
+--    buys is one fewer question asked of seventy people every day. Because
+--    the mapping is now one-to-one, Service carries nothing Department does
+--    not -- it is kept because existing rows, exports and the job book all
+--    read it.
+--
+-- 4. Scope stops defaulting. An hour is classified deliberately or not at
+--    all: a value nobody chose reads as unanswered rather than as a quiet
+--    claim that the work was in scope. Drafts may hold unclassified rows;
+--    submitting is where the choice is insisted on.
+
+insert into ts_project_types (name, sort_order, active)
+values ('Strategy', 35, true)
+on conflict do nothing;
+
+update ts_departments set active = false where name in ('Technology', 'Operations');
+
+insert into ts_departments (name, sort_order, active) values
+  ('Studio', 80, true),
+  ('Sports', 90, true)
+on conflict do nothing;
+
+-- The mapping lives in a column rather than in application code, so an admin
+-- can correct it without a deploy.
+alter table ts_departments
+  add column if not exists service_id uuid references ts_services (id) on delete set null;
+
+comment on column ts_departments.service_id is
+  'The service stamped on entries logged by this department. Service is no longer chosen per row.';
+
+-- Every department needs something to map to. Four already had an exact
+-- service; the rest get one under their own name.
+insert into ts_services (name, sort_order, active) values
+  ('Creative', 90, true),
+  ('Strategy', 100, true),
+  ('Entertainment', 110, true),
+  ('Studio', 120, true),
+  ('Sports', 130, true)
+on conflict do nothing;
+
+update ts_departments d
+   set service_id = s.id
+  from ts_services s
+ where lower(s.name) = lower(d.name)
+   and d.service_id is null;
+
+alter table ts_entries alter column scope drop default;
+alter table ts_entries alter column scope drop not null;
+
+-- ts_save_draft now stamps service_id from the employee's department and
+-- stores an unanswered scope as null; ts_validate_week asks for scope instead
+-- of the service and task nobody fills in any more. Both were applied as the
+-- migrations 'derive_service_from_department' and
+-- 'validate_week_scope_not_service'.
