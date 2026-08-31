@@ -6,6 +6,27 @@ import { useTimesheet } from "@/lib/timesheet-store";
 import { cn } from "@/lib/utils";
 
 /**
+ * Whether a required field still has nothing in it.
+ *
+ * Kept beside the rendering rather than in the validation module: this drives
+ * an outline, not a verdict, and a half-typed row should not be told off.
+ */
+function isUnanswered(key: FieldDef["key"], row: TimesheetEntry): boolean {
+  switch (key) {
+    case "clientId":
+      return !row.clientId && !row.clientOther.trim();
+    case "projectType":
+      return !row.projectType;
+    case "scope":
+      return !row.scope;
+    case "hours":
+      return row.hours === "";
+    default:
+      return false;
+  }
+}
+
+/**
  * Renders one cell of the grid from its field definition.
  *
  * Everything is driven by the configuration and by reference data loaded from
@@ -29,10 +50,32 @@ export function EntryField({
   // database records the amendment rather than refusing it.
   const disabled = false;
 
+  // Whether this field is still waiting on the person. Only ever true for the
+  // ones that must be answered -- Notes is optional and is never dressed up as
+  // an outstanding task.
+  const awaiting = field.required && isUnanswered(field.key, row);
+
+  /*
+   * Fields carry a visible border at rest now, rather than appearing only on
+   * hover. A grid of invisible inputs looks calm and reads as a table nobody
+   * is allowed to type in.
+   *
+   * The colour says something rather than decorating: amber where an answer is
+   * still owed, plain grey once it has been given, red only when it is wrong.
+   * Green is deliberately not used here -- it already means submitted and
+   * done elsewhere in this app, and a grid where every empty box is green
+   * teaches people to read green as nothing at all.
+   */
+  const stateClass = cn(
+    "border-input",
+    awaiting && "border-warning/60 bg-warning-soft/40",
+    invalid && "border-destructive/60 bg-destructive/5",
+  );
+
   const inputClass = cn(
-    "w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-[13px] transition-colors",
-    "hover:border-border-strong hover:bg-surface-muted focus:border-transparent focus:bg-surface focus:outline-2 focus:outline-ring focus:-outline-offset-1",
-    invalid && "border-destructive/50 bg-destructive/5",
+    "w-full rounded-md border bg-transparent px-2 py-1.5 text-[13px] transition-colors",
+    "hover:border-border-strong hover:bg-surface-muted focus:bg-surface focus:outline-2 focus:outline-ring focus:-outline-offset-1",
+    stateClass,
     disabled && "pointer-events-none opacity-80",
   );
 
@@ -95,6 +138,7 @@ export function EntryField({
             emptyText="No clients match"
             disabled={disabled}
             invalid={invalid}
+            className={stateClass}
             onChange={(id) => updateRow(row.id, { clientId: id, clientOther: "" })}
           />
           {selected?.isOther && (
@@ -128,6 +172,7 @@ export function EntryField({
           emptyText="No matches"
           disabled={disabled}
           invalid={invalid}
+          className={stateClass}
           onChange={(id) => updateRow(row.id, { [key]: id } as Partial<TimesheetEntry>)}
         />
       );

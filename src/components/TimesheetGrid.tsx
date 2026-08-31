@@ -76,13 +76,14 @@ function DayHeading({ date }: { date: string }) {
         </span>
       )}
       {/* The most-used control on the page, and it used to be the faintest
-          thing on its row. Given the same outlined shape as Add day, and the
-          success green from the theme rather than a fixed one, so it holds up
-          in both modes. */}
+          thing on its row. Filled rather than outlined so it reads as the
+          primary action of the day it sits on, in the theme's success green so
+          it holds its contrast in both modes. White text is set explicitly:
+          the token's own foreground follows the theme and would go dark. */}
       <Button
         variant="outline"
         size="sm"
-        className="ml-2 h-7 border-success/40 px-2.5 text-[13px] font-bold text-success hover:border-success/60 hover:bg-success-soft hover:text-success"
+        className="ml-2 h-7 border-transparent bg-success px-2.5 text-[13px] font-bold text-white shadow-card hover:bg-success/90 hover:text-white"
         onClick={() => addRow(date)}
       >
         <Plus className="size-3.5" /> Row
