@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { endOfMonth, startOfMonth } from "date-fns";
 import { AlertCircle } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { DailyNote } from "@/components/DailyNote";
 import { MonthCoverage } from "@/components/MonthCoverage";
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -11,6 +13,10 @@ import { SummaryBar } from "@/components/SummaryBar";
 import { TimesheetGrid } from "@/components/TimesheetGrid";
 import { WeekNav } from "@/components/WeekNav";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
+import { fetchMyLoggedDays } from "@/lib/data/api";
+import { monthCoverage, type DayCoverage } from "@/lib/domain/coverage";
+import { toDateKey } from "@/lib/domain/week";
 import { useTimesheet } from "@/lib/timesheet-store";
 
 export const Route = createFileRoute("/timesheet")({
@@ -32,11 +38,41 @@ export const Route = createFileRoute("/timesheet")({
 });
 
 function TimesheetPage() {
-  const { rowIssues, weekIssues, showErrors, saveError } = useTimesheet();
+  const { rowIssues, weekIssues, showErrors, saveError, config, weekKey } = useTimesheet();
+  const { status: authStatus } = useAuth();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitDate, setSubmitDate] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Fetched here rather than inside each component, so the note above and the
+  // strip below are one request and can never disagree with each other.
+  const [loggedDays, setLoggedDays] = useState<DayCoverage[] | null>(null);
+  const month = new Date();
+
+  useEffect(() => {
+    if (authStatus !== "ready") return;
+    let cancelled = false;
+
+    void fetchMyLoggedDays(toDateKey(startOfMonth(month)), toDateKey(endOfMonth(month)))
+      .then((rows) => {
+        if (!cancelled) setLoggedDays(rows);
+      })
+      .catch(() => {
+        // Neither the note nor the strip is worth taking the timesheet down for.
+        if (!cancelled) setLoggedDays([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // Re-read when the week changes, so submitting a day updates both.
+  }, [authStatus, weekKey]);
+
+  const coverage = useMemo(
+    () => (loggedDays ? monthCoverage(month, loggedDays, config.workDays) : null),
+    [loggedDays, config.workDays],
+  );
 
   const openConfirm = (date: string | null) => {
     setSubmitDate(date);
@@ -48,8 +84,9 @@ function TimesheetPage() {
   return (
     <>
       <div className="space-y-4 pb-2">
+        <DailyNote coverage={coverage} />
         <WeekNav />
-        <MonthCoverage />
+        <MonthCoverage coverage={coverage} />
 
         {saveError && (
           <p className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-[12px] font-medium text-destructive">

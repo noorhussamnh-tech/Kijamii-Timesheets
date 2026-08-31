@@ -10,8 +10,9 @@ import { useAuth } from "@/lib/auth";
 import { Confetti } from "@/components/Confetti";
 import { HoursByAccount } from "@/components/HoursByAccount";
 import { fetchMyStats } from "@/lib/data/api";
-import { milestoneFor, wryLine, type Milestone } from "@/lib/domain/milestones";
-import { CATEGORICAL } from "@/lib/viz/palette";
+import { useTheme } from "@/lib/theme";
+import { milestoneFor, type Milestone } from "@/lib/domain/milestones";
+import { CATEGORICAL, personalityColor } from "@/lib/viz/palette";
 import {
   averageHoursPerEntry,
   averageHoursPerLoggedDay,
@@ -134,6 +135,7 @@ function Insights() {
   const [stats, setStats] = useState<PersonalStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState<Milestone | null>(null);
+  const { theme } = useTheme();
 
   const range = useMemo(() => rangeFor(period, new Date()), [period]);
 
@@ -209,6 +211,9 @@ function Insights() {
 
   const confettiColors = CATEGORICAL.map((slot) => slot.light);
   const personality = workPersonality(stats);
+  // Each personality keeps its own hue, so the card is recognisably yours
+  // rather than the same slab of brand colour everyone else sees.
+  const accent = personalityColor(personality.id, theme === "dark");
   const trivia = buildTrivia(stats);
   const weekday = busiestWeekday(stats);
   const firstName = employee?.fullName?.split(" ")[0] ?? "there";
@@ -253,18 +258,21 @@ function Insights() {
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -right-16 -top-24 size-64 rounded-full opacity-40 blur-3xl"
-          style={{ background: "radial-gradient(circle, #4a3aa7 0%, transparent 70%)" }}
+          style={{ background: `radial-gradient(circle, ${accent} 0%, transparent 70%)` }}
         />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -bottom-28 -left-10 size-56 rounded-full opacity-30 blur-3xl"
-          style={{ background: "radial-gradient(circle, #eb6834 0%, transparent 70%)" }}
+          style={{
+            background: `radial-gradient(circle, ${accent} 0%, transparent 70%)`,
+            opacity: 0.18,
+          }}
         />
         <div className="relative">
           <p className="label-xs text-sidebar-foreground/50">
             {format(new Date(range.from), "d MMM")} – {format(new Date(range.to), "d MMM yyyy")}
           </p>
-          <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-sidebar-accent-foreground">
+          <h2 className="mt-2 text-2xl font-extrabold tracking-tight" style={{ color: accent }}>
             {personality.title}
           </h2>
           <p className="mt-2 max-w-lg text-[13px] leading-relaxed text-sidebar-foreground/70">
@@ -326,8 +334,6 @@ function Insights() {
           {formatHours(stats.busiestDay.hours)}.
         </p>
       )}
-
-      <p className="text-center text-[12px] italic text-muted-foreground">{wryLine()}</p>
 
       <p className="text-center text-[11px] text-muted-foreground">
         Only you can see this page. It is built from what you logged yourself.
