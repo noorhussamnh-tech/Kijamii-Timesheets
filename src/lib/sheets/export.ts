@@ -80,9 +80,27 @@ export const exportWeekToSheets = createServerFn({ method: "POST" })
 
     // Confirm the caller is a signed-in admin. The database would refuse the
     // query below anyway; this produces a clearer answer.
+    //
+    // Scoped to the caller's own row on purpose: the read policy is "your own
+    // row OR everything, if you are an admin", so for the very people this
+    // check is meant to admit it would otherwise match the whole roster and
+    // ask for a single row from it.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return {
+        ok: false,
+        reason: "not_authorized",
+        rowsWritten: 0,
+        message: "You do not have permission to export timesheets.",
+      };
+    }
+
     const { data: profile } = await supabase
       .from("ts_employees")
       .select("role, active")
+      .eq("auth_user_id", user.id)
       .maybeSingle();
 
     if (!profile || profile.role !== "admin" || !profile.active) {

@@ -101,14 +101,28 @@ function toEmployee(row: EmployeeRow): Employee {
 /**
  * The signed-in employee, or null when the address has no roster record --
  * which is how an unauthorized account presents.
+ *
+ * The filter on auth_user_id is doing real work and must stay. Row-level
+ * security scopes this table to "your own row OR everything, if you are an
+ * admin", so for an admin the policy alone narrows nothing: asking for a
+ * single row would match the whole roster and fail. Security is still the
+ * database's to enforce -- this only says which row we are asking for.
  */
 export async function fetchCurrentEmployee(): Promise<Employee | null> {
   const supabase = requireSupabaseBrowserClient();
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const authUserId = session?.user?.id;
+  if (!authUserId) return null;
+
   const { data, error } = await supabase
     .from("ts_employees")
     .select(
       "id, full_name, email, markets, primary_market, department, timesheet_configuration, expected_weekly_hours, role, active, onboarded_at",
     )
+    .eq("auth_user_id", authUserId)
     .maybeSingle();
 
   if (error) {
