@@ -11,11 +11,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchTimeDedicationRows } from "@/lib/data/api";
+import type { Market } from "@/lib/domain/types";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
 import { toLongRows, toWideRows } from "@/lib/export/time-dedication";
 
 /** How far back the year picker offers. Nothing exists before the app did. */
 const FIRST_YEAR = 2026;
+
+/**
+ * Which markets the file covers.
+ *
+ * Egypt and the UAE lead because that is the job book tab this feeds. Saudi
+ * used to be excluded in code, on the understanding that it kept no
+ * timesheets -- it does now, and a rule in code cannot notice that changing,
+ * where a choice on screen can.
+ */
+const MARKET_SETS: { id: string; label: string; markets: Market[]; note: string }[] = [
+  {
+    id: "eg-uae",
+    label: "Egypt & UAE",
+    markets: ["EG", "UAE"],
+    note: "The job book tab.",
+  },
+  { id: "ksa", label: "Saudi only", markets: ["KSA"], note: "KSA hours on their own." },
+  { id: "all", label: "Every market", markets: [], note: "Everyone, everywhere." },
+];
 
 function years(): number[] {
   const now = new Date().getFullYear();
@@ -36,6 +56,7 @@ function years(): number[] {
  */
 export function ExportTimeDedication() {
   const [year, setYear] = useState(() => String(Math.max(new Date().getFullYear(), FIRST_YEAR)));
+  const [marketSet, setMarketSet] = useState("eg-uae");
   const [busy, setBusy] = useState<"wide" | "long" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -47,17 +68,22 @@ export function ExportTimeDedication() {
     setNote(null);
 
     const value = Number(year);
+    const chosen = MARKET_SETS.find((set) => set.id === marketSet) ?? MARKET_SETS[0]!;
     try {
-      const rows = await fetchTimeDedicationRows(`${value}-01-01`, `${value}-12-31`);
+      const rows = await fetchTimeDedicationRows(
+        `${value}-01-01`,
+        `${value}-12-31`,
+        chosen.markets,
+      );
       const shaped = shape === "wide" ? toWideRows(rows, value) : toLongRows(rows);
 
       if (shaped.rows.length === 0) {
-        setNote("No Egypt or UAE employees to export yet.");
+        setNote(`No ${chosen.label.toLowerCase()} employees to export yet.`);
         return;
       }
 
       downloadCsv(
-        `kijamii-time-dedication_${value}_${shape === "wide" ? "sheet" : "lookup"}.csv`,
+        `kijamii-time-dedication_${value}_${chosen.id}_${shape === "wide" ? "sheet" : "lookup"}.csv`,
         toCsv(shaped.headers, shaped.rows),
       );
       setNote(`${shaped.rows.length} row${shaped.rows.length === 1 ? "" : "s"} downloaded.`);
@@ -80,13 +106,30 @@ export function ExportTimeDedication() {
         <div className="space-y-1">
           <p className="label-xs">Egypt &amp; UAE time dedication</p>
           <p className="text-[12px] leading-relaxed text-muted-foreground">
-            Hours by person, brand and month, for the agency job book. Everyone in Egypt and the UAE
-            appears, including anyone who logged nothing.
+            Hours by person, brand and month, for the agency job book. Everyone in the chosen
+            markets appears, including anyone who logged nothing.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="label-xs-muted shrink-0">Year</span>
+          <span className="label-xs-muted w-12 shrink-0">Markets</span>
+          <Select value={marketSet} onValueChange={setMarketSet}>
+            <SelectTrigger className="h-8 flex-1 text-[13px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MARKET_SETS.map((set) => (
+                <SelectItem key={set.id} value={set.id}>
+                  {set.label}
+                  <span className="ml-2 text-[11px] text-muted-foreground">{set.note}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="label-xs-muted w-12 shrink-0">Year</span>
           <Select value={year} onValueChange={setYear}>
             <SelectTrigger className="h-8 w-[110px] text-[13px]">
               <SelectValue />

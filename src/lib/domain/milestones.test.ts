@@ -42,29 +42,50 @@ describe("milestoneFor", () => {
     expect(milestoneFor(stats({ entryCount: 1 }), seen)).toBeNull();
   });
 
-  it("fires one at a time, rarest first", () => {
-    const rich = stats({ entryCount: 40, daysLogged: 22, longestStreak: 22, totalHours: 100 });
-    const first = milestoneFor(rich, none);
-    expect(first?.id).toBe("streak-20");
+  it("celebrates each of the first three entries, in order", () => {
+    const ids: string[] = [];
+    const seen = new Set<string>();
+    for (const count of [1, 2, 3]) {
+      const next = milestoneFor(stats({ entryCount: count }), seen);
+      ids.push(next!.id);
+      seen.add(next!.id);
+    }
+    expect(ids).toEqual(["first-entry", "second-entry", "third-entry"]);
+  });
 
-    // The runner-up is still waiting on the next visit rather than lost.
-    const second = milestoneFor(rich, new Set([first!.id]));
-    expect(second?.id).toBe("streak-5");
+  it("stops celebrating individual entries after the third", () => {
+    const seen = new Set(["first-entry", "second-entry", "third-entry"]);
+    expect(milestoneFor(stats({ entryCount: 9 }), seen)).toBeNull();
+  });
+
+  it("fires one at a time, and the opening beats a streak", () => {
+    const rich = stats({ entryCount: 40, daysLogged: 22, longestStreak: 22, totalHours: 100 });
+    // Somebody just starting hears about starting, not about a 20-day streak.
+    expect(milestoneFor(rich, none)?.id).toBe("first-entry");
+
+    // Past the opening, the rarest thing wins and nothing is lost on the way.
+    const opened = new Set(["first-entry", "second-entry", "third-entry"]);
+    const first = milestoneFor(rich, opened);
+    expect(first?.id).toBe("streak-20");
+    expect(milestoneFor(rich, new Set([...opened, first!.id]))?.id).toBe("streak-5");
   });
 
   it("treats a full week of logging as its own milestone", () => {
     const week = stats({ entryCount: 9, daysLogged: 5 });
-    expect(milestoneFor(week, new Set(["first-entry"]))?.id).toBe("full-week");
+    const opened = new Set(["first-entry", "second-entry", "third-entry"]);
+    expect(milestoneFor(week, opened)?.id).toBe("full-week");
   });
 
   it("celebrates beating the previous period, but ranks it last", () => {
     const busier = stats({ entryCount: 3, totalHours: 20, previousTotal: 10 });
-    expect(milestoneFor(busier, new Set(["first-entry"]))?.id).toBe("beat-previous");
+    const opened = new Set(["first-entry", "second-entry", "third-entry"]);
+    expect(milestoneFor(busier, opened)?.id).toBe("beat-previous");
   });
 
   it("does not claim an improvement when there is nothing to compare against", () => {
     const noHistory = stats({ entryCount: 3, totalHours: 20, previousTotal: 0 });
-    expect(milestoneFor(noHistory, new Set(["first-entry"]))).toBeNull();
+    const opened = new Set(["first-entry", "second-entry", "third-entry"]);
+    expect(milestoneFor(noHistory, opened)).toBeNull();
   });
 });
 

@@ -39,7 +39,10 @@ export function Onboarding({ onDone }: { onDone?: () => void }) {
   const [primaryMarket, setPrimaryMarket] = useState<Market | null>(
     () => employee?.primaryMarket ?? null,
   );
-  const [department, setDepartment] = useState<string>(() => employee?.department ?? "");
+  // Deliberately not pre-filled, unlike the markets above. Department now
+  // decides the service stamped on every row, so a stale answer silently
+  // mislabels a month of work -- it is asked fresh, and answered, each time.
+  const [department, setDepartment] = useState<string>("");
   const [departments, setDepartments] = useState<ReferenceOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +75,7 @@ export function Onboarding({ onDone }: { onDone?: () => void }) {
   };
 
   const returning = (employee?.markets.length ?? 0) > 0;
-  const canSubmit = markets.length > 0 && primaryMarket !== null && !saving;
+  const canSubmit = markets.length > 0 && primaryMarket !== null && department !== "" && !saving;
 
   const submit = async () => {
     if (!canSubmit || !primaryMarket) return;
@@ -82,7 +85,7 @@ export function Onboarding({ onDone }: { onDone?: () => void }) {
       await completeOnboarding({
         markets,
         primaryMarket,
-        department: department || null,
+        department,
         expectedWeeklyHours: employee?.expectedWeeklyHours ?? 40,
       });
       await refreshEmployee();
@@ -163,7 +166,7 @@ export function Onboarding({ onDone }: { onDone?: () => void }) {
 
           <div className="mt-4">
             <label className="label-xs mb-1.5 block" htmlFor="department">
-              Department
+              Department<span className="ml-0.5 text-brand">*</span>
             </label>
             <Select value={department} onValueChange={setDepartment}>
               <SelectTrigger id="department" className="h-9 w-full text-[13px]">

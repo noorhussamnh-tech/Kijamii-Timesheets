@@ -432,10 +432,13 @@ export interface TimeDedicationRow {
 export async function fetchTimeDedicationRows(
   from: string,
   to: string,
+  /** Empty means every market. Defaults to the job book's Egypt & UAE tab. */
+  markets: Market[] = ["EG", "UAE"],
 ): Promise<TimeDedicationRow[]> {
   const rows = await rpc<TimeDedicationRow[]>("ts_export_time_dedication", {
     p_from: from,
     p_to: to,
+    p_markets: markets,
   });
   return rows ?? [];
 }

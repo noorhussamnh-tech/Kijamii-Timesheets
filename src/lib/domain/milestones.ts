@@ -32,12 +32,27 @@ export function milestoneFor(
 ): Milestone | null {
   const candidates: Milestone[] = [];
 
-  if (stats.entryCount > 0) {
-    candidates.push({
+  // The first three, not just the first. A habit is not formed by one entry,
+  // and the days right after starting are exactly where people quietly stop.
+  const OPENING = [
+    {
       id: "first-entry",
       title: "That's one.",
       line: "Your first logged hours. The hard part was starting.",
-    });
+    },
+    {
+      id: "second-entry",
+      title: "Twice is a pattern.",
+      line: "Two entries in. This is roughly where most people give up — you did not.",
+    },
+    {
+      id: "third-entry",
+      title: "Three. It's a habit now.",
+      line: "Three entries logged. From here it stops being a thing you have to remember.",
+    },
+  ];
+  for (let i = 0; i < OPENING.length; i += 1) {
+    if (stats.entryCount > i) candidates.push(OPENING[i]!);
   }
 
   // Consistency, which is the actual goal: a week where nothing was skipped.
@@ -75,8 +90,17 @@ export function milestoneFor(
     });
   }
 
-  // Rarest first, so a big moment is never pre-empted by a small one.
-  const rank = ["streak-20", "streak-5", "full-week", "first-entry", "beat-previous"];
+  // Rarest first, but the opening three come before anything else: somebody
+  // taking their first steps should hear about those, not about a streak.
+  const rank = [
+    "first-entry",
+    "second-entry",
+    "third-entry",
+    "streak-20",
+    "streak-5",
+    "full-week",
+    "beat-previous",
+  ];
   const unseen = candidates
     .filter((milestone) => !seen.has(milestone.id))
     .sort((a, b) => rank.indexOf(a.id) - rank.indexOf(b.id));

@@ -62,3 +62,9 @@ alter table ts_entries alter column scope drop not null;
 -- of the service and task nobody fills in any more. Both were applied as the
 -- migrations 'derive_service_from_department' and
 -- 'validate_week_scope_not_service'.
+
+-- Applied separately as 'time_dedication_export_markets' and its follow-ups:
+-- ts_export_time_dedication gained a p_markets argument defaulting to
+-- {EG,UAE}, and the two-argument overload was dropped because a call naming
+-- only the dates matched both and Postgres refused to choose. Saudi staff had
+-- begun logging hours, which the hard-coded market filter silently dropped.
