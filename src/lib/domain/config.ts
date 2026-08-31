@@ -12,14 +12,7 @@
 import type { Market, TimesheetConfigId } from "./types";
 
 export type FieldKey =
-  | "workDate"
-  | "clientId"
-  | "serviceId"
-  | "projectType"
-  | "task"
-  | "projectNote"
-  | "hours"
-  | "billable";
+  "workDate" | "clientId" | "serviceId" | "projectType" | "projectNote" | "hours" | "billable";
 
 export type FieldKind = "date" | "client" | "reference" | "text" | "hours" | "billable";
 
@@ -50,9 +43,14 @@ export interface TimesheetConfig {
 }
 
 /**
- * What people actually fill in: Date, Client, Service, Project Type, Task and
- * Hours, with an optional free-text Project note. There is deliberately no Job
- * field -- Kijamii has no job-numbering system.
+ * What people actually fill in: Date, Client, Service, Project Type and Hours,
+ * with free-text Notes that nobody has to write.
+ *
+ * There is deliberately no Job field -- Kijamii has no job-numbering system --
+ * and no Task field: it asked people to classify work a second time, after
+ * Service and Project Type had already said what it was, and the Creative
+ * Director asked for it to go. The column stays in the database so what was
+ * logged under it is not lost.
  */
 const sharedFields: FieldDef[] = [
   { key: "workDate", label: "Date", kind: "date", required: true, width: "w-[150px]" },
@@ -74,20 +72,11 @@ const sharedFields: FieldDef[] = [
     width: "min-w-[170px]",
   },
   {
-    key: "task",
-    label: "Task / Description",
-    kind: "reference",
-    source: "taskTypes",
-    required: true,
-    width: "min-w-[170px]",
-    wide: true,
-  },
-  {
     key: "projectNote",
-    label: "Project",
+    label: "Notes",
     kind: "text",
     required: false,
-    width: "min-w-[170px]",
+    width: "min-w-[220px]",
     hint: "Optional",
     wide: true,
   },

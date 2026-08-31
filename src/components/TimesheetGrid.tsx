@@ -17,13 +17,14 @@ import { useTimesheet } from "@/lib/timesheet-store";
 import { cn } from "@/lib/utils";
 
 function RowActions({ row }: { row: TimesheetEntry }) {
-  const { duplicateRow, deleteRow, readOnly } = useTimesheet();
-  // Only a submitted row is frozen. Other rows on the same day stay editable.
-  if (readOnly || row.status !== "draft") {
-    return <span className="text-[11px] text-muted-foreground">Submitted</span>;
-  }
+  const { duplicateRow, deleteRow } = useTimesheet();
+  // Submitting reports a row; it does not put it beyond correction. The badge
+  // says what was sent, the buttons stay.
   return (
     <div className="flex items-center gap-0.5">
+      {row.status !== "draft" && (
+        <span className="mr-1 text-[11px] text-muted-foreground">Sent</span>
+      )}
       <Button
         variant="ghost"
         size="icon"
@@ -47,7 +48,7 @@ function RowActions({ row }: { row: TimesheetEntry }) {
 }
 
 function DayHeading({ date }: { date: string }) {
-  const { totals, isDayLocked, readOnly, addRow, focusDate } = useTimesheet();
+  const { totals, isDayLocked, addRow, focusDate } = useTimesheet();
   const day = totals.byDay.find((entry) => entry.date === date);
   const locked = isDayLocked(date);
   const isToday = date === focusDate && date === toDateKey(new Date());
@@ -74,18 +75,14 @@ function DayHeading({ date }: { date: string }) {
           Submitted
         </span>
       )}
-      {/* A submitted day still accepts new rows; only the rows already sent
-          are frozen. */}
-      {!readOnly && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="ml-1 h-6 px-1.5 text-[11px]"
-          onClick={() => addRow(date)}
-        >
-          <Plus className="size-3" /> Row
-        </Button>
-      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="ml-1 h-6 px-1.5 text-[11px]"
+        onClick={() => addRow(date)}
+      >
+        <Plus className="size-3" /> Row
+      </Button>
     </>
   );
 }
@@ -153,7 +150,6 @@ export function TimesheetGrid() {
     config,
     entries,
     addRow,
-    readOnly,
     visibleDates,
     focusDate,
     defaultEntryDate,
@@ -199,21 +195,17 @@ export function TimesheetGrid() {
             : "No entries for this week yet"}
         </h2>
         <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">
-          {readOnly
-            ? "Nothing was logged for this week."
-            : "Add a row, or copy last week's entries and adjust the hours."}
+          Add a row, or copy last week&apos;s entries and adjust the hours.
         </p>
-        {!readOnly && (
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            {defaultEntryDate && (
-              <Button size="sm" onClick={() => addRow(defaultEntryDate)}>
-                <Plus className="size-3.5" /> {startsToday ? "Log today's hours" : "Add first row"}
-              </Button>
-            )}
-            {/* Catching up on the whole week starts from an earlier day. */}
-            <AddDayMenu />
-          </div>
-        )}
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          {defaultEntryDate && (
+            <Button size="sm" onClick={() => addRow(defaultEntryDate)}>
+              <Plus className="size-3.5" /> {startsToday ? "Log today's hours" : "Add first row"}
+            </Button>
+          )}
+          {/* Catching up on the whole week starts from an earlier day. */}
+          <AddDayMenu />
+        </div>
       </div>
     );
   }
@@ -236,7 +228,13 @@ export function TimesheetGrid() {
                     className={cn("label-xs px-2.5 py-2.5", field.width)}
                   >
                     {field.label}
-                    {field.required && <span className="ml-0.5 text-brand">*</span>}
+                    {field.required ? (
+                      <span className="ml-0.5 text-brand">*</span>
+                    ) : (
+                      <span className="ml-1.5 font-medium normal-case tracking-normal text-muted-foreground">
+                        Optional
+                      </span>
+                    )}
                   </th>
                 ))}
                 <th scope="col" className="label-xs w-[84px] px-2.5 py-2.5">
@@ -289,23 +287,21 @@ export function TimesheetGrid() {
             </tbody>
           </table>
         </div>
-        {!readOnly && (
-          <div className="flex flex-wrap items-center gap-2 border-t bg-surface-muted px-2.5 py-2">
-            {defaultEntryDate ? (
-              <>
-                <Button variant="ghost" size="sm" onClick={() => addRow()}>
-                  <Plus className="size-3.5" /> Add another row
-                </Button>
-                <AddDayMenu />
-                <span className="text-[11px] text-muted-foreground">
-                  Tip: press Tab to move across fields, Shift+Tab to go back.
-                </span>
-              </>
-            ) : (
-              <NothingToAdd />
-            )}
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2 border-t bg-surface-muted px-2.5 py-2">
+          {defaultEntryDate ? (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => addRow()}>
+                <Plus className="size-3.5" /> Add another row
+              </Button>
+              <AddDayMenu />
+              <span className="text-[11px] text-muted-foreground">
+                Tip: press Tab to move across fields, Shift+Tab to go back.
+              </span>
+            </>
+          ) : (
+            <NothingToAdd />
+          )}
+        </div>
       </div>
 
       {/* Mobile and tablet cards — every field is preserved, not truncated */}
@@ -317,7 +313,7 @@ export function TimesheetGrid() {
               <header className="flex flex-wrap items-center gap-x-2 px-0.5 text-[12px] font-semibold">
                 <DayHeading date={date} />
               </header>
-              {dayRows.length === 0 && !readOnly && (
+              {dayRows.length === 0 && (
                 <Button variant="outline" size="sm" className="w-full" onClick={() => addRow(date)}>
                   <Plus className="size-3.5" /> Add row for {shortDayLabel(date)}
                 </Button>
@@ -337,7 +333,13 @@ export function TimesheetGrid() {
                         <div key={field.key} className={cn("min-w-0", field.wide && "col-span-2")}>
                           <p className="label-xs mb-0.5">
                             {field.label}
-                            {field.required && <span className="ml-0.5 text-brand">*</span>}
+                            {field.required ? (
+                              <span className="ml-0.5 text-brand">*</span>
+                            ) : (
+                              <span className="ml-1.5 font-medium normal-case tracking-normal text-muted-foreground">
+                                Optional
+                              </span>
+                            )}
                           </p>
                           <EntryField
                             field={field}
@@ -361,24 +363,17 @@ export function TimesheetGrid() {
             </section>
           );
         })}
-        {!readOnly &&
-          (defaultEntryDate ? (
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => addRow()}>
-                <Plus className="size-3.5" /> Add row
-              </Button>
-              <AddDayMenu className="flex-1" />
-            </div>
-          ) : (
-            <NothingToAdd />
-          ))}
+        {defaultEntryDate ? (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => addRow()}>
+              <Plus className="size-3.5" /> Add row
+            </Button>
+            <AddDayMenu className="flex-1" />
+          </div>
+        ) : (
+          <NothingToAdd />
+        )}
       </div>
-
-      {readOnly && (
-        <p className="text-[12px] text-muted-foreground">
-          This week has been submitted and is read-only.
-        </p>
-      )}
     </div>
   );
 }

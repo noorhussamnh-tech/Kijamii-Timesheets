@@ -21,19 +21,13 @@ export function EntryField({
   row: TimesheetEntry;
   invalid?: boolean | undefined;
 }) {
-  const {
-    updateRow,
-    readOnly,
-    weekKey,
-    config,
-    reference,
-    availableClients,
-    recentDates,
-    moveRowToDate,
-  } = useTimesheet();
+  const { updateRow, weekKey, config, reference, availableClients, recentDates, moveRowToDate } =
+    useTimesheet();
   // The row's own status is the guard, not the day's: a day that has been
   // submitted can still take new rows.
-  const disabled = readOnly || row.status !== "draft";
+  // Nothing here is frozen. A submitted row can still be corrected -- the
+  // database records the amendment rather than refusing it.
+  const disabled = false;
 
   const inputClass = cn(
     "w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-[13px] transition-colors",

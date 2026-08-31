@@ -79,7 +79,6 @@ interface TimesheetContextValue {
 
   entries: TimesheetEntry[];
   status: SubmissionStatus;
-  readOnly: boolean;
   lockedDays: string[];
   isDayLocked: (date: string) => boolean;
 
@@ -187,9 +186,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   const config = configById(employee?.configuration ?? null);
   const expectedWeeklyHours = employee?.expectedWeeklyHours ?? config.expectedWeeklyHours;
   const isFuture = isFutureWeek(weekKey);
-  // Only a submitted week is read-only. Being ahead of today is not a reason
-  // to lock somebody out of their own timesheet.
-  const readOnly = status !== "draft";
 
   const serialised = useMemo(() => JSON.stringify(entries), [entries]);
   const dirty = serialised !== savedSnapshot;
@@ -311,23 +307,23 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   // Debounced autosave. Deliberately keyed on the serialised rows so that
   // typing a character at a time produces one request, not one per keystroke.
   useEffect(() => {
-    if (!ready || loading || readOnly || !dirty) return;
+    if (!ready || loading || !dirty) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       void persist(entriesRef.current);
     }, AUTOSAVE_DEBOUNCE_MS);
     return () => clearTimeout(saveTimer.current);
-  }, [serialised, dirty, ready, loading, readOnly, persist]);
+  }, [serialised, dirty, ready, loading, persist]);
 
   // A tab closing mid-edit should not silently drop work.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handler = (event: BeforeUnloadEvent) => {
-      if (dirty && !readOnly) event.preventDefault();
+      if (dirty) event.preventDefault();
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [dirty, readOnly]);
+  }, [dirty]);
 
   const saveDraft = useCallback(async () => {
     clearTimeout(saveTimer.current);
@@ -380,13 +376,9 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     return all.includes(today) ? today : all[0]!;
   }, [weekKey]);
 
-  const mutate = useCallback(
-    (fn: (rows: TimesheetEntry[]) => TimesheetEntry[]) => {
-      if (readOnly) return;
-      setEntries((rows) => fn(rows));
-    },
-    [readOnly],
-  );
+  const mutate = useCallback((fn: (rows: TimesheetEntry[]) => TimesheetEntry[]) => {
+    setEntries((rows) => fn(rows));
+  }, []);
 
   /**
    * Where a new row lands when no day was named, or null when this week has
@@ -530,7 +522,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
 
   /** Pulls last week's rows in as a fresh draft, remapped onto this week. */
   const copyPreviousWeek = useCallback(async () => {
-    if (readOnly) return;
     const previous = shiftWeek(weekKey, -1);
     try {
       const week = await api.fetchWeek(previous);
@@ -549,7 +540,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     } catch (cause) {
       setSaveError(cause instanceof Error ? cause.message : "Could not copy last week's entries.");
     }
-  }, [weekKey, readOnly, mutate]);
+  }, [weekKey, mutate]);
 
   // ---------------------------------------------------------- validation
 
@@ -655,7 +646,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       availableClients,
       entries,
       status,
-      readOnly,
       lockedDays,
       isDayLocked,
       addRow,
@@ -699,7 +689,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       availableClients,
       entries,
       status,
-      readOnly,
       lockedDays,
       isDayLocked,
       addRow,

@@ -32,7 +32,7 @@ export const Route = createFileRoute("/timesheet")({
 });
 
 function TimesheetPage() {
-  const { rowIssues, weekIssues, showErrors, readOnly, saveError } = useTimesheet();
+  const { rowIssues, weekIssues, showErrors, saveError } = useTimesheet();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitDate, setSubmitDate] = useState<string | null>(null);
@@ -78,14 +78,11 @@ function TimesheetPage() {
           </div>
         )}
 
-        {!readOnly && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="ml-auto text-[11px] text-muted-foreground">
-              <span className="text-brand">*</span> Required · Hours in 0.25 steps · Up to 16h per
-              day
-            </span>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="ml-auto text-[11px] text-muted-foreground">
+            <span className="text-brand">*</span> Required · Hours in 0.25 steps · Up to 16h per day
+          </span>
+        </div>
 
         <TimesheetGrid />
       </div>

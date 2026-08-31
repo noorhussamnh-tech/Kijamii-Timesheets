@@ -48,17 +48,8 @@ export function SummaryBar({
   onSubmitDay: (date: string) => void;
   onSubmitWeek: () => void;
 }) {
-  const {
-    totals,
-    status,
-    readOnly,
-    saveDraft,
-    dirty,
-    submitting,
-    isDayLocked,
-    selectableDates,
-    entries,
-  } = useTimesheet();
+  const { totals, status, saveDraft, dirty, submitting, isDayLocked, selectableDates, entries } =
+    useTimesheet();
 
   /**
    * Every day that can still be submitted on its own: it has happened, it has
@@ -89,67 +80,57 @@ export function SummaryBar({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {readOnly ? (
-            <span className="text-[12px] text-muted-foreground">
-              Submitted weeks are read-only. Ask an admin to reopen it if something needs changing.
-            </span>
-          ) : (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void saveDraft()}
-                disabled={!dirty || submitting}
-              >
-                <Save className="size-3.5" /> Save draft
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  {/* Disabled while a submission is in flight, so a double
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void saveDraft()}
+            disabled={!dirty || submitting}
+          >
+            <Save className="size-3.5" /> Save draft
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              {/* Disabled while a submission is in flight, so a double
                       click cannot start a second one. */}
-                  <Button size="sm" className="gap-2 px-4" disabled={submitting}>
-                    {submitting ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <Send className="size-3.5" />
-                    )}
-                    {submitting ? "Submitting…" : "Submit"}
-                    <ChevronUp className="size-3.5 opacity-80" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" side="top" className="w-64">
-                  {daysWithEntries.length > 0 && (
-                    <>
-                      <DropdownMenuLabel className="label-xs">
-                        Submit a single day
-                      </DropdownMenuLabel>
-                      {/* A day already submitted stays listed but disabled, so
+              <Button size="sm" className="gap-2 px-4" disabled={submitting}>
+                {submitting ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Send className="size-3.5" />
+                )}
+                {submitting ? "Submitting…" : "Submit"}
+                <ChevronUp className="size-3.5 opacity-80" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="top" className="w-64">
+              {daysWithEntries.length > 0 && (
+                <>
+                  <DropdownMenuLabel className="label-xs">Submit a single day</DropdownMenuLabel>
+                  {/* A day already submitted stays listed but disabled, so
                           an empty-looking menu never leaves someone guessing. */}
-                      {daysWithEntries.map((date) => {
-                        const locked = isDayLocked(date);
-                        return (
-                          <DropdownMenuItem
-                            key={date}
-                            disabled={locked}
-                            onClick={() => !locked && onSubmitDay(date)}
-                          >
-                            {dayLabel(date)}
-                            {locked && (
-                              <span className="ml-auto text-[11px] text-muted-foreground">
-                                submitted
-                              </span>
-                            )}
-                          </DropdownMenuItem>
-                        );
-                      })}
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem onClick={onSubmitWeek}>Submit whole week</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          )}
+                  {daysWithEntries.map((date) => {
+                    const locked = isDayLocked(date);
+                    return (
+                      <DropdownMenuItem
+                        key={date}
+                        disabled={locked}
+                        onClick={() => !locked && onSubmitDay(date)}
+                      >
+                        {dayLabel(date)}
+                        {locked && (
+                          <span className="ml-auto text-[11px] text-muted-foreground">
+                            submitted
+                          </span>
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem onClick={onSubmitWeek}>Submit whole week</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

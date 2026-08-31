@@ -196,6 +196,9 @@
     color: var(--color-heading);
     font-weight: 800;
     letter-spacing: -0.02em;
+    /* A step up from the surrounding text. Relative rather than fixed so a
+       heading that sets its own size still scales with it. */
+    font-size: 1.12em;
   }
 
   /* Column headers are titles too, and were the greyest thing on the page. */

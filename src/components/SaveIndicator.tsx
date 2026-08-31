@@ -11,9 +11,7 @@ import { cn } from "@/lib/utils";
  * offers a retry rather than quietly showing a stale success.
  */
 export function SaveIndicator({ className }: { className?: string | undefined }) {
-  const { saveState, lastSavedAt, dirty, readOnly, saveDraft, saveError } = useTimesheet();
-
-  if (readOnly) return null;
+  const { saveState, lastSavedAt, dirty, saveDraft, saveError } = useTimesheet();
 
   if (saveState === "error") {
     return (

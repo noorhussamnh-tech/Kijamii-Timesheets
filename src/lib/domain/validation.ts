@@ -38,7 +38,6 @@ export function isBlankRow(entry: TimesheetEntry): boolean {
     !entry.clientOther.trim() &&
     !entry.serviceId &&
     !entry.projectType &&
-    !entry.task &&
     !entry.projectNote.trim() &&
     entry.hours === ""
   );
@@ -67,7 +66,6 @@ export function missingFields(entry: TimesheetEntry): string[] {
   if (!entry.clientId && !entry.clientOther.trim()) missing.push("clientId");
   if (!entry.serviceId) missing.push("serviceId");
   if (!entry.projectType) missing.push("projectType");
-  if (!entry.task) missing.push("task");
   if (validateHours(entry.hours)) missing.push("hours");
   return missing;
 }
