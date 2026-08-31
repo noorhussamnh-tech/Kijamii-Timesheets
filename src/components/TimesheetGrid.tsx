@@ -75,13 +75,17 @@ function DayHeading({ date }: { date: string }) {
           Submitted
         </span>
       )}
+      {/* The most-used control on the page, and it used to be the faintest
+          thing on its row. Given the same outlined shape as Add day, and the
+          success green from the theme rather than a fixed one, so it holds up
+          in both modes. */}
       <Button
-        variant="ghost"
+        variant="outline"
         size="sm"
-        className="ml-1 h-6 px-1.5 text-[11px]"
+        className="ml-2 h-7 border-success/40 px-2.5 text-[13px] font-bold text-success hover:border-success/60 hover:bg-success-soft hover:text-success"
         onClick={() => addRow(date)}
       >
-        <Plus className="size-3" /> Row
+        <Plus className="size-3.5" /> Row
       </Button>
     </>
   );
