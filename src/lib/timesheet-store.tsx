@@ -413,8 +413,8 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       mutate((rows) =>
         rows.map((row) => {
           if (row.id !== id) return row;
-          // A submitted row is frozen; others on the same day are not.
-          if (row.status !== "draft") return row;
+          // Status is not a guard. Submitting reports a row; correcting it
+          // afterwards is the point, and the database records the amendment.
           return { ...row, ...patch };
         }),
       );
@@ -432,7 +432,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   const moveRowToDate = useCallback(
     async (id: string, date: string) => {
       const row = entriesRef.current.find((entry) => entry.id === id);
-      if (!row || row.status !== "draft") return;
+      if (!row) return;
 
       const targetWeek = weekKeyOf(parseDateKey(date));
       if (targetWeek === weekKey) {
@@ -472,9 +472,9 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
 
   const deleteRow = useCallback(
     (id: string) => {
-      mutate((rows) => rows.filter((row) => row.id !== id || row.status !== "draft"));
+      mutate((rows) => rows.filter((row) => row.id !== id));
     },
-    [mutate, isDayLocked],
+    [mutate],
   );
 
   /**

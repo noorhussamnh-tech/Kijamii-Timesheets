@@ -85,6 +85,7 @@ const sharedFields: FieldDef[] = [
       { value: "out_of_scope", label: "Out of Scope" },
     ],
   },
+  { key: "hours", label: "Hours", kind: "hours", required: true, width: "w-[104px]" },
   {
     key: "projectNote",
     label: "Notes",
@@ -94,7 +95,6 @@ const sharedFields: FieldDef[] = [
     hint: "Optional",
     wide: true,
   },
-  { key: "hours", label: "Hours", kind: "hours", required: true, width: "w-[104px]" },
 ];
 
 export const EG_UAE_CONFIG: TimesheetConfig = {
