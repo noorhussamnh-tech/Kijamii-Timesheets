@@ -184,7 +184,21 @@ export function ExportEmployeeDetail({
       }
 
       downloadCsv(`kijamii-${slug}_${month}_${chosen.id}.csv`, toCsv(shaped.headers, shaped.rows));
-      setNote(`${shaped.rows.length} row${shaped.rows.length === 1 ? "" : "s"} downloaded.`);
+
+      /*
+       * Say how many people are actually in the file, not just how many rows.
+       *
+       * Exporting "Everyone" and receiving one name is alarming, and the file
+       * itself cannot tell you whether the others logged nothing or the export
+       * quietly dropped them. Naming the count answers that before it is asked.
+       */
+      const withRows = new Set(data.rows.map((row) => row.employeeId)).size;
+      const roster = data.employees.length;
+      const people =
+        employeeId === "all" && roster > 0
+          ? ` · ${withRows} of ${roster} ${roster === 1 ? "person" : "people"} logged anything`
+          : "";
+      setNote(`${shaped.rows.length} row${shaped.rows.length === 1 ? "" : "s"}${people}.`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The export failed. Please try again.");
     } finally {
