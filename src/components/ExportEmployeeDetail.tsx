@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/select";
 import { fetchEmployeeDetail, type EmployeeDetailExport } from "@/lib/data/api";
 import { toDateKey } from "@/lib/domain/week";
-import { downloadCsv, sectionedCsv, toCsv } from "@/lib/export/csv";
+import { downloadCsv, toCsv } from "@/lib/export/csv";
 import {
   type DetailEmployee,
+  fullDetailView,
   perAccountByDayView,
   perAccountView,
   perDayView,
@@ -30,6 +31,12 @@ import {
  * total on one and the days on another cannot drift apart.
  */
 const VIEWS = [
+  {
+    id: "full-detail",
+    label: "Full detail (every entry)",
+    note: "One row per logged entry. Every view below pivots out of this one.",
+    shape: (data: EmployeeDetailExport) => fullDetailView(data.rows),
+  },
   {
     id: "summary",
     label: "Summary",
@@ -62,9 +69,6 @@ const VIEWS = [
   },
 ] as const;
 
-/** The id of the option that puts every view into one file. */
-const ALL_VIEWS = "all-views";
-
 function monthOptions(count = 12): { value: string; label: string }[] {
   const now = new Date();
   return Array.from({ length: count }, (_, index) => {
@@ -91,7 +95,7 @@ export function ExportEmployeeDetail({
   const months = monthOptions();
   const [month, setMonth] = useState(months[0]!.value);
   const [employeeId, setEmployeeId] = useState("all");
-  const [view, setView] = useState<string>(ALL_VIEWS);
+  const [view, setView] = useState<string>("full-detail");
   const [roster, setRoster] = useState<DetailEmployee[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -170,23 +174,6 @@ export function ExportEmployeeDetail({
           who,
         ),
       );
-
-      if (view === ALL_VIEWS) {
-        // One file, every view, each under its own heading. CSV has no sheets,
-        // so sections are the honest way to keep "one download" one download.
-        const sections = VIEWS.map((option) => ({
-          title: option.label,
-          ...option.shape(data),
-        }));
-        const total = sections.reduce((sum, section) => sum + section.rows.length, 0);
-        if (total === 0) {
-          setNote("Nothing submitted in that month.");
-          return;
-        }
-        downloadCsv(`kijamii-${slug}_${month}_all-views.csv`, sectionedCsv(sections));
-        setNote(`All ${sections.length} views downloaded.`);
-        return;
-      }
 
       const chosen = VIEWS.find((option) => option.id === view) ?? VIEWS[0];
       const shaped = chosen.shape(data);
@@ -267,7 +254,6 @@ export function ExportEmployeeDetail({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL_VIEWS}>All views, one file</SelectItem>
               {VIEWS.map((option) => (
                 <SelectItem key={option.id} value={option.id}>
                   {option.label}
@@ -278,9 +264,7 @@ export function ExportEmployeeDetail({
         </div>
 
         <p className="px-0.5 text-[11px] text-muted-foreground">
-          {view === ALL_VIEWS
-            ? "Every view above, stacked into one file under its own heading."
-            : VIEWS.find((option) => option.id === view)?.note}
+          {VIEWS.find((option) => option.id === view)?.note}
         </p>
 
         <Button size="sm" className="w-full" disabled={busy} onClick={() => void run()}>

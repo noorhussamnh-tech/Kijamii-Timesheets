@@ -83,6 +83,33 @@ function collect(
 const byText = (a: unknown, b: unknown) => String(a).localeCompare(String(b));
 const accountOf = (row: DetailRow) => row.clientName ?? "Unnamed";
 
+/**
+ * One line per logged entry: the whole thing, unaggregated.
+ *
+ * This is the shape to reach for first. Every other view here is a fold of
+ * these rows, so anybody with a pivot table can rebuild all of them from this
+ * one file in about a minute -- and can also ask questions none of the five
+ * anticipated. Column names match the sheet this feeds rather than the
+ * snake_case of the summary views, because it is pasted straight in.
+ */
+export function fullDetailView(rows: readonly DetailRow[]): Shaped {
+  return {
+    headers: ["Name", "Day", "Market", "Department", "Title", "Account", "Project", "Hours"],
+    rows: [...rows]
+      .sort((a, b) => byText(a.employeeName, b.employeeName) || byText(a.workDate, b.workDate))
+      .map((row) => [
+        row.employeeName,
+        row.workDate,
+        row.market ?? "",
+        row.department ?? "",
+        row.title ?? "",
+        accountOf(row),
+        row.projectType ?? "",
+        num(row.hours),
+      ]),
+  };
+}
+
 /** One line per person: the headline figures. */
 export function summaryView(rows: readonly DetailRow[], roster: readonly DetailEmployee[]): Shaped {
   const hours = sumBy(rows, (row) => row.employeeId);

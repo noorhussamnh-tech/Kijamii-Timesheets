@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  fullDetailView,
   perAccountByDayView,
   perAccountView,
   perDayView,
@@ -164,5 +165,59 @@ describe("perTitleView", () => {
     const shaped = perTitleView([row({ hours: 5, title: null })]);
     expect(shaped.rows[0]![0]).toBe("No title set");
     expect(shaped.rows[0]![2]).toBe(5);
+  });
+});
+
+describe("fullDetailView", () => {
+  it("emits one line per entry with the sheet's own column names", () => {
+    const shaped = fullDetailView([
+      row({ hours: 4, projectType: "Campaign", clientName: "BTC", market: "EG" }),
+    ]);
+
+    expect(shaped.headers).toEqual([
+      "Name",
+      "Day",
+      "Market",
+      "Department",
+      "Title",
+      "Account",
+      "Project",
+      "Hours",
+    ]);
+    expect(shaped.rows[0]).toEqual([
+      "Noor Hussam",
+      "2026-09-01",
+      "EG",
+      "Strategy",
+      "Strategy Director",
+      "BTC",
+      "Campaign",
+      4,
+    ]);
+  });
+
+  it("does not aggregate: two entries on one day stay two lines", () => {
+    const shaped = fullDetailView([
+      row({ hours: 4, clientName: "BTC" }),
+      row({ hours: 5, clientName: "Castrol Oil" }),
+    ]);
+    expect(shaped.rows).toHaveLength(2);
+  });
+
+  it("totals the same as the per-day view, since both fold the same rows", () => {
+    const rows = [
+      row({ hours: 4 }),
+      row({ hours: 5, clientName: "Castrol Oil" }),
+      row({ hours: 6, workDate: "2026-09-02", clientName: "Carrefour" }),
+    ];
+    const flat = fullDetailView(rows).rows.reduce((sum, r) => sum + Number(r[7]), 0);
+    const daily = perDayView(rows).rows.reduce((sum, r) => sum + Number(r[2]), 0);
+    expect(flat).toBe(daily);
+  });
+
+  it("leaves a blank rather than the word null where a title is unset", () => {
+    const shaped = fullDetailView([row({ title: null, department: null })]);
+    expect(shaped.rows[0]![4]).toBe("");
+    expect(shaped.rows[0]![3]).toBe("");
   });
 });
