@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/select";
 import { fetchEmployeeDetail, type EmployeeDetailExport } from "@/lib/data/api";
 import { toDateKey } from "@/lib/domain/week";
-import { downloadCsv, toCsv } from "@/lib/export/csv";
+import { downloadCsv, sectionedCsv, toCsv } from "@/lib/export/csv";
 import {
+  type DetailEmployee,
   perAccountByDayView,
   perAccountView,
   perDayView,
@@ -61,6 +62,9 @@ const VIEWS = [
   },
 ] as const;
 
+/** The id of the option that puts every view into one file. */
+const ALL_VIEWS = "all-views";
+
 function monthOptions(count = 12): { value: string; label: string }[] {
   const now = new Date();
   return Array.from({ length: count }, (_, index) => {
@@ -76,12 +80,19 @@ function monthOptions(count = 12): { value: string; label: string }[] {
  * question. This one answers "what did this person actually do", which is a
  * different question with different columns and a different audience.
  */
-export function ExportEmployeeDetail() {
+export function ExportEmployeeDetail({
+  market,
+  department,
+}: {
+  /** The admin page's own filters. "all" means unfiltered. */
+  market: string;
+  department: string;
+}) {
   const months = monthOptions();
   const [month, setMonth] = useState(months[0]!.value);
   const [employeeId, setEmployeeId] = useState("all");
-  const [view, setView] = useState<string>("summary");
-  const [roster, setRoster] = useState<{ id: string; name: string }[]>([]);
+  const [view, setView] = useState<string>(ALL_VIEWS);
+  const [roster, setRoster] = useState<DetailEmployee[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -93,9 +104,7 @@ export function ExportEmployeeDetail() {
     const now = new Date();
     void fetchEmployeeDetail(toDateKey(startOfMonth(now)), toDateKey(endOfMonth(now)), null)
       .then((data) => {
-        if (!cancelled) {
-          setRoster(data.employees.map((person) => ({ id: person.id, name: person.name })));
-        }
+        if (!cancelled) setRoster(data.employees);
       })
       .catch(() => {
         // The picker simply stays on "everyone", which still exports.
@@ -106,6 +115,41 @@ export function ExportEmployeeDetail() {
     };
   }, []);
 
+  /*
+   * The people this export can name, narrowed by whatever the page above is
+   * filtered to. Somebody who has filtered the table down to Account
+   * Management and then opens this expects to be choosing from that list, not
+   * from the whole company.
+   */
+  const visible = roster.filter(
+    (person) =>
+      (market === "all" || person.primaryMarket === market) &&
+      (department === "all" || person.department === department),
+  );
+
+  // A person who falls outside the filters must not stay silently selected:
+  // the file would not match the name shown on the trigger.
+  useEffect(() => {
+    if (employeeId !== "all" && !visible.some((person) => person.id === employeeId)) {
+      setEmployeeId("all");
+    }
+  }, [employeeId, visible]);
+
+  /** Applies the page's filters to what the file will actually contain. */
+  const narrow = (data: EmployeeDetailExport): EmployeeDetailExport => ({
+    ...data,
+    employees: data.employees.filter(
+      (person) =>
+        (market === "all" || person.primaryMarket === market) &&
+        (department === "all" || person.department === department),
+    ),
+    rows: data.rows.filter(
+      (row) =>
+        (market === "all" || row.market === market) &&
+        (department === "all" || row.department === department),
+    ),
+  });
+
   const run = async () => {
     if (busy) return;
     setBusy(true);
@@ -114,15 +158,37 @@ export function ExportEmployeeDetail() {
 
     const [year, monthNumber] = month.split("-").map(Number);
     const anchor = new Date(year!, monthNumber! - 1, 1);
-    const chosen = VIEWS.find((option) => option.id === view) ?? VIEWS[0];
     const who = employeeId === "all" ? null : employeeId;
+    const person = roster.find((entry) => entry.id === employeeId);
+    const slug = (person?.name ?? "everyone").toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
     try {
-      const data = await fetchEmployeeDetail(
-        toDateKey(startOfMonth(anchor)),
-        toDateKey(endOfMonth(anchor)),
-        who,
+      const data = narrow(
+        await fetchEmployeeDetail(
+          toDateKey(startOfMonth(anchor)),
+          toDateKey(endOfMonth(anchor)),
+          who,
+        ),
       );
+
+      if (view === ALL_VIEWS) {
+        // One file, every view, each under its own heading. CSV has no sheets,
+        // so sections are the honest way to keep "one download" one download.
+        const sections = VIEWS.map((option) => ({
+          title: option.label,
+          ...option.shape(data),
+        }));
+        const total = sections.reduce((sum, section) => sum + section.rows.length, 0);
+        if (total === 0) {
+          setNote("Nothing submitted in that month.");
+          return;
+        }
+        downloadCsv(`kijamii-${slug}_${month}_all-views.csv`, sectionedCsv(sections));
+        setNote(`All ${sections.length} views downloaded.`);
+        return;
+      }
+
+      const chosen = VIEWS.find((option) => option.id === view) ?? VIEWS[0];
       const shaped = chosen.shape(data);
 
       if (shaped.rows.length === 0) {
@@ -130,8 +196,6 @@ export function ExportEmployeeDetail() {
         return;
       }
 
-      const person = roster.find((entry) => entry.id === employeeId);
-      const slug = (person?.name ?? "everyone").toLowerCase().replace(/[^a-z0-9]+/g, "-");
       downloadCsv(`kijamii-${slug}_${month}_${chosen.id}.csv`, toCsv(shaped.headers, shaped.rows));
       setNote(`${shaped.rows.length} row${shaped.rows.length === 1 ? "" : "s"} downloaded.`);
     } catch (cause) {
@@ -165,8 +229,13 @@ export function ExportEmployeeDetail() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Everyone</SelectItem>
-              {roster.map((person) => (
+              <SelectItem value="all">
+                Everyone
+                {(market !== "all" || department !== "all") && (
+                  <span className="ml-2 text-[11px] text-muted-foreground">in this filter</span>
+                )}
+              </SelectItem>
+              {visible.map((person) => (
                 <SelectItem key={person.id} value={person.id}>
                   {person.name}
                 </SelectItem>
@@ -198,6 +267,7 @@ export function ExportEmployeeDetail() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value={ALL_VIEWS}>All views, one file</SelectItem>
               {VIEWS.map((option) => (
                 <SelectItem key={option.id} value={option.id}>
                   {option.label}
@@ -208,7 +278,9 @@ export function ExportEmployeeDetail() {
         </div>
 
         <p className="px-0.5 text-[11px] text-muted-foreground">
-          {VIEWS.find((option) => option.id === view)?.note}
+          {view === ALL_VIEWS
+            ? "Every view above, stacked into one file under its own heading."
+            : VIEWS.find((option) => option.id === view)?.note}
         </p>
 
         <Button size="sm" className="w-full" disabled={busy} onClick={() => void run()}>
