@@ -5,6 +5,7 @@ import { AlertCircle, ShieldAlert } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { ExportCsv } from "@/components/ExportCsv";
+import { ExportEmployeeDetail } from "@/components/ExportEmployeeDetail";
 import { ExportTimeDedication } from "@/components/ExportTimeDedication";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -172,6 +173,7 @@ function AdminOverview() {
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <ExportCsv weekStart={week} market={market} department={department} />
           <ExportTimeDedication />
+          <ExportEmployeeDetail />
         </div>
       </div>
 

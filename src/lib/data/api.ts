@@ -12,6 +12,7 @@
  */
 import { requireSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { DayCoverage } from "@/lib/domain/coverage";
+import type { DetailEmployee, DetailRow } from "@/lib/export/employee-detail";
 import type { PersonalStats } from "@/lib/domain/insights";
 import type {
   AdminEmployeeStatus,
@@ -448,6 +449,38 @@ export async function fetchTimeDedicationRows(
     p_markets: markets,
   });
   return rows ?? [];
+}
+
+/** The rows and roster behind the per-employee breakdowns. */
+export interface EmployeeDetailExport {
+  from: string;
+  to: string;
+  employees: DetailEmployee[];
+  rows: DetailRow[];
+}
+
+/**
+ * Submitted rows at their finest grain, for one employee or for everybody.
+ *
+ * Every view the admin page offers is folded from this single result, so the
+ * total, the per-day and the per-account figures are guaranteed to agree.
+ */
+export async function fetchEmployeeDetail(
+  from: string,
+  to: string,
+  employeeId: string | null,
+): Promise<EmployeeDetailExport> {
+  const data = await rpc<EmployeeDetailExport>("ts_export_employee_detail", {
+    p_from: from,
+    p_to: to,
+    p_employee_id: employeeId,
+  });
+  return {
+    from: data?.from ?? from,
+    to: data?.to ?? to,
+    employees: data?.employees ?? [],
+    rows: data?.rows ?? [],
+  };
 }
 
 /** The signed-in employee's own statistics. Scoped by the database to them. */

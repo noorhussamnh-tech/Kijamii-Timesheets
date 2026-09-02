@@ -68,3 +68,14 @@ alter table ts_entries alter column scope drop not null;
 -- {EG,UAE}, and the two-argument overload was dropped because a call naming
 -- only the dates matched both and Postgres refused to choose. Saudi staff had
 -- begun logging hours, which the hard-coded market filter silently dropped.
+
+-- Also applied separately, after Saudi began logging hours and a per-person
+-- report was asked for:
+--   * 'project_types_and_employee_title' — Master Visual and Greeting
+--     deactivated (entries store the type as text, so history still reads);
+--     Reels and Digital PR added; ts_employees.title added with an admin-only
+--     setter, since a title is assigned by the agency and never self-selected.
+--   * 'employee_detail_export' — ts_export_employee_detail returns submitted
+--     rows at their finest grain plus the roster, for one employee or all.
+--     One function rather than five: total, per-day, per-account and the
+--     account-by-day grid are folds of the same rows, so they cannot disagree.
