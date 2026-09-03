@@ -79,3 +79,17 @@ alter table ts_entries alter column scope drop not null;
 --     rows at their finest grain plus the roster, for one employee or all.
 --     One function rather than five: total, per-day, per-account and the
 --     account-by-day grid are folds of the same rows, so they cannot disagree.
+
+-- Also applied separately, once the job book gained an "Employee Mapping" tab:
+--   * 'employee_directory' — ts_employee_directory holds the agency roster
+--     (133 people) keyed by email, with a ts_sync_titles_from_directory()
+--     that copies Position onto ts_employees.title. Its own table rather than
+--     a paste into ts_employees, because most of those people have no account
+--     yet and would otherwise arrive untitled.
+--   * 'new_accounts_take_title_from_directory' — ts_handle_new_auth_user now
+--     reads the title on the way in, so a first sign-in is already titled. It
+--     only fills a gap: a title an admin set deliberately is not overwritten.
+--
+-- Matching is by email, never by name. The sheet holds legal names
+-- ("Abdelrahman Hamdy Hassan Mohammed Abo-Elsoud") where the app shows what
+-- Google returns, so a name join would miss most of the company.

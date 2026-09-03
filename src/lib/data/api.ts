@@ -483,6 +483,24 @@ export async function fetchEmployeeDetail(
   };
 }
 
+/** What a title sync did, so the admin sees a real answer rather than "done". */
+export interface TitleSyncResult {
+  matched: number;
+  updated: number;
+  directory_rows: number;
+  accounts_without_title: number;
+}
+
+/**
+ * Re-applies job titles from the agency directory to the accounts that exist.
+ *
+ * Safe to run whenever: it only writes where a title actually differs, so
+ * pressing it twice is not a second change.
+ */
+export async function syncTitlesFromDirectory(): Promise<TitleSyncResult> {
+  return rpc<TitleSyncResult>("ts_sync_titles_from_directory");
+}
+
 /** The signed-in employee's own statistics. Scoped by the database to them. */
 export async function fetchMyStats(from: string, to: string): Promise<PersonalStats> {
   const data = await rpc<PersonalStats>("ts_my_stats", { p_from: from, p_to: to });

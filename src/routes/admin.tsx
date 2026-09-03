@@ -6,6 +6,7 @@ import { AlertCircle, ShieldAlert } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ExportCsv } from "@/components/ExportCsv";
 import { ExportEmployeeDetail } from "@/components/ExportEmployeeDetail";
+import { SyncTitles } from "@/components/SyncTitles";
 import { ExportTimeDedication } from "@/components/ExportTimeDedication";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -174,6 +175,7 @@ function AdminOverview() {
           <ExportCsv weekStart={week} market={market} department={department} />
           <ExportTimeDedication />
           <ExportEmployeeDetail market={market} department={department} />
+          <SyncTitles />
         </div>
       </div>
 
