@@ -93,3 +93,16 @@ alter table ts_entries alter column scope drop not null;
 -- Matching is by email, never by name. The sheet holds legal names
 -- ("Abdelrahman Hamdy Hassan Mohammed Abo-Elsoud") where the app shows what
 -- Google returns, so a name join would miss most of the company.
+
+-- Applied as 'timesheet_exemption' and 'exempt_rosters_in_exports':
+--   ts_employees.logs_timesheet marks people who are not expected to keep a
+--   timesheet -- the CEO first, and the directory also carries Finance, IT,
+--   People & Culture and Legal. Counting any of them as "missing" every week
+--   makes the compliance figure lie: two of three submitted reads as a
+--   problem when the third was never asked.
+--
+--   A flag rather than a hard-coded email, because that list grows and nobody
+--   should need a deploy to change it. Exempt people keep their accounts and
+--   may still log time; they are dropped from ts_admin_week_overview and from
+--   the rosters of both exports, never from their own entries. The exemption
+--   is about expectation, not erasure.
