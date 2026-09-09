@@ -1,22 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, ChevronDown, Download, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle, ChevronDown, Download, Loader2 } from "lucide-react";
 import { endOfMonth, format, startOfMonth } from "date-fns";
 
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { fetchExportRows, type ExportRow } from "@/lib/data/api";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
-import { parseDateKey, toDateKey, weekEnd } from "@/lib/domain/week";
+import { parseDateKey, toDateKey, weekEnd, weekRangeLabel } from "@/lib/domain/week";
 import type { Market } from "@/lib/domain/types";
-import { cn } from "@/lib/utils";
 
-/**
- * The columns available to export, in file order.
- *
- * Which of them are included is chosen in the UI rather than in code, so the
- * export can be reshaped for whoever is asking for it without a change here
- * and without a deploy.
- */
+/** The columns of the file, in order. */
 const COLUMNS = [
   { key: "work_date", label: "Date", value: (r: ExportRow) => r.workDate },
   { key: "employee_name", label: "Employee", value: (r: ExportRow) => r.employeeName },
@@ -47,25 +46,6 @@ const COLUMNS = [
   { key: "submitted_at", label: "Submitted at", value: (r: ExportRow) => r.submittedAt },
 ] as const;
 
-const STORAGE_KEY = "kijamii-export-columns";
-const DEFAULT_KEYS = COLUMNS.map((column) => column.key);
-
-function loadSelection(): string[] {
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (!stored) return [...DEFAULT_KEYS];
-    const parsed = JSON.parse(stored) as unknown;
-    if (!Array.isArray(parsed)) return [...DEFAULT_KEYS];
-    // Drop anything that no longer exists so a stale choice cannot break the file.
-    const valid = parsed.filter((key): key is string =>
-      DEFAULT_KEYS.includes(key as (typeof DEFAULT_KEYS)[number]),
-    );
-    return valid.length > 0 ? valid : [...DEFAULT_KEYS];
-  } catch {
-    return [...DEFAULT_KEYS];
-  }
-}
-
 /**
  * Downloads submitted entries as a spreadsheet file.
  *
@@ -85,31 +65,17 @@ export function ExportCsv({
   const [busy, setBusy] = useState<"week" | "month" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string[]>(DEFAULT_KEYS);
 
-  // Read on mount rather than during render, so the server and the first
-  // client paint agree.
-  useEffect(() => setSelected(loadSelection()), []);
-
-  const persist = (keys: string[]) => {
-    setSelected(keys);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
-    } catch {
-      /* storage unavailable; the choice simply will not persist */
-    }
-  };
-
-  const toggle = (key: string) => {
-    const next = selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key];
-    // Never let the file end up with no columns at all.
-    if (next.length > 0) persist(next);
-  };
-
-  const columns = useMemo(
-    () => COLUMNS.filter((column) => selected.includes(column.key)),
-    [selected],
-  );
+  /*
+   * Every column, always.
+   *
+   * There used to be a picker here, remembering a choice in localStorage. It
+   * was a setting on a file somebody opens in a spreadsheet and then hides
+   * the columns they do not want -- which they can do anyway, and which does
+   * not silently produce a file missing a column the next person needed
+   * because of a choice made months ago in a different browser.
+   */
+  const columns = COLUMNS;
 
   const filtersApplied = market !== "all" || department !== "all";
 
@@ -161,66 +127,36 @@ export function ExportCsv({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-1.5">
-            Columns
-            <span className="num text-[11px] text-muted-foreground">
-              {selected.length}/{COLUMNS.length}
-            </span>
+      {/* One control, because the two buttons were the same action with a
+          different range and read as two unrelated exports. */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={busy !== null}>
+            {busy ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Download className="size-3.5" />
+            )}
+            Export period
             <ChevronDown className="size-3.5 opacity-70" />
           </Button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-56 p-1.5">
-          <p className="label-xs px-2 py-1.5">Include in the file</p>
-          <div className="max-h-[280px] overflow-y-auto">
-            {COLUMNS.map((column) => {
-              const on = selected.includes(column.key);
-              return (
-                <button
-                  key={column.key}
-                  type="button"
-                  onClick={() => toggle(column.key)}
-                  aria-pressed={on}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-surface-muted"
-                >
-                  <Check className={cn("size-3.5 shrink-0", on ? "opacity-100" : "opacity-0")} />
-                  <span className="truncate">{column.label}</span>
-                </button>
-              );
-            })}
-          </div>
-          <button
-            type="button"
-            onClick={() => persist([...DEFAULT_KEYS])}
-            className="mt-1 w-full rounded-md px-2 py-1.5 text-left text-[12px] text-muted-foreground hover:bg-surface-muted"
-          >
-            Select all
-          </button>
-        </PopoverContent>
-      </Popover>
-
-      <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => void run("week")}>
-        {busy === "week" ? (
-          <Loader2 className="size-3.5 animate-spin" />
-        ) : (
-          <Download className="size-3.5" />
-        )}
-        Export week
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={busy !== null}
-        onClick={() => void run("month")}
-      >
-        {busy === "month" ? (
-          <Loader2 className="size-3.5 animate-spin" />
-        ) : (
-          <Download className="size-3.5" />
-        )}
-        Export month
-      </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel className="label-xs">Every entry, as a file</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => void run("week")}>
+            This week
+            <span className="num ml-auto text-[11px] text-muted-foreground">
+              {weekRangeLabel(weekStart)}
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => void run("month")}>
+            This month
+            <span className="num ml-auto text-[11px] text-muted-foreground">
+              {format(parseDateKey(weekStart), "MMM yyyy")}
+            </span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {note && <span className="text-[12px] text-muted-foreground">{note}</span>}
       {error && (

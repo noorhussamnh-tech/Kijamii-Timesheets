@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { endOfMonth, format, startOfMonth, subMonths } from "date-fns";
 import { AlertCircle, ChevronDown, Download, Loader2 } from "lucide-react";
 
+import { SearchSelect } from "@/components/SearchSelect";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -17,10 +18,16 @@ import { downloadCsv, toCsv } from "@/lib/export/csv";
 import {
   type DetailEmployee,
   fullDetailView,
-  perAccountByDayView,
-  perAccountView,
+  perBusinessUnitView,
+  perClientByDayView,
+  perClientView,
   perDayView,
-  perTitleView,
+  perFunctionView,
+  perMonthView,
+  perPositionView,
+  perProjectTypeView,
+  perSubUnitView,
+  perWeekView,
   summaryView,
 } from "@/lib/export/employee-detail";
 
@@ -40,7 +47,7 @@ const VIEWS = [
   {
     id: "summary",
     label: "Summary",
-    note: "Total hours, days logged, accounts touched.",
+    note: "Total hours, days logged, clients touched.",
     shape: (data: EmployeeDetailExport) => summaryView(data.rows, data.employees),
   },
   {
@@ -50,22 +57,58 @@ const VIEWS = [
     shape: (data: EmployeeDetailExport) => perDayView(data.rows),
   },
   {
-    id: "per-account",
-    label: "Hours per account",
-    note: "With each account's share of their time.",
-    shape: (data: EmployeeDetailExport) => perAccountView(data.rows),
+    id: "per-week",
+    label: "Hours per week",
+    note: "Weeks run Sunday to Saturday, as the timesheet does.",
+    shape: (data: EmployeeDetailExport) => perWeekView(data.rows),
   },
   {
-    id: "account-by-day",
-    label: "Hours per account, by day",
-    note: "A grid: accounts down, days across.",
-    shape: (data: EmployeeDetailExport) => perAccountByDayView(data.rows),
+    id: "per-month",
+    label: "Hours per month",
+    note: "One line per person per calendar month.",
+    shape: (data: EmployeeDetailExport) => perMonthView(data.rows),
   },
   {
-    id: "per-title",
-    label: "Hours per title",
-    note: "Needs titles loaded; unset people are grouped, not dropped.",
-    shape: (data: EmployeeDetailExport) => perTitleView(data.rows),
+    id: "per-client",
+    label: "Hours per client",
+    note: "With each client's share of their time.",
+    shape: (data: EmployeeDetailExport) => perClientView(data.rows),
+  },
+  {
+    id: "client-by-day",
+    label: "Hours per client, by day",
+    note: "A grid: clients down, days across.",
+    shape: (data: EmployeeDetailExport) => perClientByDayView(data.rows),
+  },
+  {
+    id: "per-project-type",
+    label: "Hours per project type",
+    note: "Campaign, Reels, Pitch, and the rest.",
+    shape: (data: EmployeeDetailExport) => perProjectTypeView(data.rows),
+  },
+  {
+    id: "per-business-unit",
+    label: "Hours per business unit",
+    note: "From the company employee list.",
+    shape: (data: EmployeeDetailExport) => perBusinessUnitView(data.rows),
+  },
+  {
+    id: "per-sub-unit",
+    label: "Hours per sub-unit",
+    note: "The team inside a business unit.",
+    shape: (data: EmployeeDetailExport) => perSubUnitView(data.rows),
+  },
+  {
+    id: "per-function",
+    label: "Hours per function",
+    note: "The craft: Art, Copywriting, Account Management.",
+    shape: (data: EmployeeDetailExport) => perFunctionView(data.rows),
+  },
+  {
+    id: "per-position",
+    label: "Hours per position",
+    note: "Job titles, as the employee list has them.",
+    shape: (data: EmployeeDetailExport) => perPositionView(data.rows),
   },
 ] as const;
 
@@ -223,26 +266,30 @@ export function ExportEmployeeDetail({
           </p>
         </div>
 
+        {/* Typing rather than scrolling: a plain select of 133 names is a
+            list you hunt through, and the name is the one thing the person
+            opening this already knows. */}
         <div className="flex items-center gap-2">
           <span className="label-xs-muted w-14 shrink-0">Person</span>
-          <Select value={employeeId} onValueChange={setEmployeeId}>
-            <SelectTrigger className="h-8 flex-1 text-[13px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                Everyone
-                {(market !== "all" || department !== "all") && (
-                  <span className="ml-2 text-[11px] text-muted-foreground">in this filter</span>
-                )}
-              </SelectItem>
-              {visible.map((person) => (
-                <SelectItem key={person.id} value={person.id}>
-                  {person.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchSelect
+            className="h-8 flex-1 text-[13px]"
+            value={employeeId}
+            placeholder="Search by name"
+            emptyText="No one by that name"
+            onChange={setEmployeeId}
+            options={[
+              {
+                id: "all",
+                name: "Everyone",
+                ...(market !== "all" || department !== "all" ? { meta: "in this filter" } : {}),
+              },
+              ...visible.map((person) => ({
+                id: person.id,
+                name: person.name,
+                ...(person.department ? { meta: person.department } : {}),
+              })),
+            ]}
+          />
         </div>
 
         <div className="flex items-center gap-2">

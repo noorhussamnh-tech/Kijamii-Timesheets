@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import {
   fullDetailView,
-  perAccountByDayView,
-  perAccountView,
+  perBusinessUnitView,
+  perClientByDayView,
+  perClientView,
+  perFunctionView,
   perDayView,
   perMonthView,
-  perTitleView,
+  perPositionView,
+  perProjectTypeView,
+  perSubUnitView,
   perWeekView,
   summaryView,
   type DetailEmployee,
@@ -18,7 +22,10 @@ function row(overrides: Partial<DetailRow> = {}): DetailRow {
     employeeId: "e1",
     employeeName: "Noor Hussam",
     title: "Strategy Director",
+    jobFunction: "Strategy",
     department: "Strategy",
+    businessUnit: "Strategy",
+    subUnit: "Strategy & Planning",
     market: "EG",
     workDate: "2026-09-01",
     clientCode: "CLI-001",
@@ -98,9 +105,9 @@ describe("perDayView", () => {
   });
 });
 
-describe("perAccountView", () => {
+describe("perClientView", () => {
   it("reports each account's share of that person's time, biggest first", () => {
-    const shaped = perAccountView([
+    const shaped = perClientView([
       row({ hours: 2, clientName: "Visa" }),
       row({ hours: 6, clientName: "Bioderma" }),
     ]);
@@ -114,7 +121,7 @@ describe("perAccountView", () => {
   it("keeps names and accounts whole when both contain spaces", () => {
     // The compound key is why this passes: splitting on a space would have
     // turned "Bahy Abo El Ezz" and "Orange Corners" into fragments.
-    const shaped = perAccountView([
+    const shaped = perClientView([
       row({ employeeId: "e2", employeeName: "Bahy Abo El Ezz", clientName: "Orange Corners" }),
     ]);
     expect(shaped.rows[0]![0]).toBe("Bahy Abo El Ezz");
@@ -122,15 +129,15 @@ describe("perAccountView", () => {
   });
 });
 
-describe("perAccountByDayView", () => {
+describe("perClientByDayView", () => {
   it("puts days across the top and totals each account's row", () => {
-    const shaped = perAccountByDayView([
+    const shaped = perClientByDayView([
       row({ hours: 4, workDate: "2026-09-01", clientName: "Bioderma" }),
       row({ hours: 3, workDate: "2026-09-02", clientName: "Bioderma" }),
       row({ hours: 1, workDate: "2026-09-02", clientName: "Visa" }),
     ]);
 
-    expect(shaped.headers).toEqual(["employee", "account", "2026-09-01", "2026-09-02", "total"]);
+    expect(shaped.headers).toEqual(["employee", "client", "2026-09-01", "2026-09-02", "total"]);
     expect(shaped.rows).toEqual([
       ["Noor Hussam", "Bioderma", 4, 3, 7],
       ["Noor Hussam", "Visa", 0, 1, 1],
@@ -143,15 +150,15 @@ describe("perAccountByDayView", () => {
       row({ hours: 2, clientName: "Visa" }),
       row({ hours: 3, workDate: "2026-09-02", clientName: "Visa" }),
     ];
-    const gridTotal = perAccountByDayView(rows).rows.reduce((sum, r) => sum + Number(r.at(-1)), 0);
+    const gridTotal = perClientByDayView(rows).rows.reduce((sum, r) => sum + Number(r.at(-1)), 0);
     const dayTotal = perDayView(rows).rows.reduce((sum, r) => sum + Number(r[2]), 0);
     expect(gridTotal).toBe(dayTotal);
   });
 });
 
-describe("perTitleView", () => {
-  it("groups by title and counts the people behind each", () => {
-    const shaped = perTitleView([
+describe("perPositionView", () => {
+  it("groups by position and counts the people behind each", () => {
+    const shaped = perPositionView([
       row({ hours: 4 }),
       row({ hours: 2, employeeId: "e3", employeeName: "Someone", title: "Strategy Director" }),
       row({ hours: 6, employeeId: "e2", employeeName: "Bahy", title: "Creative Director" }),
@@ -163,9 +170,9 @@ describe("perTitleView", () => {
     ]);
   });
 
-  it("shows people with no title rather than dropping their hours", () => {
-    const shaped = perTitleView([row({ hours: 5, title: null })]);
-    expect(shaped.rows[0]![0]).toBe("No title set");
+  it("shows people with no position rather than dropping their hours", () => {
+    const shaped = perPositionView([row({ hours: 5, title: null })]);
+    expect(shaped.rows[0]![0]).toBe("No position set");
     expect(shaped.rows[0]![2]).toBe(5);
   });
 });
@@ -272,5 +279,85 @@ describe("perMonthView", () => {
       row({ employeeId: "e2", employeeName: "Bahy Abo El Ezz", hours: 3 }),
     ]);
     expect(shaped.rows).toHaveLength(2);
+  });
+});
+
+describe("the views that group by one attribute", () => {
+  /*
+   * All five are the same fold over a different field, so these test the
+   * shared behaviour once and then check each view reads the field it says it
+   * does. The property that matters is that none of them lose hours: a row
+   * with nothing in the field is grouped under a name rather than dropped, so
+   * every view still totals the same as every other.
+   */
+  const rows = [
+    row({
+      hours: 4,
+      title: "Art Director",
+      jobFunction: "Art",
+      businessUnit: "Creative",
+      subUnit: "Sports",
+      projectType: "Campaign",
+    }),
+    row({
+      employeeId: "e2",
+      employeeName: "Bahy",
+      hours: 6,
+      title: "Copywriter",
+      jobFunction: "Copywriting",
+      businessUnit: "Creative",
+      subUnit: "REG 1",
+      projectType: "Reels",
+    }),
+  ];
+
+  it("reads the field each one names", () => {
+    expect(
+      perPositionView(rows)
+        .rows.map((r) => r[0])
+        .sort(),
+    ).toEqual(["Art Director", "Copywriter"]);
+    expect(
+      perFunctionView(rows)
+        .rows.map((r) => r[0])
+        .sort(),
+    ).toEqual(["Art", "Copywriting"]);
+    expect(
+      perSubUnitView(rows)
+        .rows.map((r) => r[0])
+        .sort(),
+    ).toEqual(["REG 1", "Sports"]);
+    expect(
+      perProjectTypeView(rows)
+        .rows.map((r) => r[0])
+        .sort(),
+    ).toEqual(["Campaign", "Reels"]);
+  });
+
+  it("collapses two people who share a business unit, and counts both", () => {
+    const shaped = perBusinessUnitView(rows);
+    expect(shaped.rows).toEqual([["Creative", 2, 10, "100%"]]);
+  });
+
+  it("keeps hours whose field is empty rather than dropping them", () => {
+    const shaped = perFunctionView([
+      ...rows,
+      row({ employeeId: "e3", hours: 5, jobFunction: null }),
+    ]);
+    expect(shaped.rows.find((r) => r[0] === "No function set")?.[2]).toBe(5);
+    expect(shaped.rows.reduce((sum, r) => sum + Number(r[2]), 0)).toBe(15);
+  });
+
+  it("totals the same as the per-day view, whichever field it groups by", () => {
+    const daily = perDayView(rows).rows.reduce((sum, r) => sum + Number(r[2]), 0);
+    for (const view of [
+      perPositionView,
+      perFunctionView,
+      perBusinessUnitView,
+      perSubUnitView,
+      perProjectTypeView,
+    ]) {
+      expect(view(rows).rows.reduce((sum, r) => sum + Number(r[2]), 0)).toBe(daily);
+    }
   });
 });

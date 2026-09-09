@@ -1,5 +1,5 @@
 /**
- * The five views of one person's logged time.
+ * The views of one person's logged time.
  *
  * All of them fold the same rows, which is the point: a total that disagreed
  * with the days beneath it, or a per-account column that did not add up to the
@@ -12,8 +12,14 @@ import type { Shaped } from "@/lib/export/time-dedication";
 export interface DetailRow {
   employeeId: string;
   employeeName: string;
+  /** Job title. The employee list calls this Position. */
   title: string | null;
+  /** The craft above the title -- Art, Copywriting, Account Management. */
+  jobFunction: string | null;
   department: string | null;
+  /** Straight from the company employee list, for reporting only. */
+  businessUnit: string | null;
+  subUnit: string | null;
   market: string | null;
   workDate: string;
   clientCode: string | null;
@@ -82,7 +88,66 @@ function collect(
 }
 
 const byText = (a: unknown, b: unknown) => String(a).localeCompare(String(b));
-const accountOf = (row: DetailRow) => row.clientName ?? "Unnamed";
+const clientOf = (row: DetailRow) => row.clientName ?? "Unnamed";
+
+/**
+ * Hours grouped by one attribute of the row: title, function, business unit,
+ * sub-unit, project type.
+ *
+ * One fold rather than five near-identical ones. They differ only in which
+ * field they read and what to call a row that has not got one, and writing
+ * them out separately would have meant five places to fix a rounding rule or
+ * a sort order -- and five chances to fix four of them.
+ *
+ * Rows with nothing in the field are grouped under a name rather than dropped,
+ * so every one of these views still totals the same as the others and the gap
+ * is visible instead of silent.
+ */
+function byAttribute(
+  rows: readonly DetailRow[],
+  header: string,
+  pick: (row: DetailRow) => string | null,
+  unset: string,
+): Shaped {
+  const keyOf = (row: DetailRow) => pick(row)?.trim() || unset;
+  const hours = sumBy(rows, keyOf);
+  const people = collect(rows, keyOf, (row) => row.employeeId);
+  const total = [...hours.values()].reduce((sum, value) => sum + value, 0);
+
+  return {
+    headers: [header, "people", "hours", "share"],
+    rows: [...hours.entries()]
+      // Alphabetical where the hours tie, so the same data always produces the
+      // same file rather than whatever order the rows happened to arrive in.
+      .sort((a, b) => b[1] - a[1] || byText(a[0], b[0]))
+      .map(([name, value]) => [
+        name,
+        people.get(name)?.size ?? 0,
+        round(value),
+        total > 0 ? `${Math.round((value / total) * 100)}%` : "0%",
+      ]),
+  };
+}
+
+/** Hours by job title -- Position, in the employee list's words. */
+export const perPositionView = (rows: readonly DetailRow[]): Shaped =>
+  byAttribute(rows, "position", (row) => row.title, "No position set");
+
+/** Hours by craft. */
+export const perFunctionView = (rows: readonly DetailRow[]): Shaped =>
+  byAttribute(rows, "function", (row) => row.jobFunction, "No function set");
+
+/** Hours by business unit, as the employee list has it. */
+export const perBusinessUnitView = (rows: readonly DetailRow[]): Shaped =>
+  byAttribute(rows, "business_unit", (row) => row.businessUnit, "Not in the employee list");
+
+/** Hours by sub-unit -- the team inside a business unit. */
+export const perSubUnitView = (rows: readonly DetailRow[]): Shaped =>
+  byAttribute(rows, "sub_unit", (row) => row.subUnit, "Not in the employee list");
+
+/** Hours by what the work was: Campaign, Reels, Pitch (Retainer). */
+export const perProjectTypeView = (rows: readonly DetailRow[]): Shaped =>
+  byAttribute(rows, "project_type", (row) => row.projectType, "None set");
 
 /**
  * One line per logged entry: the whole thing, unaggregated.
@@ -104,7 +169,7 @@ export function fullDetailView(rows: readonly DetailRow[]): Shaped {
         row.market ?? "",
         row.department ?? "",
         row.title ?? "",
-        accountOf(row),
+        clientOf(row),
         row.projectType ?? "",
         num(row.hours),
       ]),
@@ -119,7 +184,7 @@ export function summaryView(rows: readonly DetailRow[], roster: readonly DetailE
     (row) => row.employeeId,
     (row) => row.workDate,
   );
-  const accounts = collect(rows, (row) => row.employeeId, accountOf);
+  const clients = collect(rows, (row) => row.employeeId, clientOf);
 
   return {
     headers: [
@@ -128,7 +193,7 @@ export function summaryView(rows: readonly DetailRow[], roster: readonly DetailE
       "department",
       "total_hours",
       "days_logged",
-      "accounts",
+      "clients",
       "avg_hours_per_logged_day",
     ],
     // From the roster, not from the rows: somebody who logged nothing belongs
@@ -144,7 +209,7 @@ export function summaryView(rows: readonly DetailRow[], roster: readonly DetailE
           person.department ?? "",
           round(total),
           logged,
-          accounts.get(person.id)?.size ?? 0,
+          clients.get(person.id)?.size ?? 0,
           logged > 0 ? round(total / logged) : 0,
         ];
       }),
@@ -205,76 +270,48 @@ export function perMonthView(rows: readonly DetailRow[]): Shaped {
   };
 }
 
-/** One line per person per account, with each account's share of their time. */
-export function perAccountView(rows: readonly DetailRow[]): Shaped {
-  const hours = sumBy(rows, (row) => key(row.employeeName, accountOf(row)));
+/** One line per person per client, with each client's share of their time. */
+export function perClientView(rows: readonly DetailRow[]): Shaped {
+  const hours = sumBy(rows, (row) => key(row.employeeName, clientOf(row)));
   const perPerson = sumBy(rows, (row) => row.employeeName);
 
   return {
-    headers: ["employee", "account", "hours", "share_of_their_time"],
+    headers: ["employee", "client", "hours", "share_of_their_time"],
     rows: [...hours.entries()]
       .map(([k, value]) => {
-        const [name, account] = unkey(k);
+        const [name, client] = unkey(k);
         const total = perPerson.get(name!) ?? 0;
         return [
           name!,
-          account!,
+          client!,
           round(value),
           total > 0 ? `${Math.round((value / total) * 100)}%` : "0%",
         ];
       })
-      // Biggest account first within each person, which is the order somebody
+      // Biggest client first within each person, which is the order somebody
       // asking "where did their month go" actually reads in.
       .sort((a, b) => byText(a[0], b[0]) || Number(b[2]) - Number(a[2])),
   };
 }
 
 /**
- * A grid: accounts down the side, days across the top.
+ * A grid: clients down the side, days across the top.
  *
  * Only days that were logged become columns. A month of mostly empty columns
  * is harder to read than the same data without them, and the missing dates are
  * exactly what the per-day view already reports.
  */
-export function perAccountByDayView(rows: readonly DetailRow[]): Shaped {
+export function perClientByDayView(rows: readonly DetailRow[]): Shaped {
   const dates = [...new Set(rows.map((row) => row.workDate))].sort();
-  const cells = sumBy(rows, (row) => key(row.employeeName, accountOf(row), row.workDate));
-  const pairs = [...new Set(rows.map((row) => key(row.employeeName, accountOf(row))))].sort();
+  const cells = sumBy(rows, (row) => key(row.employeeName, clientOf(row), row.workDate));
+  const pairs = [...new Set(rows.map((row) => key(row.employeeName, clientOf(row))))].sort();
 
   return {
-    headers: ["employee", "account", ...dates, "total"],
+    headers: ["employee", "client", ...dates, "total"],
     rows: pairs.map((pair) => {
-      const [name, account] = unkey(pair);
+      const [name, client] = unkey(pair);
       const daily = dates.map((date) => round(cells.get(key(pair, date)) ?? 0));
-      return [name!, account!, ...daily, round(daily.reduce((sum, value) => sum + value, 0))];
+      return [name!, client!, ...daily, round(daily.reduce((sum, value) => sum + value, 0))];
     }),
-  };
-}
-
-/**
- * Hours by job title.
- *
- * Titles are loaded by an admin and may not be set yet. People without one are
- * grouped under "No title set" rather than dropped, so this view still totals
- * the same as every other and the gap is visible instead of silent.
- */
-export function perTitleView(rows: readonly DetailRow[]): Shaped {
-  const titleOf = (row: DetailRow) => row.title?.trim() || "No title set";
-  const hours = sumBy(rows, titleOf);
-  const people = collect(rows, titleOf, (row) => row.employeeId);
-  const total = [...hours.values()].reduce((sum, value) => sum + value, 0);
-
-  return {
-    headers: ["title", "people", "hours", "share"],
-    rows: [...hours.entries()]
-      // Alphabetical where the hours tie, so the same data always produces the
-      // same file rather than whatever order the rows happened to arrive in.
-      .sort((a, b) => b[1] - a[1] || byText(a[0], b[0]))
-      .map(([title, value]) => [
-        title,
-        people.get(title)?.size ?? 0,
-        round(value),
-        total > 0 ? `${Math.round((value / total) * 100)}%` : "0%",
-      ]),
   };
 }

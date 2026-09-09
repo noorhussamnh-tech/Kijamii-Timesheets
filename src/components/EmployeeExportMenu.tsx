@@ -13,12 +13,7 @@ import {
 import { fetchEmployeeDetail, type EmployeeDetailExport } from "@/lib/data/api";
 import { toDateKey } from "@/lib/domain/week";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
-import {
-  perAccountView,
-  perDayView,
-  perMonthView,
-  perWeekView,
-} from "@/lib/export/employee-detail";
+import { perClientView, perDayView, perMonthView, perWeekView } from "@/lib/export/employee-detail";
 
 /**
  * The four ways one person's time can be read.
@@ -30,7 +25,7 @@ const GROUPINGS = [
   { id: "day", label: "By day", shape: (d: EmployeeDetailExport) => perDayView(d.rows) },
   { id: "week", label: "By week", shape: (d: EmployeeDetailExport) => perWeekView(d.rows) },
   { id: "month", label: "By month", shape: (d: EmployeeDetailExport) => perMonthView(d.rows) },
-  { id: "client", label: "By client", shape: (d: EmployeeDetailExport) => perAccountView(d.rows) },
+  { id: "client", label: "By client", shape: (d: EmployeeDetailExport) => perClientView(d.rows) },
 ] as const;
 
 /**
