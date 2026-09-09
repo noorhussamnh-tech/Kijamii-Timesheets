@@ -4,7 +4,9 @@ import { format } from "date-fns";
 import { AlertCircle, Search, ShieldAlert } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { DateRangePicker, rangeLabel } from "@/components/DateRangePicker";
 import { ExportCsv } from "@/components/ExportCsv";
+import { ExportGrouped } from "@/components/ExportGrouped";
 import { ExportEmployeeDetail } from "@/components/ExportEmployeeDetail";
 import { EmployeeExportMenu } from "@/components/EmployeeExportMenu";
 import { SyncDirectory } from "@/components/SyncDirectory";
@@ -19,10 +21,10 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
-import { fetchAdminWeek } from "@/lib/data/api";
+import { fetchAdminRange } from "@/lib/data/api";
 import { formatHours } from "@/lib/domain/totals";
 import { MARKETS, MARKET_LABELS, type AdminEmployeeStatus, type Market } from "@/lib/domain/types";
-import { currentWeekKey, shiftWeek, weekRangeLabel } from "@/lib/domain/week";
+import { currentWeekKey, parseDateKey, toDateKey, weekEnd } from "@/lib/domain/week";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -35,7 +37,7 @@ export const Route = createFileRoute("/admin")({
       { property: "og:title", content: "Admin Overview — Kijamii Timesheets" },
       {
         property: "og:description",
-        content: "Completion rate, submitted, draft and missing timesheets for a week.",
+        content: "Completion rate, submitted, draft and missing timesheets for any period.",
       },
     ],
   }),
@@ -44,7 +46,7 @@ export const Route = createFileRoute("/admin")({
 
 function AdminRoute() {
   return (
-    <AppShell title="Admin Overview" description="Weekly submission status">
+    <AppShell title="Admin Overview" description="Submission status for any period">
       <AdminOverview />
     </AppShell>
   );
@@ -64,7 +66,16 @@ function AdminOverview() {
   const { employee, status: authStatus } = useAuth();
   const isAdmin = employee?.role === "admin";
 
-  const [week, setWeek] = useState(() => currentWeekKey());
+  /*
+   * Any two dates, defaulting to this week -- which is what the page always
+   * showed, so nothing moves for somebody who only ever wants the current one.
+   */
+  const [range, setRange] = useState(() => {
+    const key = currentWeekKey();
+    return { from: parseDateKey(key), to: parseDateKey(weekEnd(key)) };
+  });
+  const from = toDateKey(range.from);
+  const to = toDateKey(range.to);
   const [rows, setRows] = useState<AdminEmployeeStatus[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [market, setMarket] = useState("all");
@@ -79,8 +90,8 @@ function AdminOverview() {
     setRows(null);
     setError(null);
 
-    void fetchAdminWeek(week)
-      .then((data) => {
+    void fetchAdminRange(from, to)
+      .then((data: AdminEmployeeStatus[]) => {
         if (!cancelled) setRows(data);
       })
       .catch((cause: unknown) => {
@@ -93,7 +104,7 @@ function AdminOverview() {
     return () => {
       cancelled = true;
     };
-  }, [week, isAdmin, authStatus]);
+  }, [from, to, isAdmin, authStatus]);
 
   const [query, setQuery] = useState("");
 
@@ -143,8 +154,6 @@ function AdminOverview() {
   const missing = filtered.filter((row) => row.status === "missing").length;
   const completion = filtered.length ? Math.round((submitted / filtered.length) * 100) : 0;
 
-  const weekOptions = [0, -1, -2, -3, -4].map((offset) => shiftWeek(currentWeekKey(), offset));
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -161,18 +170,7 @@ function AdminOverview() {
             className="h-9 w-[210px] rounded-md border bg-surface pr-2.5 pl-8 text-[13px] focus:outline-2 focus:outline-ring"
           />
         </div>
-        <Select value={week} onValueChange={setWeek}>
-          <SelectTrigger className="h-9 w-[210px] text-[13px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {weekOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {weekRangeLabel(option)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <DateRangePicker value={range} onChange={setRange} />
         <Select value={market} onValueChange={setMarket}>
           <SelectTrigger className="h-9 w-[150px] text-[13px]">
             <SelectValue placeholder="Market" />
@@ -203,9 +201,10 @@ function AdminOverview() {
             exports used to be pushed to the far right with ml-auto, which on
             any screen narrower than the whole lot dropped them onto a second
             line and left a gap where they had been. */}
-        <ExportCsv weekStart={week} market={market} department={department} />
+        <ExportCsv from={from} to={to} market={market} department={department} />
+        <ExportGrouped from={from} to={to} market={market} department={department} />
         <ExportTimeDedication />
-        <ExportEmployeeDetail market={market} department={department} />
+        <ExportEmployeeDetail from={from} to={to} market={market} department={department} />
         <SyncDirectory />
       </div>
 
@@ -231,7 +230,11 @@ function AdminOverview() {
             <Metric label="Submitted" value={String(submitted)} />
             <Metric label="Draft" value={String(draft)} />
             <Metric label="Missing" value={String(missing)} />
-            <Metric label="Completion" value={`${completion}%`} hint={weekRangeLabel(week)} />
+            <Metric
+              label="Completion"
+              value={`${completion}%`}
+              hint={rangeLabel(range.from, range.to)}
+            />
           </div>
 
           {filtered.length === 0 ? (

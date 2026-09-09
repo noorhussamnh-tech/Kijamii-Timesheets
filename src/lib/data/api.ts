@@ -344,9 +344,17 @@ export async function fetchMySubmissions(): Promise<SubmissionSummary[]> {
 
 // -------------------------------------------------------------------- admin
 
-export async function fetchAdminWeek(weekStart: string): Promise<AdminEmployeeStatus[]> {
-  const data = await rpc<{ employees: AdminEmployeeStatus[] }>("ts_admin_week_overview", {
-    p_week_start: weekStart,
+/**
+ * The overview for any period, not only a week.
+ *
+ * Expected hours come back scaled to the range -- counted in working days, so
+ * a month is 176 rather than 40 and the comparison beside it still means
+ * something.
+ */
+export async function fetchAdminRange(from: string, to: string): Promise<AdminEmployeeStatus[]> {
+  const data = await rpc<{ employees: AdminEmployeeStatus[] }>("ts_admin_range_overview", {
+    p_from: from,
+    p_to: to,
   });
   return (data.employees ?? []).map((row) => ({
     ...row,

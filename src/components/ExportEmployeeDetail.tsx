@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { endOfMonth, format, startOfMonth, subMonths } from "date-fns";
 import { AlertCircle, ChevronDown, Download, Loader2 } from "lucide-react";
 
 import { SearchSelect } from "@/components/SearchSelect";
@@ -8,135 +7,37 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { fetchEmployeeDetail, type EmployeeDetailExport } from "@/lib/data/api";
-import { toDateKey } from "@/lib/domain/week";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
-import {
-  type DetailEmployee,
-  fullDetailView,
-  perBusinessUnitView,
-  perClientByDayView,
-  perClientView,
-  perDayView,
-  perFunctionView,
-  perMonthView,
-  perPositionView,
-  perProjectTypeView,
-  perSubUnitView,
-  perWeekView,
-  summaryView,
-} from "@/lib/export/employee-detail";
+import { VIEW_GROUPS, viewById } from "@/lib/export/views";
+import type { DetailEmployee } from "@/lib/export/employee-detail";
 
 /**
- * The views on offer.
- *
- * Each is a fold of the same fetched rows rather than its own query, so the
- * total on one and the days on another cannot drift apart.
- */
-const VIEWS = [
-  {
-    id: "full-detail",
-    label: "Full detail (every entry)",
-    note: "One row per logged entry. Every view below pivots out of this one.",
-    shape: (data: EmployeeDetailExport) => fullDetailView(data.rows),
-  },
-  {
-    id: "summary",
-    label: "Summary",
-    note: "Total hours, days logged, clients touched.",
-    shape: (data: EmployeeDetailExport) => summaryView(data.rows, data.employees),
-  },
-  {
-    id: "per-day",
-    label: "Hours per day",
-    note: "One line per person per day.",
-    shape: (data: EmployeeDetailExport) => perDayView(data.rows),
-  },
-  {
-    id: "per-week",
-    label: "Hours per week",
-    note: "Weeks run Sunday to Saturday, as the timesheet does.",
-    shape: (data: EmployeeDetailExport) => perWeekView(data.rows),
-  },
-  {
-    id: "per-month",
-    label: "Hours per month",
-    note: "One line per person per calendar month.",
-    shape: (data: EmployeeDetailExport) => perMonthView(data.rows),
-  },
-  {
-    id: "per-client",
-    label: "Hours per client",
-    note: "With each client's share of their time.",
-    shape: (data: EmployeeDetailExport) => perClientView(data.rows),
-  },
-  {
-    id: "client-by-day",
-    label: "Hours per client, by day",
-    note: "A grid: clients down, days across.",
-    shape: (data: EmployeeDetailExport) => perClientByDayView(data.rows),
-  },
-  {
-    id: "per-project-type",
-    label: "Hours per project type",
-    note: "Campaign, Reels, Pitch, and the rest.",
-    shape: (data: EmployeeDetailExport) => perProjectTypeView(data.rows),
-  },
-  {
-    id: "per-business-unit",
-    label: "Hours per business unit",
-    note: "From the company employee list.",
-    shape: (data: EmployeeDetailExport) => perBusinessUnitView(data.rows),
-  },
-  {
-    id: "per-sub-unit",
-    label: "Hours per sub-unit",
-    note: "The team inside a business unit.",
-    shape: (data: EmployeeDetailExport) => perSubUnitView(data.rows),
-  },
-  {
-    id: "per-function",
-    label: "Hours per function",
-    note: "The craft: Art, Copywriting, Account Management.",
-    shape: (data: EmployeeDetailExport) => perFunctionView(data.rows),
-  },
-  {
-    id: "per-position",
-    label: "Hours per position",
-    note: "Job titles, as the employee list has them.",
-    shape: (data: EmployeeDetailExport) => perPositionView(data.rows),
-  },
-] as const;
-
-function monthOptions(count = 12): { value: string; label: string }[] {
-  const now = new Date();
-  return Array.from({ length: count }, (_, index) => {
-    const month = subMonths(now, index);
-    return { value: format(month, "yyyy-MM"), label: format(month, "MMMM yyyy") };
-  });
-}
-
-/**
- * A detailed read on one person's month, or on everybody's.
+ * A detailed read on one person's period, or on everybody's.
  *
  * Separate from the Time Dedication export, which answers the job book's
  * question. This one answers "what did this person actually do", which is a
  * different question with different columns and a different audience.
  */
 export function ExportEmployeeDetail({
+  from,
+  to,
   market,
   department,
 }: {
+  /** The period chosen in the toolbar. */
+  from: string;
+  to: string;
   /** The admin page's own filters. "all" means unfiltered. */
   market: string;
   department: string;
 }) {
-  const months = monthOptions();
-  const [month, setMonth] = useState(months[0]!.value);
   const [employeeId, setEmployeeId] = useState("all");
   const [view, setView] = useState<string>("full-detail");
   const [roster, setRoster] = useState<DetailEmployee[]>([]);
@@ -148,8 +49,7 @@ export function ExportEmployeeDetail({
   // in this list are exactly the ones the file can contain.
   useEffect(() => {
     let cancelled = false;
-    const now = new Date();
-    void fetchEmployeeDetail(toDateKey(startOfMonth(now)), toDateKey(endOfMonth(now)), null)
+    void fetchEmployeeDetail(from, to, null)
       .then((data) => {
         if (!cancelled) setRoster(data.employees);
       })
@@ -160,7 +60,7 @@ export function ExportEmployeeDetail({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [from, to]);
 
   /*
    * The people this export can name, narrowed by whatever the page above is
@@ -203,22 +103,14 @@ export function ExportEmployeeDetail({
     setError(null);
     setNote(null);
 
-    const [year, monthNumber] = month.split("-").map(Number);
-    const anchor = new Date(year!, monthNumber! - 1, 1);
     const who = employeeId === "all" ? null : employeeId;
     const person = roster.find((entry) => entry.id === employeeId);
     const slug = (person?.name ?? "everyone").toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
     try {
-      const data = narrow(
-        await fetchEmployeeDetail(
-          toDateKey(startOfMonth(anchor)),
-          toDateKey(endOfMonth(anchor)),
-          who,
-        ),
-      );
+      const data = narrow(await fetchEmployeeDetail(from, to, who));
 
-      const chosen = VIEWS.find((option) => option.id === view) ?? VIEWS[0];
+      const chosen = viewById(view);
       const shaped = chosen.shape(data);
 
       if (shaped.rows.length === 0) {
@@ -226,7 +118,10 @@ export function ExportEmployeeDetail({
         return;
       }
 
-      downloadCsv(`kijamii-${slug}_${month}_${chosen.id}.csv`, toCsv(shaped.headers, shaped.rows));
+      downloadCsv(
+        `kijamii-${slug}_${chosen.id}_${from}_to_${to}.csv`,
+        toCsv(shaped.headers, shaped.rows),
+      );
 
       /*
        * Say how many people are actually in the file, not just how many rows.
@@ -261,8 +156,8 @@ export function ExportEmployeeDetail({
         <div className="space-y-1">
           <p className="label-xs">Employee detail</p>
           <p className="text-[12px] leading-relaxed text-muted-foreground">
-            A close read on one person&apos;s month, or everybody&apos;s. Every view is folded from
-            the same rows, so the totals always agree.
+            A close read on one person, over the period chosen above. Every view is folded from the
+            same rows, so the totals always agree.
           </p>
         </div>
 
@@ -293,40 +188,27 @@ export function ExportEmployeeDetail({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="label-xs-muted w-14 shrink-0">Month</span>
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="h-8 flex-1 text-[13px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center gap-2">
           <span className="label-xs-muted w-14 shrink-0">View</span>
           <Select value={view} onValueChange={setView}>
             <SelectTrigger className="h-8 flex-1 text-[13px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {VIEWS.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
-                  {option.label}
-                </SelectItem>
+              {VIEW_GROUPS.map((group) => (
+                <SelectGroup key={group.label}>
+                  <SelectLabel className="label-xs">{group.label}</SelectLabel>
+                  {group.views.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        <p className="px-0.5 text-[11px] text-muted-foreground">
-          {VIEWS.find((option) => option.id === view)?.note}
-        </p>
+        <p className="px-0.5 text-[11px] text-muted-foreground">{viewById(view).note}</p>
 
         <Button size="sm" className="w-full" disabled={busy} onClick={() => void run()}>
           {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}

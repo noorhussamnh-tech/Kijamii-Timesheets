@@ -1,18 +1,9 @@
 import { useState } from "react";
-import { AlertCircle, ChevronDown, Download, Loader2 } from "lucide-react";
-import { endOfMonth, format, startOfMonth } from "date-fns";
+import { AlertCircle, Download, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { fetchExportRows, type ExportRow } from "@/lib/data/api";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
-import { parseDateKey, toDateKey, weekEnd, weekRangeLabel } from "@/lib/domain/week";
 import type { Market } from "@/lib/domain/types";
 import { cn } from "@/lib/utils";
 
@@ -54,16 +45,18 @@ const COLUMNS = [
  * configuration. The file opens in Sheets or Excel directly.
  */
 export function ExportCsv({
-  weekStart,
+  from,
+  to,
   market,
   department,
 }: {
-  weekStart: string;
+  from: string;
+  to: string;
   /** "all", or a market to restrict the file to. Mirrors the page filters. */
   market: string;
   department: string;
 }) {
-  const [busy, setBusy] = useState<"week" | "month" | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
@@ -80,15 +73,11 @@ export function ExportCsv({
 
   const filtersApplied = market !== "all" || department !== "all";
 
-  const run = async (scope: "week" | "month") => {
+  const run = async () => {
     if (busy) return;
-    setBusy(scope);
+    setBusy(true);
     setError(null);
     setNote(null);
-
-    const anchor = parseDateKey(weekStart);
-    const from = scope === "week" ? weekStart : toDateKey(startOfMonth(anchor));
-    const to = scope === "week" ? weekEnd(weekStart) : toDateKey(endOfMonth(anchor));
 
     try {
       const all = await fetchExportRows(from, to);
@@ -109,10 +98,9 @@ export function ExportCsv({
         return;
       }
 
-      const label = scope === "week" ? `${from}_to_${to}` : format(anchor, "yyyy-MM");
       const suffix = market === "all" ? "" : `_${market}`;
       downloadCsv(
-        `kijamii-timesheets_${label}${suffix}.csv`,
+        `kijamii-timesheets_${from}_to_${to}${suffix}.csv`,
         toCsv(
           columns.map((column) => column.key),
           rows.map((row) => columns.map((column) => column.value(row))),
@@ -122,7 +110,7 @@ export function ExportCsv({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The export failed. Please try again.");
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
@@ -134,36 +122,19 @@ export function ExportCsv({
      * the toolbar you were about to use again.
      */
     <div className="relative">
-      {/* One control, because the two buttons were the same action with a
-          different range and read as two unrelated exports. */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-1.5" disabled={busy !== null}>
-            {busy ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Download className="size-3.5" />
-            )}
-            Export period
-            <ChevronDown className="size-3.5 opacity-70" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuLabel className="label-xs">Every entry, as a file</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => void run("week")}>
-            This week
-            <span className="num ml-auto text-[11px] text-muted-foreground">
-              {weekRangeLabel(weekStart)}
-            </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => void run("month")}>
-            This month
-            <span className="num ml-auto text-[11px] text-muted-foreground">
-              {format(parseDateKey(weekStart), "MMM yyyy")}
-            </span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* One button. The period is chosen once, in the toolbar, and applies
+          to every export on it -- so this no longer has to offer a choice of
+          two ranges that were never the two anybody wanted. */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1.5"
+        disabled={busy}
+        onClick={() => void run()}
+      >
+        {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
+        Export entries
+      </Button>
 
       {(note ?? error) && (
         <span
