@@ -48,37 +48,29 @@ function RowActions({ row }: { row: TimesheetEntry }) {
 }
 
 function DayHeading({ date }: { date: string }) {
-  const { totals, isDayLocked, addRow, focusDate, showTargets } = useTimesheet();
+  const { totals, isDayLocked, addRow, focusDate } = useTimesheet();
   const day = totals.byDay.find((entry) => entry.date === date);
   const locked = isDayLocked(date);
   const isToday = date === focusDate && date === toDateKey(new Date());
 
   return (
     <>
-      <span className="num">{dayLabel(date)}</span>
+      {/* The anchor for everything beneath it, and it was set in the same
+          11px as the small print. Whoever is filling this in needs to know
+          which day they are typing into without hunting for it. */}
+      <span className="num text-[15px] font-bold">{dayLabel(date)}</span>
       {isToday && (
-        <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-semibold text-brand">
+        <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-brand">
           Today
         </span>
       )}
-      {/* Same reason as the bar at the bottom: "4h / 8h" in amber on every
-          heading is a row of gaps asking to be filled. What the day holds is
-          still shown; what it is short of is not. A non-working day is still
-          called out, because that is a fact about the calendar rather than
-          something anybody is being measured against. */}
-      <span
-        className={cn(
-          "num ml-2 text-muted-foreground",
-          showTargets && day && day.expected > 0 && day.hours < day.expected && "text-warning",
-        )}
-      >
-        {formatHours(day?.hours ?? 0)}
-        {day?.expected
-          ? showTargets
-            ? ` / ${formatHours(day.expected)}`
-            : ""
-          : " · non-working day"}
-      </span>
+      {/* No running figure for the day. "2h / 8h" named the shortfall, and
+          "2h" on its own is still a score being kept in front of somebody
+          while they decide what to write. A non-working day is a fact about
+          the calendar rather than a measurement, so that stays. */}
+      {day && day.expected === 0 && (
+        <span className="ml-2 text-muted-foreground">non-working day</span>
+      )}
       {locked && (
         <span className="ml-2 rounded-full border border-success/30 bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">
           Submitted
@@ -277,7 +269,7 @@ export function TimesheetGrid() {
                       <th
                         scope="colgroup"
                         colSpan={config.fields.length + 1}
-                        className="px-2.5 py-1.5 text-left text-[11px] font-semibold"
+                        className="px-2.5 py-2.5 text-left text-[12px] font-semibold"
                       >
                         <DayHeading date={date} />
                       </th>
@@ -316,13 +308,6 @@ export function TimesheetGrid() {
         <div className="flex flex-wrap items-center gap-2 border-t bg-surface-muted px-2.5 py-2">
           {defaultEntryDate ? (
             <>
-              <Button
-                size="sm"
-                className="h-9 gap-1.5 border-transparent bg-success px-3.5 text-[14px] font-bold text-white shadow-card hover:bg-success/90 hover:text-white"
-                onClick={() => addRow()}
-              >
-                <Plus className="size-4" /> Add another row
-              </Button>
               <AddDayMenu />
               <span className="text-[11px] text-muted-foreground">
                 Tip: press Tab to move across fields, Shift+Tab to go back.
@@ -340,18 +325,9 @@ export function TimesheetGrid() {
           const dayRows = entries.filter((row) => row.workDate === date);
           return (
             <section key={date} className="space-y-2">
-              <header className="flex flex-wrap items-center gap-x-2 px-0.5 text-[12px] font-semibold">
+              <header className="flex flex-wrap items-center gap-x-2 gap-y-1 px-0.5 text-[12px] font-semibold">
                 <DayHeading date={date} />
               </header>
-              {dayRows.length === 0 && (
-                <Button
-                  size="sm"
-                  className="h-9 w-full gap-1.5 border-transparent bg-success text-[14px] font-bold text-white shadow-card hover:bg-success/90 hover:text-white"
-                  onClick={() => addRow(date)}
-                >
-                  <Plus className="size-4" /> Add row for {shortDayLabel(date)}
-                </Button>
-              )}
               {dayRows.map((row) => {
                 const issue = issueFor(row.id);
                 return (
@@ -397,20 +373,7 @@ export function TimesheetGrid() {
             </section>
           );
         })}
-        {defaultEntryDate ? (
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              className="h-9 flex-1 gap-1.5 border-transparent bg-success text-[14px] font-bold text-white shadow-card hover:bg-success/90 hover:text-white"
-              onClick={() => addRow()}
-            >
-              <Plus className="size-4" /> Add row
-            </Button>
-            <AddDayMenu className="flex-1" />
-          </div>
-        ) : (
-          <NothingToAdd />
-        )}
+        {defaultEntryDate ? <AddDayMenu className="w-full" /> : <NothingToAdd />}
       </div>
     </div>
   );
