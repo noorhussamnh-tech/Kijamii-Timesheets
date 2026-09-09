@@ -18,7 +18,7 @@ import { useAuth } from "@/lib/auth";
 import { fetchMyLoggedDays } from "@/lib/data/api";
 import { monthCoverage, type DayCoverage } from "@/lib/domain/coverage";
 import { CATEGORICAL } from "@/lib/viz/palette";
-import { toDateKey } from "@/lib/domain/week";
+import { dayLabel, toDateKey } from "@/lib/domain/week";
 import { useTimesheet } from "@/lib/timesheet-store";
 
 export const Route = createFileRoute("/timesheet")({
@@ -40,7 +40,8 @@ export const Route = createFileRoute("/timesheet")({
 });
 
 function TimesheetPage() {
-  const { rowIssues, weekIssues, showErrors, saveError, config, weekKey } = useTimesheet();
+  const { rowIssues, weekIssues, showErrors, saveError, config, weekKey, addDay, visibleDates } =
+    useTimesheet();
   const { status: authStatus } = useAuth();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -87,6 +88,21 @@ function TimesheetPage() {
 
   const issueCount = rowIssues.length + weekIssues.length;
 
+  /*
+   * Bring a flagged row onto the screen before complaining about it.
+   *
+   * The grid shows today plus whatever has been revealed, so a row on another
+   * day of the same week is validated but invisible. Being told that three
+   * rows are incomplete, while one complete row is all that can be seen, is a
+   * dead end -- the fix is somewhere the page never mentions.
+   */
+  useEffect(() => {
+    if (!showErrors) return;
+    for (const date of new Set(rowIssues.map((issue) => issue.date))) {
+      if (!visibleDates.includes(date)) addDay(date);
+    }
+  }, [showErrors, rowIssues, visibleDates, addDay]);
+
   return (
     <>
       {justSubmitted > 0 && (
@@ -115,11 +131,24 @@ function TimesheetPage() {
                   {issue.message}
                 </li>
               ))}
-              {rowIssues.slice(0, 5).map((issue, index) => (
+              {/* Named by day rather than numbered. "Row 2" counted problems,
+                  not rows on the page, so it pointed at nothing. */}
+              {rowIssues.slice(0, 5).map((issue) => (
                 <li key={issue.entryId} className="list-disc">
-                  Row {index + 1}: {issue.message}
+                  <button
+                    type="button"
+                    onClick={() => addDay(issue.date)}
+                    className="text-left underline underline-offset-2 hover:no-underline"
+                  >
+                    <span className="font-semibold">{dayLabel(issue.date)}</span> — {issue.message}
+                  </button>
                 </li>
               ))}
+              {rowIssues.length > 5 && (
+                <li className="list-disc">
+                  and {rowIssues.length - 5} more row{rowIssues.length - 5 === 1 ? "" : "s"}.
+                </li>
+              )}
             </ul>
           </div>
         )}

@@ -15,6 +15,15 @@ export const MAX_HOURS_PER_DAY = 16;
 
 export interface RowIssue {
   entryId: string;
+  /**
+   * The day the row sits on.
+   *
+   * Carried so the report can name it. A row can be flagged while its day is
+   * not on screen -- the grid shows today plus whatever has been revealed --
+   * and "Row 2 is incomplete" is unactionable when row 2 is nowhere to be
+   * seen.
+   */
+  date: string;
   fields: string[];
   message: string;
 }
@@ -105,6 +114,7 @@ export function validateWeek(
     if (fields.length > 0) {
       rowIssues.push({
         entryId: entry.id,
+        date: entry.workDate,
         fields,
         message: fields.includes("hours")
           ? "Hours must be greater than zero, in steps of 0.25."

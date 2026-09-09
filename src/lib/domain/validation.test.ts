@@ -151,6 +151,24 @@ describe("week validation", () => {
     expect(result.weekIssues.some((i) => i.code === "date_outside_week")).toBe(true);
   });
 
+  it("says which day each flagged row is on", () => {
+    // Load-bearing, not decorative. The grid shows today plus whatever has
+    // been revealed, so a flagged row can sit on a day that is not on screen.
+    // Without the date the report can only number the problems, and "Row 2 is
+    // incomplete" points at nothing when row 2 is not visible.
+    const result = validateWeek(
+      [
+        entry({ id: "a", workDate: "2026-08-23", workType: null }),
+        entry({ id: "b", workDate: "2026-08-26", projectType: "" }),
+      ],
+      WEEK,
+    );
+    expect(result.rowIssues.map((issue) => [issue.entryId, issue.date])).toEqual([
+      ["a", "2026-08-23"],
+      ["b", "2026-08-26"],
+    ]);
+  });
+
   it("scopes validation to a single day for per-day submission", () => {
     const rows = [
       entry({ id: "good", workDate: "2026-08-24" }),
