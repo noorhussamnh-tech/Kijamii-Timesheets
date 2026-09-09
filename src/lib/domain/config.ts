@@ -12,7 +12,7 @@
 import type { Market, TimesheetConfigId } from "./types";
 
 export type FieldKey =
-  "workDate" | "clientId" | "projectType" | "scope" | "projectNote" | "hours" | "billable";
+  "workDate" | "clientId" | "projectType" | "workType" | "projectNote" | "hours" | "billable";
 
 export type FieldKind = "date" | "client" | "reference" | "choice" | "text" | "hours" | "billable";
 
@@ -49,13 +49,17 @@ export interface TimesheetConfig {
 }
 
 /**
- * What people actually fill in: Date, Client, Project Type, Scope and Hours,
- * with free-text Notes that nobody has to write.
+ * What people actually fill in: Date, Client, Project Type, Work Type and
+ * Hours, with free-text Notes that nobody has to write.
  *
  * Service is absent because it is no longer a question: it follows from the
  * employee's department, and the database stamps it on save. That makes it a
  * second name for Department rather than a fact of its own -- the cost of
  * asking one fewer question of seventy people every day.
+ *
+ * Scope -- in or out of what the client contracted for -- was asked for a few
+ * days and withdrawn. Its column survives in the database holding what was
+ * logged under it.
  *
  * There is deliberately no Job field -- Kijamii has no job-numbering system --
  * and no Task field: it asked people to classify work a second time, after
@@ -75,14 +79,14 @@ const sharedFields: FieldDef[] = [
     width: "min-w-[170px]",
   },
   {
-    key: "scope",
-    label: "Scope",
+    key: "workType",
+    label: "Work Type",
     kind: "choice",
     required: true,
     width: "min-w-[150px]",
     choices: [
-      { value: "in_scope", label: "In Scope" },
-      { value: "out_of_scope", label: "Out of Scope" },
+      { value: "new_task", label: "New Task" },
+      { value: "amend", label: "Amend" },
     ],
   },
   { key: "hours", label: "Hours", kind: "hours", required: true, width: "w-[104px]" },

@@ -64,8 +64,8 @@ export function missingFields(entry: TimesheetEntry): string[] {
   if (!entry.workDate) missing.push("workDate");
   if (!entry.clientId && !entry.clientOther.trim()) missing.push("clientId");
   if (!entry.projectType) missing.push("projectType");
-  // Scope has no default: an unanswered row is unclassified, not in-scope.
-  if (!entry.scope) missing.push("scope");
+  // No default: an unanswered row is unclassified, not assumed to be new work.
+  if (!entry.workType) missing.push("workType");
   if (validateHours(entry.hours)) missing.push("hours");
   return missing;
 }

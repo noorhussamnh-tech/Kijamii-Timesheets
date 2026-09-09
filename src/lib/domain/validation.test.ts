@@ -20,7 +20,7 @@ function entry(overrides: Partial<TimesheetEntry> = {}): TimesheetEntry {
     serviceId: "service-1",
     projectType: "Campaign",
     task: "Copy",
-    scope: "in_scope",
+    workType: "new_task",
     projectNote: "",
     hours: 4,
     billable: true,
@@ -69,7 +69,7 @@ describe("row completeness", () => {
       clientId: "",
       projectType: "",
       task: "",
-      scope: null,
+      workType: null,
       hours: "",
     });
     expect(isBlankRow(blank)).toBe(true);
@@ -80,7 +80,7 @@ describe("row completeness", () => {
 
   it("lists every missing required field", () => {
     expect(missingFields(entry())).toEqual([]);
-    expect(missingFields(entry({ scope: null, hours: "" }))).toEqual(["scope", "hours"]);
+    expect(missingFields(entry({ workType: null, hours: "" }))).toEqual(["workType", "hours"]);
   });
 
   it("accepts a free-text client name in place of a client id", () => {
@@ -109,7 +109,7 @@ describe("week validation", () => {
       clientId: "",
       projectType: "",
       task: "",
-      scope: null,
+      workType: null,
       hours: "",
     });
     const result = validateWeek([entry(), blank], WEEK, {});
@@ -154,7 +154,7 @@ describe("week validation", () => {
   it("scopes validation to a single day for per-day submission", () => {
     const rows = [
       entry({ id: "good", workDate: "2026-08-24" }),
-      entry({ id: "bad", workDate: "2026-08-25", scope: null }),
+      entry({ id: "bad", workDate: "2026-08-25", workType: null }),
     ];
     // The whole week is invalid because of the second row...
     expect(validateWeek(rows, WEEK).ok).toBe(false);

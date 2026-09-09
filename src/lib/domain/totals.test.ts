@@ -15,7 +15,7 @@ function entry(overrides: Partial<TimesheetEntry> = {}): TimesheetEntry {
     serviceId: "s",
     projectType: "Campaign",
     task: "Copy",
-    scope: "in_scope",
+    workType: "new_task",
     projectNote: "",
     hours: 4,
     billable: true,
@@ -136,8 +136,8 @@ describe("configuration selection", () => {
       "clientId",
       "hours",
       "projectType",
-      "scope",
       "workDate",
+      "workType",
     ]);
   });
 });

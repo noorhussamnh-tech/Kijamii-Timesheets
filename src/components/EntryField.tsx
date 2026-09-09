@@ -17,8 +17,8 @@ function isUnanswered(key: FieldDef["key"], row: TimesheetEntry): boolean {
       return !row.clientId && !row.clientOther.trim();
     case "projectType":
       return !row.projectType;
-    case "scope":
-      return !row.scope;
+    case "workType":
+      return !row.workType;
     case "hours":
       return row.hours === "";
     default:
@@ -175,7 +175,7 @@ export function EntryField({
     case "choice": {
       // A short, fixed set: a plain select rather than the searchable list
       // used for the reference fields, which can run to dozens of options.
-      const value = row[field.key as "scope"] ?? "";
+      const value = row[field.key as "workType"] ?? "";
       return (
         <select
           value={value}

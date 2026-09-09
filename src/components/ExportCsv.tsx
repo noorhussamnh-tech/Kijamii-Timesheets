@@ -29,10 +29,12 @@ const COLUMNS = [
   { key: "task_description", label: "Task", value: (r: ExportRow) => r.taskDescription },
   { key: "hours", label: "Hours", value: (r: ExportRow) => Number(r.hours) },
   {
-    key: "scope",
-    label: "Scope",
+    key: "work_type",
+    label: "Work type",
+    // Rows logged before the column existed carry nothing, and are left blank
+    // rather than guessed into the more common answer.
     value: (r: ExportRow) =>
-      r.scope === "out_of_scope" ? "Out of Scope" : r.scope === "in_scope" ? "In Scope" : "",
+      r.workType === "amend" ? "Amend" : r.workType === "new_task" ? "New Task" : "",
   },
   {
     key: "billing_type",

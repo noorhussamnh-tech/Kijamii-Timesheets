@@ -16,7 +16,7 @@ import type { DetailEmployee, DetailRow } from "@/lib/export/employee-detail";
 import type { PersonalStats } from "@/lib/domain/insights";
 import type {
   AdminEmployeeStatus,
-  EntryScope,
+  WorkType,
   ClientOption,
   Employee,
   Market,
@@ -199,7 +199,7 @@ interface RawEntry {
   serviceId: string | null;
   projectType: string | null;
   task: string | null;
-  scope: EntryScope | null;
+  workType: WorkType | null;
   projectNote: string | null;
   hours: number | string | null;
   billable: boolean;
@@ -215,7 +215,7 @@ function toEntry(raw: RawEntry): TimesheetEntry {
     serviceId: raw.serviceId ?? "",
     projectType: raw.projectType ?? "",
     task: raw.task ?? "",
-    scope: raw.scope ?? null,
+    workType: raw.workType ?? null,
     projectNote: raw.projectNote ?? "",
     hours: raw.hours === null || raw.hours === "" ? "" : Number(raw.hours),
     billable: raw.billable,
@@ -272,7 +272,7 @@ export async function saveDraft(
     client_other: entry.clientOther || null,
     project_type: entry.projectType || null,
     task: entry.task || null,
-    scope: entry.scope,
+    work_type: entry.workType,
     project_note: entry.projectNote || null,
     hours: entry.hours === "" ? null : String(entry.hours),
     billable: entry.billable,
@@ -367,7 +367,7 @@ export interface ExportRow {
   serviceName: string | null;
   projectType: string | null;
   taskDescription: string | null;
-  scope: EntryScope | null;
+  workType: WorkType | null;
   hours: number | string;
   notes: string | null;
   billable: boolean;

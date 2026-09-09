@@ -61,12 +61,20 @@ export interface ReferenceData {
 }
 
 /** A single row of the timesheet grid. */
-/** Whether an hour fell inside what the client contracted for. */
-export type EntryScope = "in_scope" | "out_of_scope";
+/**
+ * Whether a row is work being done for the first time or a revision of work
+ * already delivered.
+ *
+ * This used to be answered inside Project Type, where "Amend" sat beside
+ * "Campaign" and "Reels" -- which made a revision of a campaign and a campaign
+ * itself two answers to the same question, and forced a choice between them.
+ * They are separate questions and are asked separately.
+ */
+export type WorkType = "new_task" | "amend";
 
-export const SCOPE_LABELS: Record<EntryScope, string> = {
-  in_scope: "In Scope",
-  out_of_scope: "Out of Scope",
+export const WORK_TYPE_LABELS: Record<WorkType, string> = {
+  new_task: "New Task",
+  amend: "Amend",
 };
 
 export interface TimesheetEntry {
@@ -78,7 +86,7 @@ export interface TimesheetEntry {
   projectType: string;
   task: string;
   /** Null until the person chooses. Never assumed. */
-  scope: EntryScope | null;
+  workType: WorkType | null;
   projectNote: string;
   /** Empty string while the field is blank; drafts may hold incomplete rows. */
   hours: number | "";

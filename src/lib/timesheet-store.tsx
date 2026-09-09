@@ -141,7 +141,7 @@ function emptyEntry(date: string): TimesheetEntry {
     serviceId: "",
     projectType: "",
     task: "",
-    scope: null,
+    workType: null,
     projectNote: "",
     hours: "",
     billable: true,
