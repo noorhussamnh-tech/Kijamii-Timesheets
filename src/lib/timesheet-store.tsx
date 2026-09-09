@@ -90,7 +90,6 @@ interface TimesheetContextValue {
   recentDates: string[];
   duplicateRow: (id: string) => void;
   deleteRow: (id: string) => void;
-  copyPreviousWeek: () => Promise<void>;
 
   visibleDates: string[];
   /** Days in this week that may be logged against: never the future. */
@@ -537,28 +536,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     [hiddenDates, visibleDates],
   );
 
-  /** Pulls last week's rows in as a fresh draft, remapped onto this week. */
-  const copyPreviousWeek = useCallback(async () => {
-    const previous = shiftWeek(weekKey, -1);
-    try {
-      const week = await api.fetchWeek(previous);
-      const sourceDates = weekDates(previous);
-      const targetDates = weekDates(weekKey);
-      const copies = week.entries.map<TimesheetEntry>((row) => {
-        const index = sourceDates.indexOf(row.workDate);
-        return {
-          ...row,
-          id: newEntryId(),
-          workDate: targetDates[index >= 0 ? index : 0]!,
-          status: "draft",
-        };
-      });
-      if (copies.length > 0) mutate((current) => [...current, ...copies]);
-    } catch (cause) {
-      setSaveError(cause instanceof Error ? cause.message : "Could not copy last week's entries.");
-    }
-  }, [weekKey, mutate]);
-
   // ---------------------------------------------------------- validation
 
   const validation = useMemo(() => validateWeek(entries, weekKey), [entries, weekKey]);
@@ -671,7 +648,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       recentDates,
       duplicateRow,
       deleteRow,
-      copyPreviousWeek,
       visibleDates,
       selectableDates,
       focusDate,
@@ -715,7 +691,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       recentDates,
       duplicateRow,
       deleteRow,
-      copyPreviousWeek,
       visibleDates,
       selectableDates,
       focusDate,

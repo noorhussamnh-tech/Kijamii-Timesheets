@@ -112,8 +112,16 @@ function AddDayMenu({ className }: { className?: string | undefined }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className={className}>
-          <Plus className="size-3.5" /> Add day
+        {/* Ink rather than the green of "Row": the two sit side by side and
+            do different things, so they must not be the same colour. Ink is
+            the palette's own answer for a solid action -- the brand red is a
+            shade off the destructive red, and a red "Add day" would read as
+            a button that takes a day away. */}
+        <Button
+          size="sm"
+          className={cn("h-9 gap-1.5 px-3.5 text-[14px] font-bold shadow-card", className)}
+        >
+          <Plus className="size-4" /> Add day
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-52">
@@ -209,12 +217,16 @@ export function TimesheetGrid() {
             : "No entries for this week yet"}
         </h2>
         <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">
-          Add a row, or copy last week&apos;s entries and adjust the hours.
+          Start with a row for today, or reach back to a day earlier in the week.
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           {defaultEntryDate && (
-            <Button size="sm" onClick={() => addRow(defaultEntryDate)}>
-              <Plus className="size-3.5" /> {startsToday ? "Log today's hours" : "Add first row"}
+            <Button
+              size="sm"
+              className="h-9 gap-1.5 border-transparent bg-success px-3.5 text-[14px] font-bold text-white shadow-card hover:bg-success/90 hover:text-white"
+              onClick={() => addRow(defaultEntryDate)}
+            >
+              <Plus className="size-4" /> {startsToday ? "Log today's hours" : "Add first row"}
             </Button>
           )}
           {/* Catching up on the whole week starts from an earlier day. */}
@@ -239,19 +251,19 @@ export function TimesheetGrid() {
                   <th
                     key={field.key}
                     scope="col"
-                    className={cn("label-xs px-2.5 py-2.5", field.width)}
+                    className={cn("label-col px-2.5 py-3", field.width)}
                   >
                     {field.label}
                     {field.required ? (
                       <span className="ml-0.5 text-brand">*</span>
                     ) : (
-                      <span className="ml-1.5 font-medium normal-case tracking-normal text-muted-foreground">
+                      <span className="ml-1.5 text-[12px] font-medium normal-case tracking-normal text-muted-foreground">
                         Optional
                       </span>
                     )}
                   </th>
                 ))}
-                <th scope="col" className="label-xs w-[84px] px-2.5 py-2.5">
+                <th scope="col" className="label-col w-[84px] px-2.5 py-3">
                   Actions
                 </th>
               </tr>
@@ -304,8 +316,12 @@ export function TimesheetGrid() {
         <div className="flex flex-wrap items-center gap-2 border-t bg-surface-muted px-2.5 py-2">
           {defaultEntryDate ? (
             <>
-              <Button variant="ghost" size="sm" onClick={() => addRow()}>
-                <Plus className="size-3.5" /> Add another row
+              <Button
+                size="sm"
+                className="h-9 gap-1.5 border-transparent bg-success px-3.5 text-[14px] font-bold text-white shadow-card hover:bg-success/90 hover:text-white"
+                onClick={() => addRow()}
+              >
+                <Plus className="size-4" /> Add another row
               </Button>
               <AddDayMenu />
               <span className="text-[11px] text-muted-foreground">
@@ -328,8 +344,12 @@ export function TimesheetGrid() {
                 <DayHeading date={date} />
               </header>
               {dayRows.length === 0 && (
-                <Button variant="outline" size="sm" className="w-full" onClick={() => addRow(date)}>
-                  <Plus className="size-3.5" /> Add row for {shortDayLabel(date)}
+                <Button
+                  size="sm"
+                  className="h-9 w-full gap-1.5 border-transparent bg-success text-[14px] font-bold text-white shadow-card hover:bg-success/90 hover:text-white"
+                  onClick={() => addRow(date)}
+                >
+                  <Plus className="size-4" /> Add row for {shortDayLabel(date)}
                 </Button>
               )}
               {dayRows.map((row) => {
@@ -345,12 +365,12 @@ export function TimesheetGrid() {
                     <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
                       {config.fields.map((field) => (
                         <div key={field.key} className={cn("min-w-0", field.wide && "col-span-2")}>
-                          <p className="label-xs mb-0.5">
+                          <p className="label-col mb-1">
                             {field.label}
                             {field.required ? (
                               <span className="ml-0.5 text-brand">*</span>
                             ) : (
-                              <span className="ml-1.5 font-medium normal-case tracking-normal text-muted-foreground">
+                              <span className="ml-1.5 text-[12px] font-medium normal-case tracking-normal text-muted-foreground">
                                 Optional
                               </span>
                             )}
@@ -379,8 +399,12 @@ export function TimesheetGrid() {
         })}
         {defaultEntryDate ? (
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => addRow()}>
-              <Plus className="size-3.5" /> Add row
+            <Button
+              size="sm"
+              className="h-9 flex-1 gap-1.5 border-transparent bg-success text-[14px] font-bold text-white shadow-card hover:bg-success/90 hover:text-white"
+              onClick={() => addRow()}
+            >
+              <Plus className="size-4" /> Add row
             </Button>
             <AddDayMenu className="flex-1" />
           </div>

@@ -226,6 +226,22 @@
   color: var(--color-heading);
 }
 
+/*
+ * The timesheet's own column headings.
+ *
+ * Heavier and two steps larger than label-xs, which is right for the small
+ * labels dotted around the app but read as fine print on the one row people
+ * consult every day to know what each column is asking for.
+ */
+@utility label-col {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-heading);
+}
+
 /* The muted variant, for the few labels that genuinely are secondary. */
 @utility label-xs-muted {
   font-size: 0.6875rem;

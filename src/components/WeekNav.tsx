@@ -1,11 +1,11 @@
-import { ChevronLeft, ChevronRight, CopyPlus } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useTimesheet } from "@/lib/timesheet-store";
 import { currentWeekKey, weekKeyOf, weekNumberLabel, weekRangeLabel } from "@/lib/domain/week";
 
 export function WeekNav() {
-  const { weekKey, goWeek, goCurrentWeek, copyPreviousWeek, setWeekKey } = useTimesheet();
+  const { weekKey, goWeek, goCurrentWeek, setWeekKey } = useTimesheet();
 
   const thisWeek = currentWeekKey();
   const atCurrentWeek = weekKey === thisWeek;
@@ -43,9 +43,6 @@ export function WeekNav() {
             className="num rounded-md border bg-surface px-2 py-1 text-[12px] font-medium text-foreground focus:outline-2 focus:outline-ring"
           />
         </label>
-        <Button variant="outline" size="sm" onClick={() => void copyPreviousWeek()}>
-          <CopyPlus className="size-3.5" /> Copy previous week
-        </Button>
       </div>
     </div>
   );
