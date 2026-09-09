@@ -3,6 +3,7 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { syncDirectory } from "@/lib/data/api";
+import { cn } from "@/lib/utils";
 
 /**
  * Re-reads the company employee list onto every roster record.
@@ -51,14 +52,21 @@ export function SyncDirectory() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="relative">
       <Button variant="outline" size="sm" disabled={busy} onClick={() => void run()}>
         <RefreshCw className={busy ? "size-3.5 animate-spin" : "size-3.5"} /> Sync directory
       </Button>
-      {note && <span className="text-[12px] text-muted-foreground">{note}</span>}
-      {error && (
-        <span className="inline-flex items-center gap-1 text-[12px] font-medium text-destructive">
-          <AlertCircle className="size-3.5" /> {error}
+      {/* Underneath, for the same reason as the export beside it: a result
+          that widens its own control rearranges the row it sits in. */}
+      {(note ?? error) && (
+        <span
+          className={cn(
+            "absolute top-full right-0 mt-0.5 inline-flex items-center gap-1 leading-none whitespace-nowrap text-[11px]",
+            error ? "font-medium text-destructive" : "text-muted-foreground",
+          )}
+        >
+          {error && <AlertCircle className="size-3" />}
+          {error ?? note}
         </span>
       )}
     </div>

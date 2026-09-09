@@ -199,12 +199,14 @@ function AdminOverview() {
             ))}
           </SelectContent>
         </Select>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <ExportCsv weekStart={week} market={market} department={department} />
-          <ExportTimeDedication />
-          <ExportEmployeeDetail market={market} department={department} />
-          <SyncDirectory />
-        </div>
+        {/* One row, in reading order: narrow the list, then act on it. The
+            exports used to be pushed to the far right with ml-auto, which on
+            any screen narrower than the whole lot dropped them onto a second
+            line and left a gap where they had been. */}
+        <ExportCsv weekStart={week} market={market} department={department} />
+        <ExportTimeDedication />
+        <ExportEmployeeDetail market={market} department={department} />
+        <SyncDirectory />
       </div>
 
       {error && (

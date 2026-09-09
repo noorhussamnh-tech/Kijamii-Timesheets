@@ -14,6 +14,7 @@ import { fetchExportRows, type ExportRow } from "@/lib/data/api";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
 import { parseDateKey, toDateKey, weekEnd, weekRangeLabel } from "@/lib/domain/week";
 import type { Market } from "@/lib/domain/types";
+import { cn } from "@/lib/utils";
 
 /** The columns of the file, in order. */
 const COLUMNS = [
@@ -126,7 +127,13 @@ export function ExportCsv({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    /*
+     * The result is written underneath the button rather than beside it.
+     * Beside it, "5 rows downloaded" grew the row by its own width and shoved
+     * every control to its right along -- so the act of exporting rearranged
+     * the toolbar you were about to use again.
+     */
+    <div className="relative">
       {/* One control, because the two buttons were the same action with a
           different range and read as two unrelated exports. */}
       <DropdownMenu>
@@ -158,10 +165,15 @@ export function ExportCsv({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {note && <span className="text-[12px] text-muted-foreground">{note}</span>}
-      {error && (
-        <span className="inline-flex items-center gap-1 text-[12px] font-medium text-destructive">
-          <AlertCircle className="size-3.5" /> {error}
+      {(note ?? error) && (
+        <span
+          className={cn(
+            "absolute top-full left-0 mt-0.5 inline-flex items-center gap-1 leading-none whitespace-nowrap text-[11px]",
+            error ? "font-medium text-destructive" : "text-muted-foreground",
+          )}
+        >
+          {error && <AlertCircle className="size-3" />}
+          {error ?? note}
         </span>
       )}
     </div>
