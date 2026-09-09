@@ -6,6 +6,7 @@
  * per-day one, would be worse than having no report at all. Anything summed
  * here is summed from the same list.
  */
+import { parseDateKey, weekKeyOf, weekRangeLabel } from "@/lib/domain/week";
 import type { Shaped } from "@/lib/export/time-dedication";
 
 export interface DetailRow {
@@ -159,6 +160,46 @@ export function perDayView(rows: readonly DetailRow[]): Shaped {
       .map(([k, value]) => {
         const [name, date] = unkey(k);
         return [name!, date!, round(value)];
+      })
+      .sort((a, b) => byText(a[0], b[0]) || byText(a[1], b[1])),
+  };
+}
+
+/**
+ * One line per person per week they logged anything.
+ *
+ * Weeks are anchored to the Sunday they start on, the same anchor the
+ * timesheet itself uses, so a week here is the same seven days the person
+ * filled in rather than an ISO week that starts on a different day and makes
+ * the totals impossible to reconcile against what they submitted.
+ */
+export function perWeekView(rows: readonly DetailRow[]): Shaped {
+  const hours = sumBy(rows, (row) => key(row.employeeName, weekKeyOf(parseDateKey(row.workDate))));
+  return {
+    headers: ["employee", "week_starting", "week", "hours"],
+    rows: [...hours.entries()]
+      .map(([k, value]) => {
+        const [name, week] = unkey(k);
+        return [name!, week!, weekRangeLabel(week!), round(value)];
+      })
+      .sort((a, b) => byText(a[0], b[0]) || byText(a[1], b[1])),
+  };
+}
+
+/**
+ * One line per person per calendar month.
+ *
+ * Written as `2026-09` rather than "September 2026" so a spreadsheet sorts it
+ * correctly without anybody having to reformat the column first.
+ */
+export function perMonthView(rows: readonly DetailRow[]): Shaped {
+  const hours = sumBy(rows, (row) => key(row.employeeName, row.workDate.slice(0, 7)));
+  return {
+    headers: ["employee", "month", "hours"],
+    rows: [...hours.entries()]
+      .map(([k, value]) => {
+        const [name, month] = unkey(k);
+        return [name!, month!, round(value)];
       })
       .sort((a, b) => byText(a[0], b[0]) || byText(a[1], b[1])),
   };

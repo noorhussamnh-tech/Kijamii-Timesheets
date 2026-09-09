@@ -5,7 +5,9 @@ import {
   perAccountByDayView,
   perAccountView,
   perDayView,
+  perMonthView,
   perTitleView,
+  perWeekView,
   summaryView,
   type DetailEmployee,
   type DetailRow,
@@ -219,5 +221,56 @@ describe("fullDetailView", () => {
     const shaped = fullDetailView([row({ title: null, department: null })]);
     expect(shaped.rows[0]![4]).toBe("");
     expect(shaped.rows[0]![3]).toBe("");
+  });
+});
+
+describe("perWeekView", () => {
+  it("anchors a week to the Sunday it starts on, matching the timesheet", () => {
+    // 9 and 10 Sep 2026 are the Wednesday and Thursday of the week beginning
+    // Sunday 6 Sep; 13 Sep is the Sunday after, and belongs to the next week.
+    const shaped = perWeekView([
+      row({ hours: 4, workDate: "2026-09-09" }),
+      row({ hours: 2, workDate: "2026-09-10" }),
+      row({ hours: 3, workDate: "2026-09-13" }),
+    ]);
+
+    expect(shaped.rows).toEqual([
+      ["Noor Hussam", "2026-09-06", "6 – 12 Sep 2026", 6],
+      ["Noor Hussam", "2026-09-13", "13 – 19 Sep 2026", 3],
+    ]);
+  });
+
+  it("totals the same as the per-day view, since both fold the same rows", () => {
+    const rows = [
+      row({ hours: 4, workDate: "2026-09-09" }),
+      row({ hours: 2.5, workDate: "2026-09-10" }),
+      row({ hours: 3, workDate: "2026-09-16" }),
+    ];
+    const weekly = perWeekView(rows).rows.reduce((sum, r) => sum + Number(r[3]), 0);
+    const daily = perDayView(rows).rows.reduce((sum, r) => sum + Number(r[2]), 0);
+    expect(weekly).toBe(daily);
+  });
+});
+
+describe("perMonthView", () => {
+  it("groups by calendar month, sortable as written", () => {
+    const shaped = perMonthView([
+      row({ hours: 4, workDate: "2026-08-31" }),
+      row({ hours: 2, workDate: "2026-09-01" }),
+      row({ hours: 1, workDate: "2026-09-30" }),
+    ]);
+
+    expect(shaped.rows).toEqual([
+      ["Noor Hussam", "2026-08", 4],
+      ["Noor Hussam", "2026-09", 3],
+    ]);
+  });
+
+  it("does not merge two people who worked the same month", () => {
+    const shaped = perMonthView([
+      row({ hours: 4 }),
+      row({ employeeId: "e2", employeeName: "Bahy Abo El Ezz", hours: 3 }),
+    ]);
+    expect(shaped.rows).toHaveLength(2);
   });
 });

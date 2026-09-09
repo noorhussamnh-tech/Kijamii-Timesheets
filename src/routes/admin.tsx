@@ -6,6 +6,7 @@ import { AlertCircle, ShieldAlert } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ExportCsv } from "@/components/ExportCsv";
 import { ExportEmployeeDetail } from "@/components/ExportEmployeeDetail";
+import { EmployeeExportMenu } from "@/components/EmployeeExportMenu";
 import { SyncDirectory } from "@/components/SyncDirectory";
 import { ExportTimeDedication } from "@/components/ExportTimeDedication";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -215,7 +216,7 @@ function AdminOverview() {
           ) : (
             <div className="overflow-hidden rounded-lg border bg-surface shadow-card">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[680px] text-left text-[13px]">
+                <table className="w-full min-w-[820px] text-left text-[13px]">
                   <thead>
                     <tr className="border-b bg-surface-muted">
                       <th scope="col" className="label-xs px-3 py-2.5">
@@ -235,6 +236,9 @@ function AdminOverview() {
                       </th>
                       <th scope="col" className="label-xs px-3 py-2.5">
                         Submitted
+                      </th>
+                      <th scope="col" className="label-xs px-3 py-2.5 text-right">
+                        Export
                       </th>
                     </tr>
                   </thead>
@@ -271,6 +275,11 @@ function AdminOverview() {
                           {row.submittedAt
                             ? format(new Date(row.submittedAt), "d MMM · HH:mm")
                             : "—"}
+                        </td>
+                        {/* Everything this person has logged, not just the week
+                            the table is showing. */}
+                        <td className="px-3 py-2.5">
+                          <EmployeeExportMenu employeeId={row.employeeId} name={row.name} />
                         </td>
                       </tr>
                     ))}
