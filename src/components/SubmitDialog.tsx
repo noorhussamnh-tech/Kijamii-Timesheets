@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Loader2, Lock } from "lucide-react";
+import { Loader2, PencilLine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,44 +13,55 @@ import {
 import { useAuth } from "@/lib/auth";
 import { formatHours } from "@/lib/domain/totals";
 import { MARKET_LABELS } from "@/lib/domain/types";
+import { isBlankRow, missingFields } from "@/lib/domain/validation";
 import { dayLabel, weekRangeLabel } from "@/lib/domain/week";
-import { useTimesheet } from "@/lib/timesheet-store";
+import { useTimesheet, type SubmitOutcome } from "@/lib/timesheet-store";
 
 /**
- * Explicit confirmation before anything is frozen. The button disables itself
- * for the duration of the request, so a double click cannot submit twice --
- * and even if one got through, the database would return the existing record
- * rather than create a second one.
+ * One Submit, and it always does something.
+ *
+ * There is no per-day variant: choosing between "this day" and "this week"
+ * was a decision the person had no reason to care about, and picking the
+ * wrong one was punished. And nothing is refused -- finished rows go, and
+ * anything unfinished stays a draft on the timesheet, which this says in
+ * advance so it is not a surprise afterwards.
+ *
+ * The button disables itself for the duration of the request, so a double
+ * click cannot file twice.
  */
 export function SubmitDialog({
   open,
   onOpenChange,
   onConfirmed,
-  date,
 }: {
   open: boolean;
   onOpenChange: (value: boolean) => void;
-  onConfirmed: () => void;
-  date?: string | null | undefined;
+  onConfirmed: (outcome: SubmitOutcome) => void;
 }) {
-  const { weekKey, totals, submitWeek, submitDay, entries, submitting } = useTimesheet();
+  const { weekKey, totals, submitWeek, entries, submitting } = useTimesheet();
   const { employee } = useAuth();
   const [busy, setBusy] = useState(false);
 
-  const isDay = Boolean(date);
-  const dayTotal = date
-    ? entries
-        .filter((row) => row.workDate === date)
-        .reduce((sum, row) => sum + (typeof row.hours === "number" ? row.hours : 0), 0)
-    : 0;
+  /*
+   * The same split the database will make, worked out here so the dialog can
+   * say what is about to happen rather than reporting it afterwards. An
+   * untouched empty row is neither: it is furniture, not unfinished work.
+   */
+  const meaningful = entries.filter((row) => !isBlankRow(row));
+  const holding = meaningful.filter((row) => missingFields(row).length > 0);
+  const ready = meaningful.length - holding.length;
+  const heldDays = [...new Set(holding.map((row) => row.workDate))].sort();
+  const readyHours = meaningful
+    .filter((row) => missingFields(row).length === 0)
+    .reduce((sum, row) => sum + (typeof row.hours === "number" ? row.hours : 0), 0);
 
   const confirm = async () => {
     if (busy || submitting) return;
     setBusy(true);
     try {
-      const result = date ? await submitDay(date) : await submitWeek();
+      const result = await submitWeek();
       onOpenChange(false);
-      if (result) onConfirmed();
+      if (result) onConfirmed(result);
     } finally {
       setBusy(false);
     }
@@ -62,33 +73,29 @@ export function SubmitDialog({
     <Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
       <DialogContent className="sm:max-w-[430px]">
         <DialogHeader>
-          <DialogTitle className="text-base">
-            {isDay ? "Submit this day?" : "Submit this week?"}
-          </DialogTitle>
+          <DialogTitle className="text-base">Submit this week?</DialogTitle>
           <DialogDescription className="text-[13px]">
-            Check the totals below before submitting.
+            {ready === 0
+              ? "Nothing is ready to send yet."
+              : `${ready} row${ready === 1 ? "" : "s"} will be sent.`}
           </DialogDescription>
         </DialogHeader>
 
         <dl className="space-y-2 rounded-lg border bg-surface-muted p-3 text-[13px]">
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">{isDay ? "Day" : "Week"}</dt>
-            <dd className="num text-right font-semibold">
-              {isDay && date ? dayLabel(date) : weekRangeLabel(weekKey)}
-            </dd>
+            <dt className="text-muted-foreground">Week</dt>
+            <dd className="num text-right font-semibold">{weekRangeLabel(weekKey)}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Total hours</dt>
-            <dd className="num font-semibold">{formatHours(isDay ? dayTotal : totals.total)}</dd>
+            <dt className="text-muted-foreground">Hours being sent</dt>
+            <dd className="num font-semibold">{formatHours(readyHours)}</dd>
           </div>
-          {!isDay && (
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Billable / non-billable</dt>
-              <dd className="num font-semibold">
-                {formatHours(totals.billable)} / {formatHours(totals.nonBillable)}
-              </dd>
-            </div>
-          )}
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted-foreground">Billable / non-billable</dt>
+            <dd className="num font-semibold">
+              {formatHours(totals.billable)} / {formatHours(totals.nonBillable)}
+            </dd>
+          </div>
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">Submitting as</dt>
             <dd className="truncate text-right font-semibold">{employee?.email}</dd>
@@ -101,12 +108,21 @@ export function SubmitDialog({
           )}
         </dl>
 
-        <p className="flex items-start gap-2 text-[12px] text-muted-foreground">
-          <Lock className="mt-0.5 size-3.5 shrink-0" />
-          {isDay
-            ? "This day's entries become read-only. The rest of the week stays editable."
-            : "Submitted entries become read-only. An admin can reopen the week if a correction is needed."}
-        </p>
+        {/*
+          Said before rather than after. An unfinished row is not an error and
+          does not stop anything -- it simply is not ready, and stays where it
+          is until it is.
+        */}
+        {holding.length > 0 && (
+          <p className="flex items-start gap-2 rounded-md bg-warning-soft p-2.5 text-[12px] font-medium text-warning">
+            <PencilLine className="mt-0.5 size-3.5 shrink-0" />
+            {holding.length} row{holding.length === 1 ? "" : "s"} on{" "}
+            {heldDays.map((day) => dayLabel(day)).join(", ")} still need
+            {holding.length === 1 ? "s" : ""} filling in. {holding.length === 1 ? "It" : "They"}{" "}
+            will stay here as a draft and can be sent whenever you finish{" "}
+            {holding.length === 1 ? "it" : "them"}.
+          </p>
+        )}
 
         <DialogFooter>
           <Button
@@ -117,9 +133,9 @@ export function SubmitDialog({
           >
             Keep editing
           </Button>
-          <Button size="sm" onClick={() => void confirm()} disabled={pending}>
+          <Button size="sm" onClick={() => void confirm()} disabled={pending || ready === 0}>
             {pending && <Loader2 className="size-3.5 animate-spin" />}
-            {pending ? "Submitting…" : "Confirm and submit"}
+            {pending ? "Submitting…" : ready === 0 ? "Nothing to send" : "Confirm and submit"}
           </Button>
         </DialogFooter>
       </DialogContent>

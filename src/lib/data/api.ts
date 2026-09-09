@@ -300,6 +300,12 @@ export async function saveDraft(
 export interface SubmitResult {
   ok: boolean;
   alreadySubmitted: boolean;
+  /** Rows this press actually filed. */
+  filed: number;
+  /** Rows left as drafts because they are not finished. Never a refusal. */
+  held: number;
+  /** The days those rows are on, so they can be named rather than counted. */
+  heldDays: string[];
   submissionId?: string;
   submittedAt?: string;
   totalHours?: number;
@@ -314,6 +320,9 @@ export async function submitWeek(weekStart: string): Promise<SubmitResult> {
   // Postgres returns numerics as strings; coerce only the keys that are present.
   return {
     ...result,
+    filed: Number(result.filed ?? 0),
+    held: Number(result.held ?? 0),
+    heldDays: result.heldDays ?? [],
     ...(result.totalHours === undefined ? {} : { totalHours: Number(result.totalHours) }),
     ...(result.billableHours === undefined ? {} : { billableHours: Number(result.billableHours) }),
     ...(result.nonBillableHours === undefined
@@ -321,13 +330,6 @@ export async function submitWeek(weekStart: string): Promise<SubmitResult> {
       : { nonBillableHours: Number(result.nonBillableHours) }),
     ...(result.missingHours === undefined ? {} : { missingHours: Number(result.missingHours) }),
   };
-}
-
-export async function submitDay(weekStart: string, workDate: string): Promise<SubmitResult> {
-  return rpc<SubmitResult>("ts_submit_day", {
-    p_week_start: weekStart,
-    p_work_date: workDate,
-  });
 }
 
 export async function fetchMySubmissions(): Promise<SubmissionSummary[]> {

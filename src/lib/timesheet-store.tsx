@@ -55,6 +55,10 @@ export type SaveState = "idle" | "saving" | "saved" | "error";
 export interface SubmitOutcome {
   ok: boolean;
   alreadySubmitted: boolean;
+  /** How many rows this press filed, and how many it left behind. */
+  filed: number;
+  held: number;
+  heldDays: string[];
   totalHours: number;
   submittedAt: string | null;
   weekStart: WeekKey;
@@ -112,8 +116,13 @@ interface TimesheetContextValue {
   saveDraft: () => Promise<void>;
 
   submitting: boolean;
+  /**
+   * Files every finished row and leaves the rest alone.
+   *
+   * There is no per-day variant and no refusal. One unfinished row used to
+   * block the whole week, which meant four correct days waited on a fifth.
+   */
   submitWeek: () => Promise<SubmitOutcome | null>;
-  submitDay: (date: string) => Promise<SubmitOutcome | null>;
   lastSubmission: SubmitOutcome | null;
 
   showErrors: boolean;
@@ -515,68 +524,48 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
 
   // ------------------------------------------------------------- submit
 
-  const runSubmit = useCallback(
-    async (scope: string | null): Promise<SubmitOutcome | null> => {
-      if (submitting) return null;
-
-      const result = validateWeek(entriesRef.current, weekKey, {
-        ...(scope ? { scope } : {}),
-      });
-      if (!result.ok) {
-        setShowErrors(true);
-        return null;
+  const submitWeek = useCallback(async (): Promise<SubmitOutcome | null> => {
+    if (submitting) return null;
+    setSubmitting(true);
+    try {
+      // Flush pending edits first so the server files what is on screen.
+      clearTimeout(saveTimer.current);
+      if (JSON.stringify(entriesRef.current) !== savedSnapshot) {
+        const ok = await persist(entriesRef.current);
+        if (!ok && saveState === "error") return null;
       }
 
-      setSubmitting(true);
-      try {
-        // Flush pending edits first so the server submits what is on screen.
-        clearTimeout(saveTimer.current);
-        if (JSON.stringify(entriesRef.current) !== savedSnapshot) {
-          const ok = await persist(entriesRef.current);
-          if (!ok && saveState === "error") return null;
-        }
+      const response = await api.submitWeek(weekKey);
 
-        const response = scope
-          ? await api.submitDay(weekKey, scope)
-          : await api.submitWeek(weekKey);
+      const outcome: SubmitOutcome = {
+        ok: true,
+        alreadySubmitted: Boolean(response.alreadySubmitted),
+        filed: response.filed,
+        held: response.held,
+        heldDays: response.heldDays,
+        totalHours: response.totalHours ?? totals.total,
+        submittedAt: response.submittedAt ?? null,
+        weekStart: weekKey,
+      };
 
-        if (response.ok === false) {
-          setShowErrors(true);
-          setSaveError(response.problems?.[0]?.message ?? "This week is not ready to submit.");
-          return null;
-        }
-
-        const outcome: SubmitOutcome = {
-          ok: true,
-          alreadySubmitted: Boolean(response.alreadySubmitted),
-          totalHours: response.totalHours ?? totals.total,
-          submittedAt: response.submittedAt ?? null,
-          weekStart: weekKey,
-        };
-
-        if (scope) {
-          setLockedDays((days) => (days.includes(scope) ? days : [...days, scope]));
-        } else {
-          setStatus("submitted");
-          setLastSubmission(outcome);
-        }
-        setShowErrors(false);
-        setReloadKey((key) => key + 1);
-        return outcome;
-      } catch (cause) {
-        setSaveError(
-          cause instanceof api.ApiError ? cause.message : "Could not submit. Please try again.",
-        );
-        return null;
-      } finally {
-        setSubmitting(false);
+      if (outcome.filed > 0) {
+        setStatus("submitted");
+        setLastSubmission(outcome);
       }
-    },
-    [submitting, weekKey, savedSnapshot, persist, saveState, totals.total],
-  );
-
-  const submitWeek = useCallback(() => runSubmit(null), [runSubmit]);
-  const submitDay = useCallback((date: string) => runSubmit(date), [runSubmit]);
+      // The unfinished rows are pointed at rather than complained about: they
+      // were not the reason anything failed, because nothing failed.
+      setShowErrors(outcome.held > 0);
+      setReloadKey((key) => key + 1);
+      return outcome;
+    } catch (cause) {
+      setSaveError(
+        cause instanceof api.ApiError ? cause.message : "Could not submit. Please try again.",
+      );
+      return null;
+    } finally {
+      setSubmitting(false);
+    }
+  }, [submitting, weekKey, savedSnapshot, persist, saveState, totals.total]);
 
   // ------------------------------------------------------------ context
 
@@ -623,7 +612,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       saveDraft,
       submitting,
       submitWeek,
-      submitDay,
       lastSubmission,
       showErrors,
       setShowErrors,
@@ -663,7 +651,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       saveDraft,
       submitting,
       submitWeek,
-      submitDay,
       lastSubmission,
       showErrors,
       validation,

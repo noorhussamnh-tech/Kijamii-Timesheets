@@ -49,7 +49,6 @@ function TimesheetPage() {
   // is the moment worth marking. Unlike the milestones on My Time this is not
   // rationed: sending your week is an achievement every week.
   const [justSubmitted, setJustSubmitted] = useState(0);
-  const [submitDate, setSubmitDate] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Fetched here rather than inside each component, so the note above and the
@@ -80,11 +79,6 @@ function TimesheetPage() {
     () => (loggedDays ? monthCoverage(month, loggedDays, config.workDays) : null),
     [loggedDays, config.workDays],
   );
-
-  const openConfirm = (date: string | null) => {
-    setSubmitDate(date);
-    setConfirmOpen(true);
-  };
 
   const issueCount = rowIssues.length + weekIssues.length;
 
@@ -162,22 +156,21 @@ function TimesheetPage() {
         <TimesheetGrid />
       </div>
 
-      <SummaryBar
-        onSubmitDay={(date) => openConfirm(date)}
-        onSubmitWeek={() => openConfirm(null)}
-      />
+      <SummaryBar onSubmit={() => setConfirmOpen(true)} />
       <SubmitDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        date={submitDate}
-        onConfirmed={() => {
-          if (!submitDate) {
+        onConfirmed={(outcome) => {
+          // Leaving for the confirmation page is only right when there is
+          // nothing left to do here. With rows still waiting, walking the
+          // person away from the timesheet is the last thing that helps --
+          // they stay, the burst still fires for what they did send, and the
+          // waiting rows are outlined behind it.
+          if (outcome.held === 0) {
             void navigate({ to: "/submitted" });
             return;
           }
-          // A day was sent and the person stays on this page to see it. The
-          // counter keys the burst so submitting twice fires twice.
-          setJustSubmitted((n) => n + 1);
+          if (outcome.filed > 0) setJustSubmitted((n) => n + 1);
         }}
       />
     </>

@@ -1,19 +1,16 @@
-import { ChevronUp, Loader2, Save, Send } from "lucide-react";
+import { Loader2, Save, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { dayLabel } from "@/lib/domain/week";
 import { useTimesheet } from "@/lib/timesheet-store";
 
 /**
- * Save and submit, and nothing else.
+ * Save and submit, and nothing else -- and Submit is one button.
+ *
+ * It used to open a menu offering each day of the week separately and then
+ * "Submit whole week" underneath. That asked people to make a choice they had
+ * no reason to care about, and punished them for making the wrong one: a week
+ * carrying one unfinished row refused every finished row with it. Submit now
+ * sends what is ready and leaves the rest as drafts.
  *
  * This bar used to carry a running scoreboard -- hours against forty, a
  * billable split, hours remaining, a status pill. All of it is gone. A total
@@ -23,24 +20,8 @@ import { useTimesheet } from "@/lib/timesheet-store";
  * the submit dialog's receipt, and on the admin page, where it is read-only
  * and belongs to somebody else.
  */
-export function SummaryBar({
-  onSubmitDay,
-  onSubmitWeek,
-}: {
-  onSubmitDay: (date: string) => void;
-  onSubmitWeek: () => void;
-}) {
-  const { saveDraft, dirty, submitting, isDayLocked, selectableDates, entries } = useTimesheet();
-
-  /**
-   * Every day that can still be submitted on its own: it has happened, it has
-   * entries, and it is not already locked. Listing them means a day can be
-   * submitted after the fact -- catching up on Thursday still lets Monday be
-   * closed off separately.
-   */
-  const daysWithEntries = selectableDates.filter((date) =>
-    entries.some((row) => row.workDate === date),
-  );
+export function SummaryBar({ onSubmit }: { onSubmit: () => void }) {
+  const { saveDraft, dirty, submitting } = useTimesheet();
 
   return (
     <div className="sticky bottom-0 z-20 -mx-4 border-t bg-surface/95 px-4 py-3 shadow-raised backdrop-blur sm:-mx-6 sm:px-6">
@@ -53,58 +34,14 @@ export function SummaryBar({
         >
           <Save className="size-3.5" /> Save draft
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            {/* Disabled while a submission is in flight, so a double
-                      click cannot start a second one. */}
-            <Button size="sm" className="gap-2 px-4" disabled={submitting}>
-              {submitting ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Send className="size-3.5" />
-              )}
-              {submitting ? "Submitting…" : "Submit"}
-              <ChevronUp className="size-3.5 opacity-80" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" side="top" className="w-64">
-            {daysWithEntries.length > 0 && (
-              <>
-                <DropdownMenuLabel className="label-xs">Submit a single day</DropdownMenuLabel>
-                {/* A day can be submitted again. Adding rows to a day that
-                      was already sent is allowed, so refusing to send them
-                      would be a dead end: the rows would sit there forever
-                      with no way out. What decides the state here is whether
-                      anything on the day is still a draft, never whether the
-                      day was submitted before. */}
-                {daysWithEntries.map((date) => {
-                  const pending = entries.filter(
-                    (row) => row.workDate === date && row.status === "draft",
-                  ).length;
-                  const sentBefore = isDayLocked(date);
-                  return (
-                    <DropdownMenuItem
-                      key={date}
-                      disabled={pending === 0}
-                      onClick={() => pending > 0 && onSubmitDay(date)}
-                    >
-                      {dayLabel(date)}
-                      <span className="ml-auto text-[11px] text-muted-foreground">
-                        {pending === 0
-                          ? "sent"
-                          : sentBefore
-                            ? `${pending} new`
-                            : `${pending} row${pending === 1 ? "" : "s"}`}
-                      </span>
-                    </DropdownMenuItem>
-                  );
-                })}
-                <DropdownMenuSeparator />
-              </>
-            )}
-            <DropdownMenuItem onClick={onSubmitWeek}>Submit whole week</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button size="sm" className="gap-2 px-4" disabled={submitting} onClick={onSubmit}>
+          {submitting ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Send className="size-3.5" />
+          )}
+          {submitting ? "Submitting…" : "Submit"}
+        </Button>
       </div>
     </div>
   );
