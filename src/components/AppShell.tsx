@@ -78,20 +78,17 @@ function ShellChrome({
     void navigate({ to: "/", replace: true });
   };
 
-  // Markets are changeable now that people serve several in parallel, so the
-  // chip is a control. Every submitted row keeps the market it was filed
-  // under, so changing this never rewrites history.
+  /*
+   * Who the company says this person is.
+   *
+   * Read-only, and shown rather than hidden precisely because it is no longer
+   * asked for: if the employee list has somebody in the wrong department, the
+   * fastest way for that to be found is for them to see it every day. It used
+   * to be a control that reopened the questionnaire; there is no questionnaire
+   * to reopen.
+   */
   const marketLabel = employee?.primaryMarket ? MARKET_LABELS[employee.primaryMarket] : null;
-  const extraMarkets = (employee?.markets.length ?? 0) - 1;
-
-  const changeMarkets = () => {
-    try {
-      window.sessionStorage.removeItem("kijamii-markets-confirmed");
-    } catch {
-      /* storage unavailable; reloading still reaches the question */
-    }
-    window.location.reload();
-  };
+  const placement = [marketLabel, employee?.department].filter(Boolean).join(" · ");
 
   return (
     <div className="min-h-screen bg-background lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
@@ -108,12 +105,11 @@ function ShellChrome({
             {employee?.fullName}
           </p>
           <p className="truncate text-[11px] text-sidebar-foreground/60">{employee?.email}</p>
-          {marketLabel && (
-            <p className="mt-1 truncate text-[11px] text-sidebar-foreground/50">
-              {marketLabel}
-              {extraMarkets > 0 && ` +${extraMarkets}`}
-              {employee?.department ? ` · ${employee.department}` : ""}
-            </p>
+          {employee?.title && (
+            <p className="mt-1 truncate text-[11px] text-sidebar-foreground/60">{employee.title}</p>
+          )}
+          {placement && (
+            <p className="truncate text-[11px] text-sidebar-foreground/50">{placement}</p>
           )}
           <button
             onClick={() => void handleSignOut()}
@@ -157,19 +153,13 @@ function ShellChrome({
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              {marketLabel && (
-                <button
-                  type="button"
-                  onClick={changeMarkets}
-                  title="Change your markets or department"
-                  className="hidden items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors hover:border-border-strong sm:inline-flex"
+              {placement && (
+                <span
+                  title="From the company employee list. Ask People & Culture if it is wrong."
+                  className="hidden items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold sm:inline-flex"
                 >
-                  <span className="label-xs">Market</span>
-                  {marketLabel}
-                  {extraMarkets > 0 && (
-                    <span className="text-muted-foreground">+{extraMarkets}</span>
-                  )}
-                </button>
+                  {placement}
+                </span>
               )}
               {actions}
               <ThemeToggle />

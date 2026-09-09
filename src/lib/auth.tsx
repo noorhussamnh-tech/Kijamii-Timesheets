@@ -36,8 +36,13 @@ export type AuthStatus =
    * network merely blinked is both wrong and alarming.
    */
   | "error"
-  /** Authorized, but has not chosen their markets yet. */
-  | "onboarding"
+  /**
+   * On the roster, but the directory has not told us enough to run a
+   * timesheet -- no readable region, so no working week. Nobody in the sheet
+   * lands here; it is what an unrecognised entity looks like instead of a
+   * silently wrong default.
+   */
+  | "incomplete"
   | "ready"
   /** Supabase credentials are missing from the environment. */
   | "misconfigured";
@@ -164,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session) return "signedOut";
     if (lookupFailed) return "error";
     if (!employee || !employee.active) return "unauthorized";
-    if (!employee.onboarded) return "onboarding";
+    if (!employee.provisioned) return "incomplete";
     return "ready";
   }, [resolved, session, employee, lookupFailed]);
 

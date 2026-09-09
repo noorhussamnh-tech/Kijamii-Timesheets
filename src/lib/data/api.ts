@@ -50,9 +50,6 @@ const FRIENDLY_ERRORS: Record<string, string> = {
   not_authorized: "Your account is not authorized to access Kijamii Timesheets.",
   week_must_start_sunday: "Weeks run Sunday to Saturday.",
   no_draft: "There is nothing saved for this week yet.",
-  already_onboarded: "Your profile has already been set up.",
-  invalid_primary_market: "Choose a main market from the markets you selected.",
-  markets_required: "Select at least one market.",
   date_outside_week: "That date falls outside the selected week.",
 };
 
@@ -84,6 +81,8 @@ interface EmployeeRow {
   markets: Market[] | null;
   primary_market: Market | null;
   department: string | null;
+  title: string | null;
+  job_function: string | null;
   timesheet_configuration: "EG_UAE" | "KSA" | null;
   expected_weekly_hours: number | string;
   role: "employee" | "admin";
@@ -99,62 +98,34 @@ function toEmployee(row: EmployeeRow): Employee {
     markets: row.markets ?? [],
     primaryMarket: row.primary_market,
     department: row.department,
+    title: row.title,
+    jobFunction: row.job_function,
     configuration: row.timesheet_configuration,
     expectedWeeklyHours: Number(row.expected_weekly_hours),
     role: row.role,
     active: row.active,
-    onboarded: row.onboarded_at !== null,
+    provisioned: row.onboarded_at !== null,
   };
 }
 
 /**
  * The signed-in employee, or null when the address has no roster record --
- * which is how an unauthorized account presents.
+ * which is how somebody the company directory has never heard of presents.
  *
- * The filter on auth_user_id is doing real work and must stay. Row-level
+ * A function call rather than a select, because reading the profile is also
+ * what refreshes it. The directory decides this person's department, title,
+ * function and region, and the database re-applies it here on every sign-in --
+ * so a promotion or a move between teams reaches the app without anybody
+ * pressing anything, and without anybody being asked to type it.
+ *
+ * It also puts the row behind a filter the client cannot get wrong. Row-level
  * security scopes this table to "your own row OR everything, if you are an
- * admin", so for an admin the policy alone narrows nothing: asking for a
- * single row would match the whole roster and fail. Security is still the
- * database's to enforce -- this only says which row we are asking for.
+ * admin", so an admin selecting a single row from it used to match the whole
+ * roster and fail.
  */
 export async function fetchCurrentEmployee(): Promise<Employee | null> {
-  const supabase = requireSupabaseBrowserClient();
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const authUserId = session?.user?.id;
-  if (!authUserId) return null;
-
-  const { data, error } = await supabase
-    .from("ts_employees")
-    .select(
-      "id, full_name, email, markets, primary_market, department, timesheet_configuration, expected_weekly_hours, role, active, onboarded_at",
-    )
-    .eq("auth_user_id", authUserId)
-    .maybeSingle();
-
-  if (error) {
-    console.error("[timesheets] employee lookup failed", { code: error.code });
-    throw toApiError(error);
-  }
-  if (!data) return null;
-  return toEmployee(data as EmployeeRow);
-}
-
-export async function completeOnboarding(input: {
-  markets: Market[];
-  primaryMarket: Market;
-  department: string | null;
-  expectedWeeklyHours: number;
-}): Promise<Employee> {
-  const row = await rpc<EmployeeRow>("ts_complete_onboarding", {
-    p_markets: input.markets,
-    p_primary_market: input.primaryMarket,
-    p_department: input.department,
-    p_expected_hours: input.expectedWeeklyHours,
-  });
-  return toEmployee(row);
+  const row = await rpc<EmployeeRow | null>("ts_my_profile");
+  return row ? toEmployee(row) : null;
 }
 
 // ---------------------------------------------------------------- reference
@@ -483,22 +454,28 @@ export async function fetchEmployeeDetail(
   };
 }
 
-/** What a title sync did, so the admin sees a real answer rather than "done". */
-export interface TitleSyncResult {
-  matched: number;
-  updated: number;
+/** What a sync did, so the admin sees a real answer rather than "done". */
+export interface DirectorySyncResult {
   directory_rows: number;
-  accounts_without_title: number;
+  applied: number;
+  /** People who were not on the roster at all until this run. */
+  created: number;
+  /** On the roster but with no readable region, so no timesheet yet. */
+  unmapped: number;
+  /** On the roster but absent from the sheet -- reported, never switched off. */
+  not_in_directory: number;
 }
 
 /**
- * Re-applies job titles from the agency directory to the accounts that exist.
+ * Re-reads the company directory onto every roster record.
  *
- * Safe to run whenever: it only writes where a title actually differs, so
- * pressing it twice is not a second change.
+ * People pick their own details up when they sign in, so this is for the case
+ * where the sheet changed under somebody already here -- a promotion, a move
+ * between teams, or a new joiner who should appear in the reports before their
+ * first login. Safe to run twice: it writes the same answer.
  */
-export async function syncTitlesFromDirectory(): Promise<TitleSyncResult> {
-  return rpc<TitleSyncResult>("ts_sync_titles_from_directory");
+export async function syncDirectory(): Promise<DirectorySyncResult> {
+  return rpc<DirectorySyncResult>("ts_sync_directory");
 }
 
 /** The signed-in employee's own statistics. Scoped by the database to them. */

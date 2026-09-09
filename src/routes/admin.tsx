@@ -6,7 +6,7 @@ import { AlertCircle, ShieldAlert } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ExportCsv } from "@/components/ExportCsv";
 import { ExportEmployeeDetail } from "@/components/ExportEmployeeDetail";
-import { SyncTitles } from "@/components/SyncTitles";
+import { SyncDirectory } from "@/components/SyncDirectory";
 import { ExportTimeDedication } from "@/components/ExportTimeDedication";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -175,7 +175,7 @@ function AdminOverview() {
           <ExportCsv weekStart={week} market={market} department={department} />
           <ExportTimeDedication />
           <ExportEmployeeDetail market={market} department={department} />
-          <SyncTitles />
+          <SyncDirectory />
         </div>
       </div>
 
@@ -208,7 +208,8 @@ function AdminOverview() {
             <div className="rounded-lg border border-dashed bg-surface px-6 py-12 text-center">
               <h2 className="text-sm font-bold">No employees match these filters</h2>
               <p className="mt-1 text-[13px] text-muted-foreground">
-                Only people who have completed onboarding appear here.
+                Everybody on the company employee list appears here, whether or not they have logged
+                anything.
               </p>
             </div>
           ) : (

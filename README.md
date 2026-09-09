@@ -46,14 +46,14 @@ The app runs at <http://localhost:8080>.
 
 Useful scripts:
 
-| Script | What it does |
-| --- | --- |
-| `npm run dev` | Development server with hot reload |
-| `npm run build` | Production build (Nitro, Vercel preset) |
-| `npm run lint` | ESLint + Prettier |
-| `npm run typecheck` | TypeScript, no emit |
-| `npm run test` | Vitest unit tests |
-| `npm run verify` | Lint, typecheck, test and build in sequence |
+| Script              | What it does                                |
+| ------------------- | ------------------------------------------- |
+| `npm run dev`       | Development server with hot reload          |
+| `npm run build`     | Production build (Nitro, Vercel preset)     |
+| `npm run lint`      | ESLint + Prettier                           |
+| `npm run typecheck` | TypeScript, no emit                         |
+| `npm run test`      | Vitest unit tests                           |
+| `npm run verify`    | Lint, typecheck, test and build in sequence |
 
 Run `npm run verify` before pushing; it is the same sequence CI should run.
 
@@ -66,13 +66,13 @@ are `*.pem`, `*.key` and `service-account*.json`.
 
 ### Required
 
-| Variable | Public? | Description |
-| --- | --- | --- |
-| `VITE_SUPABASE_URL` | **Yes** | Project URL, e.g. `https://xxxx.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | **Yes** | Publishable (`sb_publishable_…`) key |
-| `ALLOWED_EMAIL_DOMAINS` | No | Comma-separated, e.g. `kijamii.com` |
-| `SEED_ADMIN_EMAILS` | No | Comma-separated addresses granted admin on first sign-in |
-| `VITE_SITE_URL` | Yes | Public origin, used to build the OAuth redirect |
+| Variable                        | Public? | Description                                              |
+| ------------------------------- | ------- | -------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | **Yes** | Project URL, e.g. `https://xxxx.supabase.co`             |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | **Yes** | Publishable (`sb_publishable_…`) key                     |
+| `ALLOWED_EMAIL_DOMAINS`         | No      | Comma-separated, e.g. `kijamii.com`                      |
+| `SEED_ADMIN_EMAILS`             | No      | Comma-separated addresses granted admin on first sign-in |
+| `VITE_SITE_URL`                 | Yes     | Public origin, used to build the OAuth redirect          |
 
 > **On the two "public" values.** Anything prefixed `VITE_` is compiled into
 > the browser bundle — that is by design. The publishable key grants no access
@@ -82,12 +82,12 @@ are `*.pem`, `*.key` and `service-account*.json`.
 
 ### Secret — server only
 
-| Variable | Description |
-| --- | --- |
-| `SUPABASE_SERVICE_ROLE_KEY` | Bypasses row-level security. Maintenance scripts only. |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Service account for the Sheets export |
-| `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | Its private key, newlines written as `\n` |
-| `GOOGLE_SHEETS_SPREADSHEET_ID` | Target spreadsheet for the export |
+| Variable                             | Description                                            |
+| ------------------------------------ | ------------------------------------------------------ |
+| `SUPABASE_SERVICE_ROLE_KEY`          | Bypasses row-level security. Maintenance scripts only. |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL`       | Service account for the Sheets export                  |
+| `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | Its private key, newlines written as `\n`              |
+| `GOOGLE_SHEETS_SPREADSHEET_ID`       | Target spreadsheet for the export                      |
 
 **Never prefix a secret with `VITE_`.** That would publish it to every visitor.
 
@@ -194,13 +194,13 @@ failed sign-in.
 https://<your-supabase-ref>.supabase.co/auth/v1/callback
 ```
 
-That is the *Supabase* callback, not the app's. Google talks to Supabase.
+That is the _Supabase_ callback, not the app's. Google talks to Supabase.
 
 **Supabase → Authentication → URL Configuration**
 
-| Field | Value |
-| --- | --- |
-| Site URL | `https://timesheets.kijamii.com` (your production origin) |
+| Field         | Value                                                                                   |
+| ------------- | --------------------------------------------------------------------------------------- |
+| Site URL      | `https://timesheets.kijamii.com` (your production origin)                               |
 | Redirect URLs | `https://timesheets.kijamii.com/auth/callback`<br>`http://localhost:8080/auth/callback` |
 
 **The app** builds its redirect from `window.location.origin`, so preview
@@ -231,10 +231,39 @@ server entry, so they travel with the app rather than living in host config.
 
 ## 8. Adding or disabling an employee
 
-**There is no roster to maintain for adding people.** Anyone with a verified
-email on an allowed domain gets a timesheet record automatically the first time
-they sign in, and chooses their markets and department on a one-time onboarding
-screen. New hires need no action at all.
+**The roster is the company employee list, and it is maintained in the sheet,
+not here.** `ts_employee_directory` mirrors the "Employee List - CI" sheet on
+Drive -- name, email, entity, business unit, sub-unit, function and position --
+and every person in it has a timesheet record whether or not they have ever
+signed in. Signing in re-reads that record, so department, title, function and
+region are never typed by the person they describe.
+
+**To add a new joiner:** add them to the sheet, then load the sheet into
+`ts_employee_directory` and press **Sync directory** on the admin page (or wait
+for their first sign-in, which applies their own row on its own). They appear
+in the reports at zero hours from the moment the directory has them.
+
+**How the sheet's columns become app fields** -- `ts_directory_market` and
+`ts_directory_department`, both in migration 0017:
+
+| Sheet         | App              | Notes                                                                                                       |
+| ------------- | ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| Entity        | `primary_market` | `Kijamii` → EG, `UAE` → UAE, `KSA` → KSA. Decides the working week.                                         |
+| Business Unit | `department`     | `Client Servicing` → Account Management, `Media Planning & Buying` → Media Buying, `Regional` → Management. |
+| Sub-Unit      | `department`     | Only within Creative: Studio, Sports and Entertainment are departments of their own.                        |
+| Function      | `job_function`   | Verbatim.                                                                                                   |
+| Position      | `title`          | Verbatim.                                                                                                   |
+
+`markets` is set to all three for everybody, deliberately: it decides which
+clients appear in the picker, and the sheet answers a different question. It
+records the entity that employs somebody, and the sheet itself has Egypt-entity
+staff working KSA accounts. The market on each logged row still comes from the
+client, so the reporting stays market-accurate.
+
+An unrecognised entity leaves the person un-onboarded rather than guessed at:
+they are told their record is missing a region instead of being given the wrong
+working week. An address that is not in the sheet at all is told so, and asked
+to speak to People & Culture.
 
 **To remove access**, disable the person's Google Workspace account — that is
 the single source of truth and it revokes access everywhere at once.
@@ -248,8 +277,10 @@ update ts_employees set active = false where email = 'someone@kijamii.com';
 An inactive employee sees "Your account is not authorized to access Kijamii
 Timesheets." and can do nothing else. Their submitted history is retained.
 
-**To correct someone's market, department, hours or role** (markets lock after
-onboarding precisely so people cannot reassign themselves):
+**To correct someone's market, department, hours or role.** Department, title,
+function and region come from the sheet and are overwritten on the next sign-in
+or sync, so correct those in the sheet. This is for the fields the sheet does
+not carry -- expected hours, role, active -- and for a temporary override:
 
 ```sql
 select ts_admin_update_employee(
@@ -310,10 +341,10 @@ identical field list; `KSA_CONFIG` exists as a separate object so its columns,
 hour rules or working week can diverge without touching Egypt and UAE.
 
 **Which configuration someone gets** is decided by their **primary market**:
-`KSA` → `KSA_CONFIG`, everything else → `EG_UAE_CONFIG`. This is set at
-onboarding by `ts_complete_onboarding` and mirrored in TypeScript by
-`configForMarket`. An employee spanning several markets sees all of their
-markets' clients but follows their primary market's configuration.
+`KSA` → `KSA_CONFIG`, everything else → `EG_UAE_CONFIG`. This follows from the
+employing entity in the directory, is applied by `ts_apply_directory`, and is
+mirrored in TypeScript by `configForMarket`. Everybody sees every market's
+clients but follows their own entity's configuration.
 
 To give KSA a different field, edit `KSA_CONFIG.fields` only:
 
@@ -342,7 +373,8 @@ instead.
 After deploying, confirm the whole path end to end:
 
 1. Sign in at the production URL with a Kijamii account.
-2. Complete onboarding — pick markets and a department.
+2. Confirm the sidebar names your region and department — they come from the
+   employee list, and there is nothing to fill in.
 3. Add a row: date, client, service, project type, task, hours (e.g. `4.25`).
 4. Wait ~2 seconds and confirm the indicator reads **Saved HH:MM**, not
    "Saving…" or "Save failed".
@@ -416,7 +448,7 @@ creates a row when Google reports the address as verified.
 
 **Sign-in redirects back to the sign-in page.**
 Almost always a redirect URL mismatch. The app's origin must be in Supabase's
-Redirect URLs, and Google's redirect URI must be the *Supabase* callback
+Redirect URLs, and Google's redirect URI must be the _Supabase_ callback
 (`https://<ref>.supabase.co/auth/v1/callback`), not the app's.
 
 **"Timesheets is not configured".**
@@ -436,8 +468,8 @@ the project is not paused (free projects pause after ~a week of inactivity).
 
 **Dropdowns are empty.**
 Reference data did not load. Confirm `ts_clients` / `ts_services` have rows and
-that the person completed onboarding — the read policies require an onboarded
-employee record.
+that the person has a provisioned employee record — the read policies require
+one, and a directory row with an unreadable entity does not produce one.
 
 **Export returns "Could not write to the Google Sheet".**
 Usually the spreadsheet is not shared with the service account. Share it as an
@@ -454,15 +486,15 @@ Check every environment variable is present in the Vercel scope being built.
 **The database enforces the rules, not the application.** This is the central
 design decision and it is what makes the guarantees hold:
 
-| Requirement | How it is guaranteed |
-| --- | --- |
-| No duplicate weekly submission | `UNIQUE (employee_id, week_start)` |
-| Quarter-hour increments, ≤ 24h | `CHECK` constraints on `ts_entries` |
-| An entry belongs to its week | Composite foreign key on `(submission_id, week_start)` |
-| Employees see only their own rows | Row-level security on every table |
-| Submitted work is not editable | RLS policies exclude non-draft rows |
-| Admin routes are not reachable by URL | Every admin function re-checks the role in SQL |
-| A week submits atomically | `ts_submit_week` is one transaction |
+| Requirement                           | How it is guaranteed                                   |
+| ------------------------------------- | ------------------------------------------------------ |
+| No duplicate weekly submission        | `UNIQUE (employee_id, week_start)`                     |
+| Quarter-hour increments, ≤ 24h        | `CHECK` constraints on `ts_entries`                    |
+| An entry belongs to its week          | Composite foreign key on `(submission_id, week_start)` |
+| Employees see only their own rows     | Row-level security on every table                      |
+| Submitted work is not editable        | RLS policies exclude non-draft rows                    |
+| Admin routes are not reachable by URL | Every admin function re-checks the role in SQL         |
+| A week submits atomically             | `ts_submit_week` is one transaction                    |
 
 A bug in the frontend therefore cannot create a duplicate submission, expose a
 colleague's timesheet, or edit a submitted week — the database refuses.

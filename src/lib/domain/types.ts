@@ -23,11 +23,20 @@ export interface Employee {
   markets: Market[];
   primaryMarket: Market | null;
   department: string | null;
+  /** Job title, from the company directory. Not editable in the app. */
+  title: string | null;
+  /** The craft above the title -- Art, Copywriting, Account Management. */
+  jobFunction: string | null;
   configuration: TimesheetConfigId | null;
   expectedWeeklyHours: number;
   role: EmployeeRole;
   active: boolean;
-  onboarded: boolean;
+  /**
+   * Whether the directory has told us enough to run a timesheet: a market,
+   * and therefore a working week. Everybody in the sheet is; somebody whose
+   * entity we could not read is not, and is shown what is missing.
+   */
+  provisioned: boolean;
 }
 
 export interface ReferenceOption {

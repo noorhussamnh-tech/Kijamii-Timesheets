@@ -127,7 +127,7 @@ export const CONFIGS: Record<TimesheetConfigId, TimesheetConfig> = {
   KSA: KSA_CONFIG,
 };
 
-/** The configuration a market maps to. Mirrors `ts_complete_onboarding`. */
+/** The configuration a market maps to. Mirrors `ts_apply_directory`. */
 export function configForMarket(market: Market | null): TimesheetConfig {
   return market === "KSA" ? KSA_CONFIG : EG_UAE_CONFIG;
 }

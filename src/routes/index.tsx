@@ -55,7 +55,7 @@ function SignIn() {
 
   // Someone already signed in has no reason to see this page.
   useEffect(() => {
-    if (status === "ready" || status === "onboarding" || status === "unauthorized") {
+    if (status === "ready" || status === "incomplete" || status === "unauthorized") {
       void navigate({ to: "/timesheet", replace: true });
     }
   }, [status, navigate]);
