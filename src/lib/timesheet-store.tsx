@@ -124,6 +124,21 @@ interface TimesheetContextValue {
   issueFor: (entryId: string) => RowIssue | undefined;
 
   totals: WeekTotals;
+  /**
+   * Whether to show how far this week is from its expected hours.
+   *
+   * Off for everybody who keeps a timesheet, and the reason is not clutter.
+   * A meter that says "33.75h remaining" tells somebody exactly how much to
+   * invent to look complete, and puts the number in front of them at the
+   * moment they are deciding what to write. The hours are meant to be a
+   * record of what happened, and a target on the same screen quietly turns
+   * them into a score.
+   *
+   * Admins keep it because the same figures are theirs to check anyway --
+   * the admin page shows logged against expected for every person, where it
+   * is read-only and cannot be filled in.
+   */
+  showTargets: boolean;
 }
 
 const TimesheetContext = createContext<TimesheetContextValue | null>(null);
@@ -184,6 +199,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   // A row on its way to a different week, inserted once that week loads.
   const pendingInsert = useRef<TimesheetEntry | null>(null);
 
+  const showTargets = employee?.role === "admin";
   const config = configById(employee?.configuration ?? null);
   const expectedWeeklyHours = employee?.expectedWeeklyHours ?? config.expectedWeeklyHours;
   const isFuture = isFutureWeek(weekKey);
@@ -678,6 +694,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       weekIssues: validation.weekIssues,
       issueFor,
       totals,
+      showTargets,
     }),
     [
       weekKey,
@@ -718,6 +735,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       validation,
       issueFor,
       totals,
+      showTargets,
     ],
   );
 

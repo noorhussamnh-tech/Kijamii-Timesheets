@@ -48,7 +48,7 @@ function RowActions({ row }: { row: TimesheetEntry }) {
 }
 
 function DayHeading({ date }: { date: string }) {
-  const { totals, isDayLocked, addRow, focusDate } = useTimesheet();
+  const { totals, isDayLocked, addRow, focusDate, showTargets } = useTimesheet();
   const day = totals.byDay.find((entry) => entry.date === date);
   const locked = isDayLocked(date);
   const isToday = date === focusDate && date === toDateKey(new Date());
@@ -61,14 +61,23 @@ function DayHeading({ date }: { date: string }) {
           Today
         </span>
       )}
+      {/* Same reason as the bar at the bottom: "4h / 8h" in amber on every
+          heading is a row of gaps asking to be filled. What the day holds is
+          still shown; what it is short of is not. A non-working day is still
+          called out, because that is a fact about the calendar rather than
+          something anybody is being measured against. */}
       <span
         className={cn(
           "num ml-2 text-muted-foreground",
-          day && day.expected > 0 && day.hours < day.expected && "text-warning",
+          showTargets && day && day.expected > 0 && day.hours < day.expected && "text-warning",
         )}
       >
         {formatHours(day?.hours ?? 0)}
-        {day?.expected ? ` / ${formatHours(day.expected)}` : " · non-working day"}
+        {day?.expected
+          ? showTargets
+            ? ` / ${formatHours(day.expected)}`
+            : ""
+          : " · non-working day"}
       </span>
       {locked && (
         <span className="ml-2 rounded-full border border-success/30 bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">

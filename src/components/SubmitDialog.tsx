@@ -33,7 +33,8 @@ export function SubmitDialog({
   onConfirmed: () => void;
   date?: string | null | undefined;
 }) {
-  const { weekKey, totals, submitWeek, submitDay, entries, submitting } = useTimesheet();
+  const { weekKey, totals, submitWeek, submitDay, entries, submitting, showTargets } =
+    useTimesheet();
   const { employee } = useAuth();
   const [busy, setBusy] = useState(false);
 
@@ -101,7 +102,9 @@ export function SubmitDialog({
           )}
         </dl>
 
-        {!isDay && totals.missing > 0 && (
+        {/* The one moment this warning was most likely to be acted on by
+            adding a row rather than by remembering one. */}
+        {showTargets && !isDay && totals.missing > 0 && (
           <p className="flex items-start gap-2 rounded-md bg-warning-soft p-2.5 text-[12px] font-medium text-warning">
             <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
             You are {formatHours(totals.missing)} below the expected {formatHours(totals.expected)}.
