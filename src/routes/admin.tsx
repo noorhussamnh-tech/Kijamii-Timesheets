@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
-import { AlertCircle, ShieldAlert } from "lucide-react";
+import { AlertCircle, Search, ShieldAlert } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { ExportCsv } from "@/components/ExportCsv";
@@ -95,20 +95,34 @@ function AdminOverview() {
     };
   }, [week, isAdmin, authStatus]);
 
+  const [query, setQuery] = useState("");
+
   const departments = useMemo(() => {
     const set = new Set((rows ?? []).map((row) => row.department).filter(Boolean));
     return [...set] as string[];
   }, [rows]);
 
-  const filtered = useMemo(
-    () =>
-      (rows ?? []).filter(
-        (row) =>
-          (market === "all" || row.markets.includes(market as Market)) &&
-          (department === "all" || row.department === department),
-      ),
-    [rows, market, department],
-  );
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return (rows ?? []).filter(
+      (row) =>
+        /*
+         * The market a person is in is the entity that employs them, which is
+         * what the company employee list records and what decides their
+         * working week. It is not `markets`, which is every market whose
+         * clients they can pick from -- that is all three for everybody, so
+         * filtering on it matched the whole company whichever market was
+         * chosen, and the filter appeared to do nothing.
+         */
+        (market === "all" || row.primaryMarket === market) &&
+        (department === "all" || row.department === department) &&
+        // Email as well as name: two people can share a first name, and the
+        // address is the thing an admin has been given in a message.
+        (needle === "" ||
+          row.name.toLowerCase().includes(needle) ||
+          row.email.toLowerCase().includes(needle)),
+    );
+  }, [rows, market, department, query]);
 
   if (!isAdmin) {
     return (
@@ -134,6 +148,19 @@ function AdminOverview() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
+        {/* First, and outside the table, so it stays put while the table
+            scrolls sideways on a narrow screen. */}
+        <div className="relative">
+          <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search employee"
+            aria-label="Search employees by name or email"
+            className="h-9 w-[210px] rounded-md border bg-surface pr-2.5 pl-8 text-[13px] focus:outline-2 focus:outline-ring"
+          />
+        </div>
         <Select value={week} onValueChange={setWeek}>
           <SelectTrigger className="h-9 w-[210px] text-[13px]">
             <SelectValue />
@@ -257,7 +284,7 @@ function AdminOverview() {
                           </div>
                         </td>
                         <td className="px-3 py-2.5 text-muted-foreground">
-                          {row.markets.map((m) => MARKET_LABELS[m]).join(", ") || "—"}
+                          {row.primaryMarket ? MARKET_LABELS[row.primaryMarket] : "—"}
                         </td>
                         <td className="px-3 py-2.5 text-muted-foreground">
                           {row.department ?? "—"}
