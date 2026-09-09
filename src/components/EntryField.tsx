@@ -1,7 +1,7 @@
 import { SearchSelect } from "@/components/SearchSelect";
 import type { FieldDef } from "@/lib/domain/config";
 import type { TimesheetEntry } from "@/lib/domain/types";
-import { parseDateKey, shortDayLabel, weekKeyOf } from "@/lib/domain/week";
+import { shortDayLabel } from "@/lib/domain/week";
 import { useTimesheet } from "@/lib/timesheet-store";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +42,7 @@ export function EntryField({
   row: TimesheetEntry;
   invalid?: boolean | undefined;
 }) {
-  const { updateRow, weekKey, config, reference, availableClients, recentDates, moveRowToDate } =
+  const { updateRow, config, reference, availableClients, selectableDates, moveRowToDate } =
     useTimesheet();
   // The row's own status is the guard, not the day's: a day that has been
   // submitted can still take new rows.
@@ -81,16 +81,19 @@ export function EntryField({
 
   switch (field.kind) {
     case "date": {
-      // Every date is offered, in this week or a nearby one. Nothing is
-      // withheld: weekends get worked and a day can be filled in whenever.
-      // Choosing a date in another week moves the row there.
-      const grouped = new Map<string, string[]>();
-      for (const date of recentDates) {
-        const key = weekKeyOf(parseDateKey(date));
-        grouped.set(key, [...(grouped.get(key) ?? []), date]);
-      }
-      const weeks = [...grouped.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
-
+      /*
+       * Only the week on screen, in the order the grid shows it.
+       *
+       * It used to offer the last month or so, grouped by week, so that a row
+       * could be re-dated into a different week and would follow it there.
+       * That made the two halves of the page disagree: the header said
+       * 6 - 12 Sep while the field beside it offered August. Whichever week
+       * the nav is showing is now the whole of the answer, and reaching
+       * another one means going there -- which is what the nav is for.
+       *
+       * No day is withheld within that week. Weekends get worked, and a day
+       * still to come can be filled in ahead of time.
+       */
       return (
         <select
           value={row.workDate}
@@ -100,24 +103,15 @@ export function EntryField({
           onChange={(event) => void moveRowToDate(row.id, event.target.value)}
           className={cn(inputClass, "num min-w-[104px]")}
         >
-          {/* A date outside the offered window still shows its own value. */}
-          {!recentDates.includes(row.workDate) && (
+          {/* A row whose date somehow sits outside the week still shows its
+              own value rather than silently displaying somebody else's. */}
+          {!selectableDates.includes(row.workDate) && (
             <option value={row.workDate}>{shortDayLabel(row.workDate)}</option>
           )}
-          {weeks.map(([week, dates]) => (
-            <optgroup
-              key={week}
-              label={week === weekKey ? "This week" : `Week of ${shortDayLabel(week)}`}
-            >
-              {dates
-                .slice()
-                .sort((a, b) => (a < b ? 1 : -1))
-                .map((date) => (
-                  <option key={date} value={date}>
-                    {shortDayLabel(date)}
-                  </option>
-                ))}
-            </optgroup>
+          {selectableDates.map((date) => (
+            <option key={date} value={date}>
+              {shortDayLabel(date)}
+            </option>
           ))}
         </select>
       );

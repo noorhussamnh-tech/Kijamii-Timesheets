@@ -30,8 +30,6 @@ import { configById, type TimesheetConfig } from "@/lib/domain/config";
 import { defaultEntryDateFor } from "@/lib/domain/entry-target";
 import { calculateTotals, type WeekTotals } from "@/lib/domain/totals";
 import { isBlankRow, validateWeek, type RowIssue, type WeekIssue } from "@/lib/domain/validation";
-import { addDays, startOfMonth, subMonths } from "date-fns";
-
 import {
   currentWeekKey,
   isFutureDate,
@@ -86,13 +84,15 @@ interface TimesheetContextValue {
   updateRow: (id: string, patch: Partial<TimesheetEntry>) => void;
   /** Re-dates a row, following it to another week when the date lives there. */
   moveRowToDate: (id: string, date: string) => Promise<void>;
-  /** Dates the Date field may offer, reaching back beyond this week. */
-  recentDates: string[];
   duplicateRow: (id: string) => void;
   deleteRow: (id: string) => void;
 
   visibleDates: string[];
-  /** Days in this week that may be logged against: never the future. */
+  /**
+   * The seven days of the week on screen: everything the Date field offers,
+   * and everything "Add day" can reveal. Days still to come are included --
+   * a week ahead of today can be filled in.
+   */
   selectableDates: string[];
   /** The day the UI should foreground: today, or the week start. */
   focusDate: string;
@@ -347,28 +347,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   // Every day of the week, with no date withheld: people work weekends, and a
   // day can be filled in whenever suits them.
   const selectableDates = useMemo(() => weekDates(weekKey), [weekKey]);
-
-  /**
-   * Dates the Date field may offer, reaching back three weeks.
-   *
-   * Covers this month and the last, plus the whole of the viewed week, so
-   * anything within the month being submitted can be reached. Picking a date
-   * from another week moves the row there, which the person should not have
-   * to think about.
-   */
-  const recentDates = useMemo(() => {
-    const today = new Date();
-    // Back to the start of last month, so the whole of the current month is
-    // always reachable -- including on the 1st, when "this month" is one day.
-    const earliest = startOfMonth(subMonths(today, 1));
-    const out: string[] = [];
-    for (let cursor = earliest; cursor <= today; cursor = addDays(cursor, 1)) {
-      out.push(toDateKey(cursor));
-    }
-    // Plus the whole of the viewed week, whichever way it falls.
-    for (const date of weekDates(weekKey)) out.push(date);
-    return [...new Set(out)].sort();
-  }, [weekKey]);
 
   const focusDate = useMemo(() => {
     const all = weekDates(weekKey);
@@ -629,7 +607,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       addRow,
       updateRow,
       moveRowToDate,
-      recentDates,
       duplicateRow,
       deleteRow,
       visibleDates,
@@ -671,7 +648,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       addRow,
       updateRow,
       moveRowToDate,
-      recentDates,
       duplicateRow,
       deleteRow,
       visibleDates,

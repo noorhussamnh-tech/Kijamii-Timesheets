@@ -12,6 +12,7 @@ import {
   weekDates,
   weekEnd,
   weekKeyOf,
+  weekRangeLabel,
 } from "./week";
 
 describe("week arithmetic", () => {
@@ -104,34 +105,73 @@ describe("daily focus", () => {
   });
 });
 
-describe("selectable days", () => {
-  /**
-   * Mirrors the store's selectableDates rule. Offering a day that cannot be
-   * submitted, then rejecting it at submit time, is a trap; the future is
-   * simply not selectable.
+describe("the days the Date field offers", () => {
+  /*
+   * The field offers the viewed week and nothing else, which is the whole of
+   * the rule now: the header says which week you are in, and the field beside
+   * it must not disagree. It used to reach back a month, so a row filed under
+   * "6 - 12 Sep" could be dated into August from a dropdown sitting under that
+   * heading.
+   *
+   * No day is filtered out. An earlier version stopped at today, which read as
+   * caution and behaved as a trap: on the Sunday a week begins it left exactly
+   * one option, and a week ahead of today -- which the app now accepts -- could
+   * not be filled in at all.
    */
-  const selectableFor = (week: string, today: Date) =>
-    weekDates(week).filter((date) => !isFutureDate(date, today));
-
-  it("stops at today within the current week", () => {
-    // Wednesday 2026-08-26, in the week beginning Sunday 2026-08-23.
-    expect(selectableFor("2026-08-23", parseDateKey("2026-08-26"))).toEqual([
-      "2026-08-23",
-      "2026-08-24",
-      "2026-08-25",
-      "2026-08-26",
+  it("offers the seven days of the viewed week, in order", () => {
+    expect(weekDates("2026-09-06")).toEqual([
+      "2026-09-06",
+      "2026-09-07",
+      "2026-09-08",
+      "2026-09-09",
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-12",
     ]);
   });
 
-  it("allows every day of a week that has already passed", () => {
-    expect(selectableFor("2026-08-16", parseDateKey("2026-08-26"))).toHaveLength(7);
+  it("offers days still to come, not only those that have happened", () => {
+    // Wednesday 9 September, mid-week: Thursday through Saturday are offered.
+    const offered = weekDates("2026-09-06");
+    expect(offered.filter((date) => isFutureDate(date, parseDateKey("2026-09-09")))).toEqual([
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-12",
+    ]);
   });
 
-  it("allows the whole week once its last day has arrived", () => {
-    expect(selectableFor("2026-08-23", parseDateKey("2026-08-29"))).toHaveLength(7);
+  it("offers a full week on the Sunday one begins", () => {
+    // The old rule left a single option here, and nothing to pick between.
+    expect(weekDates("2026-09-06")).toHaveLength(7);
   });
 
-  it("allows only the first day on the Sunday a week begins", () => {
-    expect(selectableFor("2026-08-23", parseDateKey("2026-08-23"))).toEqual(["2026-08-23"]);
+  it("offers nothing outside the week it belongs to", () => {
+    for (const date of weekDates("2026-09-06")) {
+      expect(isDateInWeek(date, "2026-09-06")).toBe(true);
+    }
+    expect(isDateInWeek("2026-09-05", "2026-09-06")).toBe(false);
+    expect(isDateInWeek("2026-09-13", "2026-09-06")).toBe(false);
+  });
+
+  /*
+   * The two halves of the header have to agree with the field. These assert
+   * the pairing directly rather than each side on its own, because the failure
+   * that matters is them drifting apart.
+   */
+  it("agrees with the range the header prints", () => {
+    const offered = weekDates("2026-09-06");
+    expect(weekRangeLabel("2026-09-06")).toBe("6 – 12 Sep 2026");
+    expect(offered.at(0)).toBe("2026-09-06");
+    expect(offered.at(-1)).toBe(weekEnd("2026-09-06"));
+  });
+
+  it("agrees with it across a month boundary too", () => {
+    // The one place a mismatch would actually bite: the label changes shape
+    // when a week straddles two months, and the dates must still line up.
+    const offered = weekDates("2026-08-30");
+    expect(weekRangeLabel("2026-08-30")).toBe("30 Aug – 5 Sep 2026");
+    expect(offered.at(0)).toBe("2026-08-30");
+    expect(offered.at(-1)).toBe("2026-09-05");
+    expect(offered).toHaveLength(7);
   });
 });
