@@ -35,8 +35,13 @@ export interface DetailEmployee {
   name: string;
   email: string;
   title: string | null;
+  jobFunction: string | null;
   department: string | null;
+  /** Straight from the company employee list. */
+  businessUnit: string | null;
+  subUnit: string | null;
   employeeCode: string | null;
+  /** The entity that employs them, which is what the sheet calls Entity. */
   primaryMarket: string | null;
 }
 
@@ -314,4 +319,55 @@ export function perClientByDayView(rows: readonly DetailRow[]): Shaped {
       return [name!, client!, ...daily, round(daily.reduce((sum, value) => sum + value, 0))];
     }),
   };
+}
+
+/**
+ * Everybody who worked on one account, and who they are.
+ *
+ * A staffing sheet rather than a time sheet: one line per person, describing
+ * them the way the company employee list does, with the hours they put into
+ * this client beside it. The question it answers is "who is on Castrol, and
+ * what does that team look like" -- which is asked about one account at a
+ * time, and answered by a file per account.
+ *
+ * The description comes from the roster rather than from whichever entry
+ * happened to sort first. An entry knows the market its client belongs to; it
+ * does not know which entity employs the person who logged it, and those are
+ * routinely different -- the employee list has Egypt-entity staff on KSA
+ * business.
+ */
+export function clientStaffingView(
+  rows: readonly DetailRow[],
+  roster: readonly DetailEmployee[],
+  client: string,
+): Shaped {
+  const mine = rows.filter((row) => clientOf(row) === client);
+  const hours = sumBy(mine, (row) => row.employeeId);
+  const byId = new Map(roster.map((person) => [person.id, person]));
+
+  return {
+    headers: ["employee", "entity", "business_unit", "sub_unit", "function", "title", "hours"],
+    rows: [...hours.entries()]
+      // Most hours first: the question is who is carrying the account, and the
+      // answer should be the first line rather than somewhere alphabetical.
+      .sort((a, b) => b[1] - a[1])
+      .map(([id, value]) => {
+        const person = byId.get(id);
+        const anyRow = mine.find((row) => row.employeeId === id);
+        return [
+          person?.name ?? anyRow?.employeeName ?? "Unknown",
+          person?.primaryMarket ?? "",
+          person?.businessUnit ?? "",
+          person?.subUnit ?? "",
+          person?.jobFunction ?? "",
+          person?.title ?? "",
+          round(value),
+        ];
+      }),
+  };
+}
+
+/** Every client with logged hours in the fetched rows, for the picker. */
+export function clientsIn(rows: readonly DetailRow[]): string[] {
+  return [...new Set(rows.map(clientOf))].sort((a, b) => a.localeCompare(b));
 }

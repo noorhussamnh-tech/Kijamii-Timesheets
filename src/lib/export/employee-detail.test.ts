@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clientStaffingView,
+  clientsIn,
   fullDetailView,
   perBusinessUnitView,
   perClientByDayView,
@@ -44,7 +46,10 @@ function person(overrides: Partial<DetailEmployee> = {}): DetailEmployee {
     name: "Noor Hussam",
     email: "noor@kijamii.com",
     title: "Strategy Director",
+    jobFunction: "Strategy",
     department: "Strategy",
+    businessUnit: "Strategy",
+    subUnit: "Strategy & Planning",
     employeeCode: null,
     primaryMarket: "EG",
     ...overrides,
@@ -359,5 +364,86 @@ describe("the views that group by one attribute", () => {
     ]) {
       expect(view(rows).rows.reduce((sum, r) => sum + Number(r[2]), 0)).toBe(daily);
     }
+  });
+});
+
+describe("clientStaffingView", () => {
+  const roster = [
+    person(),
+    person({
+      id: "e2",
+      name: "Bahy Abo El Ezz",
+      title: "Art Director",
+      jobFunction: "Art",
+      businessUnit: "Creative",
+      subUnit: "Sports",
+      primaryMarket: "KSA",
+    }),
+  ];
+
+  it("lists everybody on the account, heaviest first, described by the roster", () => {
+    const shaped = clientStaffingView(
+      [
+        row({ hours: 2, clientName: "Castrol Oil" }),
+        row({
+          hours: 6,
+          clientName: "Castrol Oil",
+          employeeId: "e2",
+          employeeName: "Bahy Abo El Ezz",
+        }),
+        row({ hours: 9, clientName: "Carrefour" }),
+      ],
+      roster,
+      "Castrol Oil",
+    );
+
+    expect(shaped.headers).toEqual([
+      "employee",
+      "entity",
+      "business_unit",
+      "sub_unit",
+      "function",
+      "title",
+      "hours",
+    ]);
+    expect(shaped.rows).toEqual([
+      ["Bahy Abo El Ezz", "KSA", "Creative", "Sports", "Art", "Art Director", 6],
+      ["Noor Hussam", "EG", "Strategy", "Strategy & Planning", "Strategy", "Strategy Director", 2],
+    ]);
+  });
+
+  it("describes the person from the roster, not from the entry they logged", () => {
+    /*
+     * The entry's market is the client's, and the two disagree on purpose:
+     * the employee list has Egypt-entity staff on KSA business. Reading the
+     * entity off the row would file an Egyptian employee under KSA because
+     * that is where the account sits.
+     */
+    const shaped = clientStaffingView(
+      [row({ hours: 4, clientName: "Castrol Oil", market: "KSA" })],
+      roster,
+      "Castrol Oil",
+    );
+    expect(shaped.rows[0]![1]).toBe("EG");
+  });
+
+  it("counts only the account asked for", () => {
+    const shaped = clientStaffingView(
+      [row({ hours: 3, clientName: "Castrol Oil" }), row({ hours: 5, clientName: "Carrefour" })],
+      roster,
+      "Castrol Oil",
+    );
+    expect(shaped.rows).toHaveLength(1);
+    expect(shaped.rows[0]![6]).toBe(3);
+  });
+
+  it("offers every client that has hours, in name order", () => {
+    expect(
+      clientsIn([
+        row({ clientName: "Carrefour" }),
+        row({ clientName: "Castrol Oil" }),
+        row({ clientName: "Carrefour" }),
+      ]),
+    ).toEqual(["Carrefour", "Castrol Oil"]);
   });
 });
