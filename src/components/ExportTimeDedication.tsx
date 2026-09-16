@@ -106,13 +106,13 @@ export function ExportTimeDedication() {
     <Popover>
       <PopoverTrigger asChild>
         <Button size="sm" className={EXPORT_TRIGGER}>
-          Calendar year view
+          Calendar Year View
           <ChevronDown className="size-3.5 opacity-70" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[320px] space-y-3 p-3">
         <div className="space-y-1">
-          <p className="label-xs">Calendar year view</p>
+          <p className="label-xs">Calendar Year View</p>
           <p className="text-[12px] leading-relaxed text-muted-foreground">
             A whole year, a column per month, by person and brand — the shape the agency job book
             expects. Everyone in the chosen markets appears, including anyone who logged nothing.

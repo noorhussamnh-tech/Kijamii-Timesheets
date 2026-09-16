@@ -63,7 +63,7 @@ export function SyncDirectory() {
         disabled={busy}
         onClick={() => void run()}
       >
-        <RefreshCw className={busy ? "size-3.5 animate-spin" : "size-3.5"} /> Sync directory
+        <RefreshCw className={busy ? "size-3.5 animate-spin" : "size-3.5"} /> Sync Directory
       </Button>
       {/* Underneath, for the same reason as the export beside it: a result
           that widens its own control rearranges the row it sits in. */}

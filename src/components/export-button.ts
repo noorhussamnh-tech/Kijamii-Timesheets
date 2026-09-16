@@ -13,3 +13,16 @@
  */
 export const EXPORT_TRIGGER =
   "h-9 gap-1.5 bg-primary px-3 text-[13px] font-bold text-primary-foreground shadow-card hover:bg-primary/90";
+
+/**
+ * Export Entries, which sits on the filter row rather than with the shaped
+ * exports below it.
+ *
+ * It is the only export that hands back exactly what the row above it
+ * describes -- the same people, the same period, unfolded -- so it belongs
+ * beside the controls that decide that rather than among the ones that
+ * reshape it. The brand colour separates it from both the black of those and
+ * the green of Sync Directory, which is the one button here that writes.
+ */
+export const RAW_EXPORT_TRIGGER =
+  "h-9 gap-1.5 bg-brand px-3 text-[13px] font-bold text-brand-foreground shadow-card hover:bg-brand/90";

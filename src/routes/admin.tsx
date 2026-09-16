@@ -238,11 +238,14 @@ function AdminOverview() {
             ))}
           </SelectContent>
         </Select>
+        {/* On this row because it returns exactly what this row describes:
+            the same people over the same period, unfolded. The row below
+            reshapes that into an answer; this one hands it over as it is. */}
+        <ExportCsv from={from} to={to} market={market} department={department} />
       </div>
 
-      {/* Every one of these reads the period and the filters above. */}
+      {/* Reads the period and the filters above, and folds them into a shape. */}
       <div className="flex flex-wrap items-center gap-2">
-        <ExportCsv from={from} to={to} market={market} department={department} />
         <ExportGrouped from={from} to={to} market={market} department={department} />
         <ExportByClient from={from} to={to} market={market} department={department} />
         <ExportTimeDedication />

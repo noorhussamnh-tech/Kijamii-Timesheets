@@ -96,7 +96,7 @@ export function ExportGrouped({
             ) : (
               <Download className="size-3.5" />
             )}
-            Export by
+            Export By
             <ChevronDown className="size-3.5 opacity-70" />
           </Button>
         </DropdownMenuTrigger>

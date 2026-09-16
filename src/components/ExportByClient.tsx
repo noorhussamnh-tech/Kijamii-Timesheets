@@ -112,7 +112,7 @@ export function ExportByClient({
       <PopoverTrigger asChild>
         <Button size="sm" className={EXPORT_TRIGGER}>
           <Download className="size-3.5" />
-          By client
+          By Client
           <ChevronDown className="size-3.5 opacity-70" />
         </Button>
       </PopoverTrigger>
