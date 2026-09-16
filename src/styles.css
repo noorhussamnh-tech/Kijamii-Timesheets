@@ -211,6 +211,21 @@
   }
 }
 
+/* The wordmark is a single off-white PNG whose alpha channel carries the
+   letterforms. Painting it through a mask rather than dropping it in an <img>
+   lets one asset serve the dark sidebar, the light page and dark mode: the
+   colour comes from `currentColor`, so the logo is always exactly the colour
+   the surrounding text would have been. */
+@utility kijamii-wordmark {
+  display: block;
+  aspect-ratio: 350 / 136;
+  background-color: currentColor;
+  mask-image: url("/kijamii-wordmark.png");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
 @utility num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;

@@ -67,7 +67,6 @@ function SignIn() {
       <div className="hidden flex-col justify-between bg-sidebar px-10 py-10 lg:flex">
         <KijamiiMark />
         <div className="max-w-sm">
-          <p className="label-xs text-sidebar-foreground/50">Kijamii</p>
           <h2 className="mt-2 text-2xl font-bold text-sidebar-accent-foreground">
             Weekly hours, logged in minutes.
           </h2>

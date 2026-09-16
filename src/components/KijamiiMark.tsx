@@ -3,13 +3,15 @@ import { cn } from "@/lib/utils";
 /**
  * The Kijamii lockup.
  *
- * Rendered as type rather than an image on purpose: the prototype pointed at
- * an asset hosted by the Lovable editor, which 404s anywhere else and would
- * have shipped a broken image to production. This uses the design system's own
- * type and colour, so it is correct in both themes and needs no network.
+ * The wordmark is the real artwork, `public/kijamii-wordmark.png`, and not an
+ * <img>: the file is off-white letterforms on transparency, so an <img> would
+ * vanish on the light page and only ever look right on the dark sidebar.
+ * Painting it as a mask filled with `currentColor` (see the
+ * `kijamii-wordmark` utility) means the one file is correct on the sidebar, on
+ * the page, and in both themes, and still needs no network beyond our own.
  *
- * To use the real artwork instead, drop the file in `public/` and swap the
- * wordmark span for an <img> — nothing else needs to change.
+ * The height is set here and the width follows from the file's aspect ratio,
+ * so nothing has to be kept in sync if the artwork is ever re-cut.
  */
 export function KijamiiMark({
   className,
@@ -26,14 +28,13 @@ export function KijamiiMark({
   return (
     <div className={cn("flex min-w-0 items-center gap-2.5", className)}>
       <span
+        role="img"
+        aria-label="Kijamii"
         className={cn(
-          "text-[15px] leading-none font-extrabold tracking-tight",
+          "kijamii-wordmark h-[22px] shrink-0",
           tone === "dark" ? "text-sidebar-accent-foreground" : "text-foreground",
         )}
-      >
-        kijamii
-        <span className="text-brand">.</span>
-      </span>
+      />
       {showWordmark && productName && (
         <span
           className={cn(
