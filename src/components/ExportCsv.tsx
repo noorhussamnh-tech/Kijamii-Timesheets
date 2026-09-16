@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AlertCircle, Download, Loader2 } from "lucide-react";
 
+import { EXPORT_TRIGGER } from "@/components/export-button";
 import { Button } from "@/components/ui/button";
 import { fetchExportRows, type ExportRow } from "@/lib/data/api";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
@@ -125,13 +126,7 @@ export function ExportCsv({
       {/* One button. The period is chosen once, in the toolbar, and applies
           to every export on it -- so this no longer has to offer a choice of
           two ranges that were never the two anybody wanted. */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="gap-1.5"
-        disabled={busy}
-        onClick={() => void run()}
-      >
+      <Button size="sm" className={EXPORT_TRIGGER} disabled={busy} onClick={() => void run()}>
         {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
         Export entries
       </Button>

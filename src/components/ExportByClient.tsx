@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, ChevronDown, Download, Loader2 } from "lucide-react";
 
 import { SearchSelect } from "@/components/SearchSelect";
+import { EXPORT_TRIGGER } from "@/components/export-button";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { fetchEmployeeDetail, type EmployeeDetailExport } from "@/lib/data/api";
@@ -109,7 +110,7 @@ export function ExportByClient({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button size="sm" className={EXPORT_TRIGGER}>
           <Download className="size-3.5" />
           By client
           <ChevronDown className="size-3.5 opacity-70" />

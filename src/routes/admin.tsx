@@ -109,10 +109,47 @@ function AdminOverview() {
 
   const [query, setQuery] = useState("");
 
+  /*
+   * Market and department narrow each other.
+   *
+   * Each list offers only what the other filter leaves reachable, so a pair
+   * that returns nobody cannot be chosen: picking KSA leaves the departments
+   * that have somebody in KSA, and picking Studio leaves the markets Studio
+   * actually works in. Without it the two filters were independent, and the
+   * combinations that produce an empty table were the ones an admin had to
+   * discover by trying them.
+   */
   const departments = useMemo(() => {
-    const set = new Set((rows ?? []).map((row) => row.department).filter(Boolean));
-    return [...set] as string[];
-  }, [rows]);
+    const reachable = (rows ?? []).filter(
+      (row) => market === "all" || row.primaryMarket === market,
+    );
+    return [...new Set(reachable.map((row) => row.department).filter(Boolean))].sort() as string[];
+  }, [rows, market]);
+
+  const markets = useMemo(() => {
+    const reachable = (rows ?? []).filter(
+      (row) => department === "all" || row.department === department,
+    );
+    const present = new Set(reachable.map((row) => row.primaryMarket).filter(Boolean));
+    return MARKETS.filter((option) => present.has(option));
+  }, [rows, department]);
+
+  /*
+   * A selection the other filter has just made unreachable falls back to
+   * "all" rather than silently showing an empty table under a filter naming
+   * something real.
+   */
+  useEffect(() => {
+    if (department !== "all" && rows !== null && !departments.includes(department)) {
+      setDepartment("all");
+    }
+  }, [departments, department, rows]);
+
+  useEffect(() => {
+    if (market !== "all" && rows !== null && !markets.includes(market as Market)) {
+      setMarket("all");
+    }
+  }, [markets, market, rows]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -157,9 +194,13 @@ function AdminOverview() {
 
   return (
     <div className="space-y-4">
+      {/* Two rows. The first narrows the list, the second acts on what is
+          left, and Sync directory leads because it is the only control here
+          that changes the roster rather than reading it. */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* First, and outside the table, so it stays put while the table
-            scrolls sideways on a narrow screen. */}
+        <SyncDirectory />
+        {/* Outside the table, so it stays put while the table scrolls
+            sideways on a narrow screen. */}
         <div className="relative">
           <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -178,7 +219,7 @@ function AdminOverview() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All markets</SelectItem>
-            {MARKETS.map((option) => (
+            {markets.map((option) => (
               <SelectItem key={option} value={option}>
                 {MARKET_LABELS[option]}
               </SelectItem>
@@ -198,16 +239,15 @@ function AdminOverview() {
             ))}
           </SelectContent>
         </Select>
-        {/* One row, in reading order: narrow the list, then act on it. The
-            exports used to be pushed to the far right with ml-auto, which on
-            any screen narrower than the whole lot dropped them onto a second
-            line and left a gap where they had been. */}
+      </div>
+
+      {/* Every one of these reads the period and the filters above. */}
+      <div className="flex flex-wrap items-center gap-2">
         <ExportCsv from={from} to={to} market={market} department={department} />
         <ExportGrouped from={from} to={to} market={market} department={department} />
         <ExportByClient from={from} to={to} market={market} department={department} />
         <ExportTimeDedication />
         <ExportEmployeeDetail from={from} to={to} market={market} department={department} />
-        <SyncDirectory />
       </div>
 
       {error && (

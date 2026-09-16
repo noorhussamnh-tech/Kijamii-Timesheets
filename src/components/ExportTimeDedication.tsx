@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AlertCircle, ChevronDown, Download, Loader2 } from "lucide-react";
 
+import { EXPORT_TRIGGER } from "@/components/export-button";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -97,7 +98,7 @@ export function ExportTimeDedication() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button size="sm" className={EXPORT_TRIGGER}>
           Time dedication
           <ChevronDown className="size-3.5 opacity-70" />
         </Button>

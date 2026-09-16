@@ -53,7 +53,16 @@ export function SyncDirectory() {
 
   return (
     <div className="relative">
-      <Button variant="outline" size="sm" disabled={busy} onClick={() => void run()}>
+      {/* The green of "+ Row" on the timesheet. This is not an export and
+          does not belong in that set: it reloads the roster from the company
+          employee list, which is the one button here that changes data rather
+          than reading it. */}
+      <Button
+        size="sm"
+        className="h-9 gap-1.5 border-transparent bg-success px-3 text-[13px] font-bold text-white shadow-card hover:bg-success/90 hover:text-white"
+        disabled={busy}
+        onClick={() => void run()}
+      >
         <RefreshCw className={busy ? "size-3.5 animate-spin" : "size-3.5"} /> Sync directory
       </Button>
       {/* Underneath, for the same reason as the export beside it: a result
@@ -61,7 +70,7 @@ export function SyncDirectory() {
       {(note ?? error) && (
         <span
           className={cn(
-            "absolute top-full right-0 mt-0.5 inline-flex items-center gap-1 leading-none whitespace-nowrap text-[11px]",
+            "absolute top-full left-0 mt-0.5 inline-flex items-center gap-1 leading-none whitespace-nowrap text-[11px]",
             error ? "font-medium text-destructive" : "text-muted-foreground",
           )}
         >

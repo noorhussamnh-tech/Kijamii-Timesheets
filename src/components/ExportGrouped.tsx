@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AlertCircle, ChevronDown, Download, Loader2 } from "lucide-react";
 
+import { EXPORT_TRIGGER } from "@/components/export-button";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -84,7 +85,7 @@ export function ExportGrouped({
     <div className="relative">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-1.5" disabled={busy}>
+          <Button size="sm" className={EXPORT_TRIGGER} disabled={busy}>
             {busy ? (
               <Loader2 className="size-3.5 animate-spin" />
             ) : (
