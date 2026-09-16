@@ -75,13 +75,16 @@ export const PERIOD_VIEWS: ExportView[] = [
 export const WORK_VIEWS: ExportView[] = [
   {
     id: "per-client",
-    label: "By client",
-    note: "With each client's share of their time.",
+    // Not "By client": the toolbar has a By client button that does something
+    // else entirely -- one account, and the team staffed on it. This is how
+    // each person's time splits across the accounts they touch.
+    label: "Client split",
+    note: "Per person, with each client's share of their time.",
     shape: (data) => perClientView(data.rows),
   },
   {
     id: "client-by-day",
-    label: "By client, day by day",
+    label: "Client split, day by day",
     note: "A grid: clients down, days across.",
     shape: (data) => perClientByDayView(data.rows),
   },

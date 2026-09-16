@@ -20,11 +20,16 @@ import { cn } from "@/lib/utils";
  * Everybody's hours over the chosen period, grouped however the question
  * needs them.
  *
- * These groupings existed before this, but only inside the per-person panel
- * next to it -- which meant "how did the Studio spend August" was three
- * dropdowns deep, behind a control whose name said it was about one employee.
- * A question about the whole company should not be reached through a screen
- * about a person.
+ * This replaces the per-person panel that used to sit beside it. Once that
+ * panel's employee picker went -- redundant, because every row of the table
+ * has its own Export button, which is the better door for one person since
+ * you click the name you are already looking at -- the two controls made the
+ * same call with the same views and the same filters. Two buttons doing one
+ * thing is worse than either of them.
+ *
+ * What the panel had and this did not, it has now: a line under each view
+ * saying what the file contains, and a count of how many people are actually
+ * in it.
  */
 export function ExportGrouped({
   from,
@@ -95,14 +100,21 @@ export function ExportGrouped({
             <ChevronDown className="size-3.5 opacity-70" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="end" className="w-72">
           {VIEW_GROUPS.map((group, index) => (
             <div key={group.label}>
               {index > 0 && <DropdownMenuSeparator />}
               <DropdownMenuLabel className="label-xs">{group.label}</DropdownMenuLabel>
               {group.views.map((view) => (
-                <DropdownMenuItem key={view.id} onClick={() => void run(view)}>
-                  {view.label}
+                <DropdownMenuItem
+                  key={view.id}
+                  onClick={() => void run(view)}
+                  className="flex-col items-start gap-0.5"
+                >
+                  <span className="font-medium">{view.label}</span>
+                  <span className="text-[11px] leading-snug text-muted-foreground">
+                    {view.note}
+                  </span>
                 </DropdownMenuItem>
               ))}
             </div>

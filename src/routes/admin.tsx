@@ -8,7 +8,6 @@ import { DateRangePicker, rangeLabel } from "@/components/DateRangePicker";
 import { ExportCsv } from "@/components/ExportCsv";
 import { ExportByClient } from "@/components/ExportByClient";
 import { ExportGrouped } from "@/components/ExportGrouped";
-import { ExportEmployeeDetail } from "@/components/ExportEmployeeDetail";
 import { EmployeeExportMenu } from "@/components/EmployeeExportMenu";
 import { SyncDirectory } from "@/components/SyncDirectory";
 import { ExportTimeDedication } from "@/components/ExportTimeDedication";
@@ -247,7 +246,6 @@ function AdminOverview() {
         <ExportGrouped from={from} to={to} market={market} department={department} />
         <ExportByClient from={from} to={to} market={market} department={department} />
         <ExportTimeDedication />
-        <ExportEmployeeDetail from={from} to={to} market={market} department={department} />
       </div>
 
       {error && (
