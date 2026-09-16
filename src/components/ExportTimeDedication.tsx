@@ -46,7 +46,14 @@ function years(): number[] {
 }
 
 /**
- * The feed for the job book's "Egypt & UAE Time Dedication" tab.
+ * A calendar year at a glance, and the feed for the job book's "Egypt & UAE
+ * Time Dedication" tab.
+ *
+ * Called "Time dedication" until the name was questioned, correctly: it read
+ * as an analysis when it is a file shape for one destination, and it gave no
+ * hint that it is the only export here that ignores the toolbar's date range
+ * in favour of a whole calendar year. The tab it feeds keeps its own name;
+ * this control is named for what somebody choosing it is actually choosing.
  *
  * Two shapes, because the tab is read two ways. "Matching the sheet" is wide,
  * a column per month, to paste in. "For lookups" is long, one row per person,
@@ -84,7 +91,7 @@ export function ExportTimeDedication() {
       }
 
       downloadCsv(
-        `kijamii-time-dedication_${value}_${chosen.id}_${shape === "wide" ? "sheet" : "lookup"}.csv`,
+        `kijamii-calendar-year_${value}_${chosen.id}_${shape === "wide" ? "sheet" : "lookup"}.csv`,
         toCsv(shaped.headers, shaped.rows),
       );
       setNote(`${shaped.rows.length} row${shaped.rows.length === 1 ? "" : "s"} downloaded.`);
@@ -99,16 +106,22 @@ export function ExportTimeDedication() {
     <Popover>
       <PopoverTrigger asChild>
         <Button size="sm" className={EXPORT_TRIGGER}>
-          Time dedication
+          Calendar year view
           <ChevronDown className="size-3.5 opacity-70" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[320px] space-y-3 p-3">
         <div className="space-y-1">
-          <p className="label-xs">Egypt &amp; UAE time dedication</p>
+          <p className="label-xs">Calendar year view</p>
           <p className="text-[12px] leading-relaxed text-muted-foreground">
-            Hours by person, brand and month, for the agency job book. Everyone in the chosen
-            markets appears, including anyone who logged nothing.
+            A whole year, a column per month, by person and brand — the shape the agency job book
+            expects. Everyone in the chosen markets appears, including anyone who logged nothing.
+          </p>
+          {/* The one control here that does not read the toolbar's dates, which
+              is worth saying where somebody is looking rather than leaving
+              them to notice the file covers a different period. */}
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            Covers the year chosen below, not the dates in the toolbar.
           </p>
         </div>
 

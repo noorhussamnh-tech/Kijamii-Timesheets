@@ -22,7 +22,7 @@ import type { DetailEmployee } from "@/lib/export/employee-detail";
 /**
  * A detailed read on one person's period, or on everybody's.
  *
- * Separate from the Time Dedication export, which answers the job book's
+ * Separate from the calendar year view, which answers the job book's
  * question. This one answers "what did this person actually do", which is a
  * different question with different columns and a different audience.
  */
