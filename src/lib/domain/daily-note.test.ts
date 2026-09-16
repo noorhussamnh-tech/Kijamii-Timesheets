@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { MonthCoverage } from "@/lib/domain/coverage";
-import { dailyNote } from "@/lib/domain/daily-note";
+import { dailyNote, NOTE_SETS, pickForDay } from "@/lib/domain/daily-note";
 
 function coverage(overrides: Partial<MonthCoverage> = {}): MonthCoverage {
   return {
@@ -19,7 +19,6 @@ describe("dailyNote", () => {
   it("opens a month that has not started without asking for anything", () => {
     const note = dailyNote(coverage(), DAY);
     expect(note.tone).toBe("invite");
-    expect(note.text).toMatch(/fresh month/i);
   });
 
   it("does not call anybody behind on the first days of a month", () => {
@@ -28,7 +27,6 @@ describe("dailyNote", () => {
       DAY,
     );
     expect(note.tone).toBe("invite");
-    expect(note.text).toMatch(/clean slate/i);
   });
 
   it("invites rather than scolds when nothing is logged", () => {
@@ -37,7 +35,6 @@ describe("dailyNote", () => {
       DAY,
     );
     expect(note.tone).toBe("invite");
-    expect(note.text).toMatch(/easiest day to start/i);
   });
 
   it("celebrates a month with nothing missing", () => {
@@ -46,7 +43,6 @@ describe("dailyNote", () => {
       DAY,
     );
     expect(note.tone).toBe("praise");
-    expect(note.text).toContain("11");
   });
 
   it("saves the jokes for people who are keeping up", () => {
@@ -73,7 +69,6 @@ describe("dailyNote", () => {
       DAY,
     );
     expect(note.tone).toBe("steady");
-    expect(note.text).toContain("4 days");
   });
 
   it("points at one next step rather than the backlog when far behind", () => {
@@ -87,10 +82,6 @@ describe("dailyNote", () => {
       DAY,
     );
     expect(note.tone).toBe("invite");
-    expect(note.text).toMatch(/most recent/i);
-    // Never states the size of the backlog, and never blames.
-    expect(note.text).not.toContain("14");
-    expect(note.text.toLowerCase()).not.toMatch(/behind|missed|failed|should/);
   });
 
   it("holds one joke all day and changes it the next", () => {
@@ -120,6 +111,119 @@ describe("dailyNote", () => {
         DAY,
       );
       expect(note.emoji.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("the line changes every day and does not repeat", () => {
+  const day = (n: number) => new Date(n * 86_400_000);
+
+  it("gives every line in a set exactly one turn before any of them comes back", () => {
+    for (const [name, lines] of Object.entries(NOTE_SETS)) {
+      const lap = Array.from({ length: lines.length }, (_, i) => pickForDay(lines, day(i)));
+      expect(new Set(lap).size, `${name} repeats within a single lap`).toBe(lines.length);
+    }
+  });
+
+  it("shuffles the order again on the next lap, so the sequence is not learnable", () => {
+    // Not a cosmetic point: walking a fixed order makes the set read as a
+    // short loop, which is the thing a rotating line exists to avoid.
+    const lines = NOTE_SETS.KEEPING_UP;
+    const first = Array.from({ length: lines.length }, (_, i) => pickForDay(lines, day(i)));
+    const second = Array.from({ length: lines.length }, (_, i) =>
+      pickForDay(lines, day(lines.length + i)),
+    );
+    expect(second).not.toEqual(first);
+    expect(new Set(second).size).toBe(lines.length);
+  });
+
+  it("is stable within a day and different the next", () => {
+    const lines = NOTE_SETS.BEHIND;
+    const morning = new Date("2026-09-16T08:00:00Z");
+    const evening = new Date("2026-09-16T21:30:00Z");
+    const tomorrow = new Date("2026-09-17T08:00:00Z");
+
+    expect(pickForDay(lines, evening)).toBe(pickForDay(lines, morning));
+    expect(pickForDay(lines, tomorrow)).not.toBe(pickForDay(lines, morning));
+  });
+
+  it("indexes forwards for dates before the epoch rather than off the end", () => {
+    const lines = NOTE_SETS.COMPLETE;
+    expect(lines).toContain(pickForDay(lines, new Date("1969-07-20T00:00:00Z")));
+  });
+
+  it("gives the half-done month a set rather than one sentence", () => {
+    // The state that was on screen every morning with the same words. Every
+    // other state had the same problem; this is the one that was reported.
+    const seen = new Set(
+      Array.from(
+        { length: NOTE_SETS.KEEPING_PACE.length },
+        (_, i) =>
+          dailyNote(
+            coverage({
+              workingDaysSoFar: 11,
+              logged: Array(6).fill("d"),
+              missing: ["a", "b", "c", "d", "e"],
+              completion: 0.55,
+            }),
+            day(i),
+          ).text,
+      ),
+    );
+    expect(seen.size).toBeGreaterThan(1);
+  });
+});
+
+describe("the promises every line has to keep", () => {
+  const ALL = Object.entries(NOTE_SETS).flatMap(([set, lines]) =>
+    lines.map((line) => ({
+      set,
+      text:
+        typeof line.text === "function"
+          ? line.text(
+              coverage({
+                workingDaysSoFar: 11,
+                logged: Array(6).fill("d"),
+                missing: ["a", "b", "c", "d", "e"],
+                completion: 0.55,
+              }),
+            )
+          : line.text,
+      emoji: line.emoji,
+    })),
+  );
+
+  it("never scolds, in any state", () => {
+    // The rule the whole file exists to keep. Worth checking across every
+    // line rather than the handful a branch test happens to reach, because
+    // the one that slips in will be in a set nobody wrote a test for.
+    for (const line of ALL) {
+      expect(line.text.toLowerCase(), `${line.set}: "${line.text}"`).not.toMatch(
+        // Word boundaries matter here: without them "late" matches inside
+        // "clean slate", which is one of the warmest lines in the file.
+        /\b(behind|missed|failed|overdue|late|forgot|neglected)\b|should have/,
+      );
+    }
+  });
+
+  it("never names the size of the pile to somebody who is behind", () => {
+    // Counting what is open is encouraging at half a month and dispiriting at
+    // a fortnight. The behind set points at one day instead.
+    for (const line of NOTE_SETS.BEHIND) {
+      expect(typeof line.text).toBe("string");
+    }
+  });
+
+  it("gives every line an emoji and a sentence", () => {
+    for (const line of ALL) {
+      expect(line.emoji.length, `${line.set} has a line with no emoji`).toBeGreaterThan(0);
+      expect(line.text.trim().length, `${line.set} has an empty line`).toBeGreaterThan(10);
+    }
+  });
+
+  it("has enough lines in every set that a month rarely repeats one", () => {
+    for (const [set, lines] of Object.entries(NOTE_SETS)) {
+      expect(lines.length, `${set} is too small to last a month`).toBeGreaterThanOrEqual(7);
     }
   });
 });

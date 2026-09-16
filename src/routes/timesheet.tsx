@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { endOfMonth, startOfMonth } from "date-fns";
 import { AlertCircle } from "lucide-react";
@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { fetchMyLoggedDays } from "@/lib/data/api";
 import { monthCoverage, type DayCoverage } from "@/lib/domain/coverage";
+import { missingFields } from "@/lib/domain/validation";
 import { CATEGORICAL } from "@/lib/viz/palette";
 import { dayLabel, toDateKey } from "@/lib/domain/week";
 import { useTimesheet } from "@/lib/timesheet-store";
@@ -40,8 +41,18 @@ export const Route = createFileRoute("/timesheet")({
 });
 
 function TimesheetPage() {
-  const { rowIssues, weekIssues, showErrors, saveError, config, weekKey, addDay, visibleDates } =
-    useTimesheet();
+  const {
+    rowIssues,
+    weekIssues,
+    showErrors,
+    saveError,
+    config,
+    weekKey,
+    addDay,
+    visibleDates,
+    entries,
+    loading,
+  } = useTimesheet();
   const { status: authStatus } = useAuth();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -49,6 +60,42 @@ function TimesheetPage() {
   // is the moment worth marking. Unlike the milestones on My Time this is not
   // rationed: sending your week is an achievement every week.
   const [justSubmitted, setJustSubmitted] = useState(0);
+
+  /*
+   * A burst for every entry, the moment it becomes a complete one.
+   *
+   * Completion rather than the press of "+ Row": a blank row is an intention,
+   * and celebrating it would fire before anything had been logged and then
+   * stay silent for the part that is actually work.
+   *
+   * The ids already celebrated are kept so a row that is edited afterwards --
+   * or briefly emptied and filled again -- does not fire twice for the same
+   * entry.
+   */
+  const [justLogged, setJustLogged] = useState(0);
+  const celebrated = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    // Forget everything while a week is in flight. The first snapshot after it
+    // lands is history, not achievement: without this, opening a week that was
+    // filled in last Tuesday would set off a burst for every row in it.
+    if (loading) {
+      celebrated.current = null;
+      return;
+    }
+
+    const complete = entries.filter((row) => missingFields(row).length === 0).map((row) => row.id);
+
+    if (celebrated.current === null) {
+      celebrated.current = new Set(complete);
+      return;
+    }
+
+    const fresh = complete.filter((id) => !celebrated.current!.has(id));
+    if (fresh.length === 0) return;
+    for (const id of fresh) celebrated.current.add(id);
+    setJustLogged((n) => n + 1);
+  }, [entries, loading]);
   const navigate = useNavigate();
 
   // Fetched here rather than inside each component, so the note above and the
@@ -100,7 +147,16 @@ function TimesheetPage() {
   return (
     <>
       {justSubmitted > 0 && (
-        <Confetti key={justSubmitted} fire palette={CATEGORICAL.map((slot) => slot.light)} />
+        <Confetti
+          key={`sent-${justSubmitted}`}
+          fire
+          palette={CATEGORICAL.map((slot) => slot.light)}
+        />
+      )}
+      {/* Keyed by the counter so the tenth entry of the day gets its own burst
+          rather than reusing a layer that has already fallen. */}
+      {justLogged > 0 && (
+        <Confetti key={`row-${justLogged}`} fire palette={CATEGORICAL.map((slot) => slot.light)} />
       )}
       <div className="space-y-4 pb-2">
         <DailyNote coverage={coverage} />
