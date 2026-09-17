@@ -211,14 +211,15 @@
   }
 }
 
-/* The wordmark is a single off-white PNG whose alpha channel carries the
-   letterforms. Painting it through a mask rather than dropping it in an <img>
+/* The wordmark is a single PNG whose alpha channel carries the letterforms
+   (it is cut from the 2025 brand pack's White-Logotype-Black-BG, trimmed to
+   the ink and with the black field turned into transparency). Painting it through a mask rather than dropping it in an <img>
    lets one asset serve the dark sidebar, the light page and dark mode: the
    colour comes from `currentColor`, so the logo is always exactly the colour
    the surrounding text would have been. */
 @utility kijamii-wordmark {
   display: block;
-  aspect-ratio: 350 / 136;
+  aspect-ratio: 519 / 160;
   background-color: currentColor;
   mask-image: url("/kijamii-wordmark.png");
   mask-size: contain;

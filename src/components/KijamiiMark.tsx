@@ -31,7 +31,7 @@ export function KijamiiMark({
         role="img"
         aria-label="Kijamii"
         className={cn(
-          "kijamii-wordmark h-[22px] shrink-0",
+          "kijamii-wordmark h-[18px] shrink-0",
           tone === "dark" ? "text-sidebar-accent-foreground" : "text-foreground",
         )}
       />
