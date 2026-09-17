@@ -50,11 +50,6 @@ export function averageHoursPerEntry(stats: PersonalStats): number {
   return round(stats.totalHours / stats.entryCount);
 }
 
-export function averageHoursPerLoggedDay(stats: PersonalStats): number {
-  if (stats.daysLogged === 0) return 0;
-  return round(stats.totalHours / stats.daysLogged);
-}
-
 export function billableShare(stats: PersonalStats): number {
   if (stats.totalHours <= 0) return 0;
   return stats.billableHours / stats.totalHours;
@@ -194,14 +189,6 @@ export function buildTrivia(stats: PersonalStats): Trivia[] {
       detail: `Your most-logged client — ${round(stats.topClient.hours)}h, ${Math.round(
         topClientShare(stats) * 100,
       )}% of your time.`,
-    });
-  }
-
-  if (stats.topService?.name) {
-    out.push({
-      id: "top-service",
-      headline: stats.topService.name,
-      detail: `Where most of your hours went — ${round(stats.topService.hours)}h.`,
     });
   }
 

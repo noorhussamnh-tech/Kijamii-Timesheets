@@ -14,8 +14,6 @@ import { useTheme } from "@/lib/theme";
 import { milestoneFor, type Milestone } from "@/lib/domain/milestones";
 import { CATEGORICAL, personalityColor } from "@/lib/viz/palette";
 import {
-  averageHoursPerEntry,
-  averageHoursPerLoggedDay,
   billableShare,
   buildTrivia,
   busiestWeekday,
@@ -342,21 +340,9 @@ function Insights() {
         </section>
       )}
 
-      <section className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-xl border bg-surface p-4 shadow-card">
-          <p className="label-xs">Typical day</p>
-          <p className="num mt-1 text-lg font-bold">
-            {formatHours(averageHoursPerLoggedDay(stats))}
-          </p>
-        </div>
-        <div className="rounded-xl border bg-surface p-4 shadow-card">
-          <p className="label-xs">Typical entry</p>
-          <p className="num mt-1 text-lg font-bold">{formatHours(averageHoursPerEntry(stats))}</p>
-        </div>
-        <div className="rounded-xl border bg-surface p-4 shadow-card">
-          <p className="label-xs">Busiest weekday</p>
-          <p className="mt-1 text-lg font-bold">{weekday === null ? "—" : WEEKDAYS[weekday]}</p>
-        </div>
+      <section className="rounded-xl border bg-surface p-4 shadow-card">
+        <p className="label-xs">Busiest weekday</p>
+        <p className="mt-1 text-lg font-bold">{weekday === null ? "—" : WEEKDAYS[weekday]}</p>
       </section>
 
       {stats.busiestDay && (

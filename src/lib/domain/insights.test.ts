@@ -122,10 +122,9 @@ describe("trivia", () => {
     expect(buildTrivia(stats({ entryCount: 0 }))).toEqual([]);
   });
 
-  it("surfaces the client, service, busiest day, streak and trend", () => {
+  it("surfaces the client, busiest day, streak and trend", () => {
     const ids = buildTrivia(stats()).map((t) => t.id);
     expect(ids).toContain("top-client");
-    expect(ids).toContain("top-service");
     expect(ids).toContain("busiest-day");
     expect(ids).toContain("streak");
     expect(ids).toContain("trend");
@@ -146,7 +145,6 @@ describe("trivia", () => {
       (t) => t.id,
     );
     expect(ids).not.toContain("top-client");
-    expect(ids).not.toContain("top-service");
     expect(ids).not.toContain("top-task");
   });
 });
