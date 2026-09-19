@@ -51,6 +51,9 @@ const FRIENDLY_ERRORS: Record<string, string> = {
   week_must_start_sunday: "Weeks run Sunday to Saturday.",
   no_draft: "There is nothing saved for this week yet.",
   date_outside_week: "That date falls outside the selected week.",
+  week_closed:
+    "This week closed a fortnight after it ended. Ask an admin to reopen it if you need to change it.",
+  day_over_limit: "That day would go over 16 hours. Check the hours on its rows.",
 };
 
 function toApiError(error: { message?: string; code?: string } | null): ApiError {

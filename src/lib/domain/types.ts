@@ -143,6 +143,10 @@ export interface AdminEmployeeStatus {
   teams: string[];
   expectedHours: number;
   status: WeekStatus;
+  /** Filed hours only, so this ties to every export. */
   totalHours: number;
+  /** Logged but not filed. Reported apart rather than folded in, because
+   *  "logged nothing" and "has not filed" are different problems. */
+  draftHours: number;
   submittedAt: string | null;
 }

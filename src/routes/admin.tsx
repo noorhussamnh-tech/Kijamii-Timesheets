@@ -433,6 +433,14 @@ function AdminOverview() {
                           <span className="ml-1 text-[11px] font-normal text-muted-foreground">
                             / {formatHours(row.expectedHours)}
                           </span>
+                          {/* Filed hours are the headline, so this column ties
+                              to every export. Anything still in draft is said
+                              separately rather than added in. */}
+                          {row.draftHours > 0 && (
+                            <span className="block text-[11px] font-normal text-warning">
+                              +{formatHours(row.draftHours)} draft
+                            </span>
+                          )}
                         </td>
                         <td className="px-3 py-2.5">
                           <StatusBadge status={row.status} />
