@@ -43,3 +43,4 @@ gcp-*.json
 # Test + build output
 coverage
 .vercel
+supabase/.temp/
