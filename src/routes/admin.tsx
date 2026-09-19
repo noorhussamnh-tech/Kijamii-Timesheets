@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { DateRangePicker, rangeLabel } from "@/components/DateRangePicker";
 import { ExportCsv } from "@/components/ExportCsv";
 import { ExportByClient } from "@/components/ExportByClient";
+import { ExportByTeam } from "@/components/ExportByTeam";
 import { ExportGrouped } from "@/components/ExportGrouped";
 import { EmployeeExportMenu } from "@/components/EmployeeExportMenu";
 import { SyncDirectory } from "@/components/SyncDirectory";
@@ -338,6 +339,7 @@ function AdminOverview() {
           manager={manager}
           team={team}
         />
+        <ExportByTeam from={from} to={to} />
         <ExportByClient from={from} to={to} market={market} department={department} />
         <ExportTimeDedication />
       </div>

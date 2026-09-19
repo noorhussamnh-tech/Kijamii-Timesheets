@@ -551,6 +551,7 @@ export async function fetchMyLoggedDays(from: string, to: string): Promise<DayCo
 export interface TeamDedicationRow {
   full_name: string | null;
   email: string;
+  entity: string | null;
   business_unit: string | null;
   sub_unit: string | null;
   job_function: string | null;
