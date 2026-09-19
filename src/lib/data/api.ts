@@ -554,6 +554,7 @@ export interface TeamDedicationRow {
   manager: string | null;
   team: string;
   assumed_pct: number | string | null;
+  assumed_hours: number | string | null;
   actual_hours: number | string | null;
   actual_pct: number | string | null;
 }

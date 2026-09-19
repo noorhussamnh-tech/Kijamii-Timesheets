@@ -5,11 +5,15 @@
  * the header row is the sheet's header row with three columns added on the
  * right rather than a tidier set of its own.
  *
- * "Actual %" is the team's share of what that person logged in the period,
- * not of a contracted week. That is what makes it comparable with an assumed
- * split, which is also a share of one person totalling 100%. Somebody who
- * logged nothing in the period gets a blank rather than a nought, because
- * nought reads as "did none of this work" when it means "we do not know".
+ * Both sides are measured against the same month of capacity, 140 hours, so
+ * Assumed Hours and Actual Hours subtract straight from each other and Actual
+ * Dedication % falls short when somebody logs short. Dividing by what they
+ * actually logged instead would always total 100%, which would make a person
+ * who logged twenty hours in a month look perfectly distributed.
+ *
+ * This is a month's export. Over a week or a quarter both figures are
+ * measured against the wrong month -- the assumed side is per month by
+ * definition, so no denominator rescues a range that is not one.
  */
 import type { TeamDedicationRow } from "@/lib/data/api";
 import type { Shaped } from "@/lib/export/time-dedication";
@@ -31,8 +35,9 @@ export function teamDedicationView(rows: readonly TeamDedicationRow[]): Shaped {
       "Manager",
       "Team",
       "Dedication %",
+      "Assumed Hours",
       "Actual Hours",
-      "Actual %",
+      "Actual Dedication %",
     ],
     rows: rows.map((row) => [
       row.full_name ?? "",
@@ -43,6 +48,7 @@ export function teamDedicationView(rows: readonly TeamDedicationRow[]): Shaped {
       row.manager ?? "",
       row.team,
       pct(row.assumed_pct),
+      num(row.assumed_hours),
       num(row.actual_hours),
       pct(row.actual_pct),
     ]),
