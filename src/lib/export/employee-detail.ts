@@ -25,6 +25,8 @@ export interface DetailRow {
   clientCode: string | null;
   clientName: string | null;
   projectType: string | null;
+  /** Null on anything logged before the Team column existed. */
+  team: string | null;
   scope: string | null;
   billable: boolean;
   hours: number | string;
@@ -155,6 +157,15 @@ export const perProjectTypeView = (rows: readonly DetailRow[]): Shaped =>
   byAttribute(rows, "project_type", (row) => row.projectType, "None set");
 
 /**
+ * Hours by the team the work was for.
+ *
+ * "Not set" is the honest bucket and will be most of the hours at first:
+ * the Team column is new, so nothing logged before it exists carries one.
+ */
+export const perTeamView = (rows: readonly DetailRow[]): Shaped =>
+  byAttribute(rows, "team", (row) => row.team, "Not set");
+
+/**
  * One line per logged entry: the whole thing, unaggregated.
  *
  * This is the shape to reach for first. Every other view here is a fold of
@@ -165,7 +176,17 @@ export const perProjectTypeView = (rows: readonly DetailRow[]): Shaped =>
  */
 export function fullDetailView(rows: readonly DetailRow[]): Shaped {
   return {
-    headers: ["Name", "Day", "Market", "Department", "Title", "Account", "Project", "Hours"],
+    headers: [
+      "Name",
+      "Day",
+      "Market",
+      "Department",
+      "Title",
+      "Account",
+      "Team",
+      "Project",
+      "Hours",
+    ],
     rows: [...rows]
       .sort((a, b) => byText(a.employeeName, b.employeeName) || byText(a.workDate, b.workDate))
       .map((row) => [
@@ -175,6 +196,7 @@ export function fullDetailView(rows: readonly DetailRow[]): Shaped {
         row.department ?? "",
         row.title ?? "",
         clientOf(row),
+        row.team ?? "",
         row.projectType ?? "",
         num(row.hours),
       ]),

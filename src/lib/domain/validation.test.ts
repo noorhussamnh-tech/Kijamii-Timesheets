@@ -21,6 +21,7 @@ function entry(overrides: Partial<TimesheetEntry> = {}): TimesheetEntry {
     projectType: "Campaign",
     task: "Copy",
     workType: "new_task",
+    teamId: "",
     projectNote: "",
     hours: 4,
     billable: true,

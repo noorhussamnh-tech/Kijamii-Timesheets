@@ -133,7 +133,7 @@ export async function fetchCurrentEmployee(): Promise<Employee | null> {
 export async function fetchReferenceData(): Promise<ReferenceData> {
   const supabase = requireSupabaseBrowserClient();
 
-  const [clients, services, projectTypes, taskTypes, departments] = await Promise.all([
+  const [clients, services, projectTypes, taskTypes, departments, teams] = await Promise.all([
     supabase
       .from("ts_clients")
       .select("id, name, sector, markets, is_other")
@@ -144,9 +144,14 @@ export async function fetchReferenceData(): Promise<ReferenceData> {
     supabase.from("ts_project_types").select("id, name").eq("active", true).order("sort_order"),
     supabase.from("ts_task_types").select("id, name").eq("active", true).order("sort_order"),
     supabase.from("ts_departments").select("id, name").eq("active", true).order("sort_order"),
+    // Not a table read: the teams somebody may log against are their own,
+    // and the function decides that from who is asking.
+    supabase.rpc("ts_my_teams"),
   ]);
 
-  const failure = [clients, services, projectTypes, taskTypes, departments].find((r) => r.error);
+  const failure = [clients, services, projectTypes, taskTypes, departments, teams].find(
+    (r) => r.error,
+  );
   if (failure?.error) {
     console.error("[timesheets] reference load failed", { code: failure.error.code });
     throw toApiError(failure.error);
@@ -175,6 +180,7 @@ export async function fetchReferenceData(): Promise<ReferenceData> {
     projectTypes: asOptions(projectTypes.data),
     taskTypes: asOptions(taskTypes.data),
     departments: asOptions(departments.data),
+    teams: asOptions(teams.data),
   };
 }
 
@@ -200,6 +206,7 @@ interface RawEntry {
   projectType: string | null;
   task: string | null;
   workType: WorkType | null;
+  teamId: string | null;
   projectNote: string | null;
   hours: number | string | null;
   billable: boolean;
@@ -216,6 +223,7 @@ function toEntry(raw: RawEntry): TimesheetEntry {
     projectType: raw.projectType ?? "",
     task: raw.task ?? "",
     workType: raw.workType ?? null,
+    teamId: raw.teamId ?? "",
     projectNote: raw.projectNote ?? "",
     hours: raw.hours === null || raw.hours === "" ? "" : Number(raw.hours),
     billable: raw.billable,
@@ -273,6 +281,7 @@ export async function saveDraft(
     project_type: entry.projectType || null,
     task: entry.task || null,
     work_type: entry.workType,
+    team_id: entry.teamId || null,
     project_note: entry.projectNote || null,
     hours: entry.hours === "" ? null : String(entry.hours),
     billable: entry.billable,
@@ -520,4 +529,37 @@ export async function fetchMyStats(from: string, to: string): Promise<PersonalSt
 export async function fetchMyLoggedDays(from: string, to: string): Promise<DayCoverage[]> {
   const rows = await rpc<DayCoverage[]>("ts_my_logged_days", { p_from: from, p_to: to });
   return (rows ?? []).map((row) => ({ date: row.date, hours: Number(row.hours) }));
+}
+
+// ------------------------------------------------------- team dedication
+
+/**
+ * One row per person per team: what the OPS list assumes, and what was
+ * actually logged.
+ *
+ * Deliberately not folded out of the employee-detail export like the other
+ * admin views. Its left-hand columns are the OPS sheet's own -- entity aside,
+ * which the sheet is still filling in -- so the file can be pasted beside the
+ * sheet month after month, and it must include people and teams that logged
+ * nothing, which a fold over logged rows can never produce.
+ */
+export interface TeamDedicationRow {
+  full_name: string | null;
+  email: string;
+  business_unit: string | null;
+  sub_unit: string | null;
+  job_function: string | null;
+  manager: string | null;
+  team: string;
+  assumed_pct: number | string | null;
+  actual_hours: number | string | null;
+  actual_pct: number | string | null;
+}
+
+export async function fetchTeamDedication(from: string, to: string): Promise<TeamDedicationRow[]> {
+  const rows = await rpc<TeamDedicationRow[]>("ts_export_team_dedication", {
+    p_from: from,
+    p_to: to,
+  });
+  return rows ?? [];
 }

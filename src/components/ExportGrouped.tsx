@@ -11,8 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { fetchEmployeeDetail } from "@/lib/data/api";
+import { fetchEmployeeDetail, fetchTeamDedication } from "@/lib/data/api";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
+import { teamDedicationView } from "@/lib/export/team-dedication";
 import { VIEW_GROUPS, type ExportView } from "@/lib/export/views";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +87,36 @@ export function ExportGrouped({
     }
   };
 
+  /*
+   * The dedication comparison does not fold out of the detail export like
+   * every other view here, so it gets its own runner rather than being bent
+   * into the ExportView shape. It ignores the market and department filters
+   * on purpose: it is the whole staffing plan against the whole of what was
+   * logged, and a half-filtered plan compares against nothing meaningful.
+   */
+  const runDedication = async () => {
+    if (busy) return;
+    setBusy(true);
+    setNote(null);
+    setError(null);
+    try {
+      const shaped = teamDedicationView(await fetchTeamDedication(from, to));
+      if (shaped.rows.length === 0) {
+        setNote("Nobody is staffed onto a team yet.");
+        return;
+      }
+      downloadCsv(
+        `kijamii_assumed-vs-actual_${from}_to_${to}.csv`,
+        toCsv(shaped.headers, shaped.rows),
+      );
+      setNote(`${shaped.rows.length} rows downloaded.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The export failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="relative">
       <DropdownMenu>
@@ -119,6 +150,18 @@ export function ExportGrouped({
               ))}
             </div>
           ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="label-xs">Plan against actual</DropdownMenuLabel>
+          <DropdownMenuItem
+            onClick={() => void runDedication()}
+            className="flex-col items-start gap-0.5"
+          >
+            <span className="font-medium">Assumed vs actual dedication</span>
+            <span className="text-[11px] leading-snug text-muted-foreground">
+              The OPS list&rsquo;s own columns, with each team&rsquo;s real share beside the assumed
+              one.
+            </span>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

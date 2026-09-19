@@ -58,6 +58,9 @@ export interface ReferenceData {
   projectTypes: ReferenceOption[];
   taskTypes: ReferenceOption[];
   departments: ReferenceOption[];
+  /** Only the teams the OPS list staffs this person onto. Empty for
+   *  somebody it staffs onto none, which hides the column for them. */
+  teams: ReferenceOption[];
 }
 
 /** A single row of the timesheet grid. */
@@ -87,6 +90,9 @@ export interface TimesheetEntry {
   task: string;
   /** Null until the person chooses. Never assumed. */
   workType: WorkType | null;
+  /** Which team the hour was for. Empty while unanswered; a draft may
+   *  hold rows without one, and the submit checks do not insist. */
+  teamId: string;
   projectNote: string;
   /** Empty string while the field is blank; drafts may hold incomplete rows. */
   hours: number | "";

@@ -148,6 +148,7 @@ function emptyEntry(date: string): TimesheetEntry {
     clientId: "",
     clientOther: "",
     serviceId: "",
+    teamId: "",
     projectType: "",
     task: "",
     workType: null,
@@ -192,7 +193,20 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   // A row on its way to a different week, inserted once that week loads.
   const pendingInsert = useRef<TimesheetEntry | null>(null);
 
-  const config = configById(employee?.configuration ?? null);
+  const baseConfig = configById(employee?.configuration ?? null);
+  /*
+   * Somebody the OPS list staffs onto no team has nothing to put in the Team
+   * column, so they do not get one. Finance, IT, People & Culture and the
+   * others are 22 of the 138 people on the list; showing them a dropdown with
+   * nothing in it would read as something they had failed to fill in.
+   */
+  const config = useMemo(
+    () =>
+      reference && reference.teams.length === 0
+        ? { ...baseConfig, fields: baseConfig.fields.filter((f) => f.key !== "teamId") }
+        : baseConfig,
+    [baseConfig, reference],
+  );
   const expectedWeeklyHours = employee?.expectedWeeklyHours ?? config.expectedWeeklyHours;
   const isFuture = isFutureWeek(weekKey);
 

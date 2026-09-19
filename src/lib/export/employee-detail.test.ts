@@ -29,6 +29,7 @@ function row(overrides: Partial<DetailRow> = {}): DetailRow {
     businessUnit: "Strategy",
     subUnit: "Strategy & Planning",
     market: "EG",
+    team: "Consumer Insights EGY",
     workDate: "2026-09-01",
     clientCode: "CLI-001",
     clientName: "Bioderma",
@@ -195,6 +196,7 @@ describe("fullDetailView", () => {
       "Department",
       "Title",
       "Account",
+      "Team",
       "Project",
       "Hours",
     ]);
@@ -205,6 +207,7 @@ describe("fullDetailView", () => {
       "Strategy",
       "Strategy Director",
       "BTC",
+      "Consumer Insights EGY",
       "Campaign",
       4,
     ]);
@@ -224,7 +227,8 @@ describe("fullDetailView", () => {
       row({ hours: 5, clientName: "Castrol Oil" }),
       row({ hours: 6, workDate: "2026-09-02", clientName: "Carrefour" }),
     ];
-    const flat = fullDetailView(rows).rows.reduce((sum, r) => sum + Number(r[7]), 0);
+    // Hours is the last column, so this does not have to be renumbered again.
+    const flat = fullDetailView(rows).rows.reduce((sum, r) => sum + Number(r.at(-1)), 0);
     const daily = perDayView(rows).rows.reduce((sum, r) => sum + Number(r[2]), 0);
     expect(flat).toBe(daily);
   });

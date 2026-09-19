@@ -19,6 +19,7 @@ import {
   perPositionView,
   perProjectTypeView,
   perSubUnitView,
+  perTeamView,
   perWeekView,
   summaryView,
 } from "@/lib/export/employee-detail";
@@ -87,6 +88,12 @@ export const WORK_VIEWS: ExportView[] = [
     label: "Client split, day by day",
     note: "A grid: clients down, days across.",
     shape: (data) => perClientByDayView(data.rows),
+  },
+  {
+    id: "per-team",
+    label: "By team",
+    note: "The squad the work was for, from the OPS employee list.",
+    shape: (data) => perTeamView(data.rows),
   },
   {
     id: "per-project-type",

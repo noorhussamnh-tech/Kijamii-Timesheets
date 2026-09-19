@@ -12,7 +12,14 @@
 import type { Market, TimesheetConfigId } from "./types";
 
 export type FieldKey =
-  "workDate" | "clientId" | "projectType" | "workType" | "projectNote" | "hours" | "billable";
+  | "workDate"
+  | "clientId"
+  | "projectType"
+  | "workType"
+  | "teamId"
+  | "projectNote"
+  | "hours"
+  | "billable";
 
 export type FieldKind = "date" | "client" | "reference" | "choice" | "text" | "hours" | "billable";
 
@@ -22,7 +29,7 @@ export interface FieldDef {
   kind: FieldKind;
   required: boolean;
   /** Which reference list feeds a `reference` field. */
-  source?: "services" | "projectTypes" | "taskTypes";
+  source?: "services" | "projectTypes" | "taskTypes" | "teams";
   /**
    * The fixed options of a `choice` field. Unlike a `reference` field these
    * live in the configuration rather than in operational data, because they
@@ -88,6 +95,17 @@ const sharedFields: FieldDef[] = [
       { value: "new_task", label: "New Task" },
       { value: "amend", label: "Amend" },
     ],
+  },
+  {
+    // Not required. The OPS list staffs 116 of 138 people onto a team, and the
+    // rest -- Finance, IT, People & Culture and the like -- have none to pick.
+    // Insisting would block exactly the people the column does not describe.
+    key: "teamId",
+    label: "Team",
+    kind: "reference",
+    source: "teams",
+    required: false,
+    width: "min-w-[170px]",
   },
   { key: "hours", label: "Hours", kind: "hours", required: true, width: "w-[104px]" },
   {
