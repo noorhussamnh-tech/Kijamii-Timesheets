@@ -37,12 +37,16 @@ export function ExportGrouped({
   to,
   market,
   department,
+  manager,
+  team,
 }: {
   from: string;
   to: string;
   /** The page's own filters. "all" means unfiltered. */
   market: string;
   department: string;
+  manager: string;
+  team: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -56,20 +60,28 @@ export function ExportGrouped({
     try {
       const data = await fetchEmployeeDetail(from, to, null);
 
-      // The file matches what the page is showing rather than quietly
-      // including the markets and departments that were filtered out.
+      /*
+       * The file matches what the page is showing rather than quietly
+       * including the people the filters excluded.
+       *
+       * One predicate, over people, and the rows follow whoever it keeps.
+       * Team has to work this way -- a person is on several teams, so
+       * "is on this team" is a fact about them, not about the hour -- and
+       * running the other three the same way means the roster and the rows
+       * cannot disagree about who is in the file.
+       */
+      const keep = (person: (typeof data.employees)[number]) =>
+        (market === "all" || person.primaryMarket === market) &&
+        (department === "all" || person.department === department) &&
+        (manager === "all" || person.manager === manager) &&
+        (team === "all" || person.teams.includes(team));
+
+      const employees = data.employees.filter(keep);
+      const ids = new Set(employees.map((person) => person.id));
       const narrowed = {
         ...data,
-        employees: data.employees.filter(
-          (person) =>
-            (market === "all" || person.primaryMarket === market) &&
-            (department === "all" || person.department === department),
-        ),
-        rows: data.rows.filter(
-          (row) =>
-            (market === "all" || row.market === market) &&
-            (department === "all" || row.department === department),
-        ),
+        employees,
+        rows: data.rows.filter((row) => ids.has(row.employeeId)),
       };
 
       const shaped = view.shape(narrowed);
@@ -127,7 +139,7 @@ export function ExportGrouped({
             ) : (
               <Download className="size-3.5" />
             )}
-            Export By
+            Breakdowns
             <ChevronDown className="size-3.5 opacity-70" />
           </Button>
         </DropdownMenuTrigger>

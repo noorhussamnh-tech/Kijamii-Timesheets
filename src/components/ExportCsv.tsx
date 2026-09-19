@@ -50,12 +50,16 @@ export function ExportCsv({
   to,
   market,
   department,
+  manager,
+  team,
 }: {
   from: string;
   to: string;
-  /** "all", or a market to restrict the file to. Mirrors the page filters. */
+  /** "all", or a value to restrict the file to. Mirrors the page filters. */
   market: string;
   department: string;
+  manager: string;
+  team: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +76,8 @@ export function ExportCsv({
    */
   const columns = COLUMNS;
 
-  const filtersApplied = market !== "all" || department !== "all";
+  const filtersApplied =
+    market !== "all" || department !== "all" || manager !== "all" || team !== "all";
 
   const run = async () => {
     if (busy) return;
@@ -87,7 +92,10 @@ export function ExportCsv({
       const rows = all.filter(
         (row) =>
           (market === "all" || row.market === (market as Market)) &&
-          (department === "all" || row.department === department),
+          (department === "all" || row.department === department) &&
+          (manager === "all" || row.manager === manager) &&
+          // A person is on several teams; the filter means "is on this one".
+          (team === "all" || row.teams.includes(team)),
       );
 
       if (rows.length === 0) {

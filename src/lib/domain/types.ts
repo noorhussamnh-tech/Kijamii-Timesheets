@@ -137,6 +137,10 @@ export interface AdminEmployeeStatus {
   markets: Market[];
   primaryMarket: Market | null;
   department: string | null;
+  manager: string | null;
+  /** Every team the OPS list staffs them onto. Empty for the people it
+   *  staffs onto none. */
+  teams: string[];
   expectedHours: number;
   status: WeekStatus;
   totalHours: number;

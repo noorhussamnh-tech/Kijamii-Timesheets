@@ -27,6 +27,8 @@ export interface DetailRow {
   projectType: string | null;
   /** Null on anything logged before the Team column existed. */
   team: string | null;
+  /** From the OPS employee list; null for anybody not on it. */
+  manager: string | null;
   scope: string | null;
   billable: boolean;
   hours: number | string;
@@ -42,6 +44,9 @@ export interface DetailEmployee {
   /** Straight from the company employee list. */
   businessUnit: string | null;
   subUnit: string | null;
+  manager: string | null;
+  /** Every team the OPS list staffs them onto. */
+  teams: string[];
   employeeCode: string | null;
   /** The entity that employs them, which is what the sheet calls Entity. */
   primaryMarket: string | null;
@@ -164,6 +169,10 @@ export const perProjectTypeView = (rows: readonly DetailRow[]): Shaped =>
  */
 export const perTeamView = (rows: readonly DetailRow[]): Shaped =>
   byAttribute(rows, "team", (row) => row.team, "Not set");
+
+/** Hours by who the person reports to, for a manager-shaped read of a period. */
+export const perManagerView = (rows: readonly DetailRow[]): Shaped =>
+  byAttribute(rows, "manager", (row) => row.manager, "No manager set");
 
 /**
  * One line per logged entry: the whole thing, unaggregated.

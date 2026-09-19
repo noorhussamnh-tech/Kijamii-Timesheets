@@ -380,6 +380,8 @@ export interface ExportRow {
   employeeEmail: string;
   market: string;
   department: string | null;
+  manager: string | null;
+  teams: string[];
   weekStart: string;
   workDate: string;
   clientName: string | null;

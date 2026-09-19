@@ -18,6 +18,7 @@ import {
   perMonthView,
   perPositionView,
   perProjectTypeView,
+  perManagerView,
   perSubUnitView,
   perTeamView,
   perWeekView,
@@ -122,6 +123,12 @@ export const PEOPLE_VIEWS: ExportView[] = [
     label: "By function",
     note: "The craft: Art, Copywriting, Account Management.",
     shape: (data) => perFunctionView(data.rows),
+  },
+  {
+    id: "per-manager",
+    label: "By manager",
+    note: "Who each person reports to, from the OPS employee list.",
+    shape: (data) => perManagerView(data.rows),
   },
   {
     id: "per-title",

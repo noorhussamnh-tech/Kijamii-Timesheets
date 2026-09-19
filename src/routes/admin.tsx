@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { AlertCircle, Search, ShieldAlert } from "lucide-react";
@@ -108,34 +108,75 @@ function AdminOverview() {
 
   const [query, setQuery] = useState("");
 
+  const [manager, setManager] = useState("all");
+  const [team, setTeam] = useState("all");
+
   /*
-   * Market and department narrow each other.
+   * The four filters narrow each other.
    *
-   * Each list offers only what the other filter leaves reachable, so a pair
-   * that returns nobody cannot be chosen: picking KSA leaves the departments
-   * that have somebody in KSA, and picking Studio leaves the markets Studio
-   * actually works in. Without it the two filters were independent, and the
-   * combinations that produce an empty table were the ones an admin had to
-   * discover by trying them.
+   * Each list offers only what the other three leave reachable, so a
+   * combination that returns nobody cannot be chosen: picking KSA leaves the
+   * departments that have somebody in KSA, and picking a manager leaves the
+   * teams their people are actually on. Without it the filters were
+   * independent, and the combinations that produce an empty table were the
+   * ones an admin had to discover by trying them.
+   *
+   * Team is the odd one: a person is on several, so a row matches if any of
+   * theirs is the chosen one.
    */
-  const departments = useMemo(() => {
-    const reachable = (rows ?? []).filter(
-      (row) => market === "all" || row.primaryMarket === market,
-    );
-    return [...new Set(reachable.map((row) => row.department).filter(Boolean))].sort() as string[];
-  }, [rows, market]);
+  const matches = useCallback(
+    (row: AdminEmployeeStatus, skip: "market" | "department" | "manager" | "team") =>
+      (skip === "market" || market === "all" || row.primaryMarket === market) &&
+      (skip === "department" || department === "all" || row.department === department) &&
+      (skip === "manager" || manager === "all" || row.manager === manager) &&
+      (skip === "team" || team === "all" || row.teams.includes(team)),
+    [market, department, manager, team],
+  );
+
+  const departments = useMemo(
+    () =>
+      [
+        ...new Set(
+          (rows ?? [])
+            .filter((row) => matches(row, "department"))
+            .map((row) => row.department)
+            .filter(Boolean),
+        ),
+      ].sort() as string[],
+    [rows, matches],
+  );
+
+  const managers = useMemo(
+    () =>
+      [
+        ...new Set(
+          (rows ?? [])
+            .filter((row) => matches(row, "manager"))
+            .map((row) => row.manager)
+            .filter(Boolean),
+        ),
+      ].sort() as string[],
+    [rows, matches],
+  );
+
+  const teams = useMemo(
+    () =>
+      [
+        ...new Set((rows ?? []).filter((row) => matches(row, "team")).flatMap((row) => row.teams)),
+      ].sort(),
+    [rows, matches],
+  );
 
   const markets = useMemo(() => {
-    const reachable = (rows ?? []).filter(
-      (row) => department === "all" || row.department === department,
+    const present = new Set(
+      (rows ?? []).filter((row) => matches(row, "market")).map((row) => row.primaryMarket),
     );
-    const present = new Set(reachable.map((row) => row.primaryMarket).filter(Boolean));
     return MARKETS.filter((option) => present.has(option));
-  }, [rows, department]);
+  }, [rows, matches]);
 
   /*
-   * A selection the other filter has just made unreachable falls back to
-   * "all" rather than silently showing an empty table under a filter naming
+   * A selection the others have just made unreachable falls back to "all"
+   * rather than silently showing an empty table under a filter naming
    * something real.
    */
   useEffect(() => {
@@ -143,6 +184,14 @@ function AdminOverview() {
       setDepartment("all");
     }
   }, [departments, department, rows]);
+
+  useEffect(() => {
+    if (manager !== "all" && rows !== null && !managers.includes(manager)) setManager("all");
+  }, [managers, manager, rows]);
+
+  useEffect(() => {
+    if (team !== "all" && rows !== null && !teams.includes(team)) setTeam("all");
+  }, [teams, team, rows]);
 
   useEffect(() => {
     if (market !== "all" && rows !== null && !markets.includes(market as Market)) {
@@ -164,13 +213,15 @@ function AdminOverview() {
          */
         (market === "all" || row.primaryMarket === market) &&
         (department === "all" || row.department === department) &&
+        (manager === "all" || row.manager === manager) &&
+        (team === "all" || row.teams.includes(team)) &&
         // Email as well as name: two people can share a first name, and the
         // address is the thing an admin has been given in a message.
         (needle === "" ||
           row.name.toLowerCase().includes(needle) ||
           row.email.toLowerCase().includes(needle)),
     );
-  }, [rows, market, department, query]);
+  }, [rows, market, department, manager, team, query]);
 
   if (!isAdmin) {
     return (
@@ -238,15 +289,55 @@ function AdminOverview() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={manager} onValueChange={setManager}>
+          <SelectTrigger className="h-9 w-[190px] text-[13px]">
+            <SelectValue placeholder="Manager" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All managers</SelectItem>
+            {managers.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={team} onValueChange={setTeam}>
+          <SelectTrigger className="h-9 w-[180px] text-[13px]">
+            <SelectValue placeholder="Team" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All teams</SelectItem>
+            {teams.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {/* On this row because it returns exactly what this row describes:
             the same people over the same period, unfolded. The row below
             reshapes that into an answer; this one hands it over as it is. */}
-        <ExportCsv from={from} to={to} market={market} department={department} />
+        <ExportCsv
+          from={from}
+          to={to}
+          market={market}
+          department={department}
+          manager={manager}
+          team={team}
+        />
       </div>
 
       {/* Reads the period and the filters above, and folds them into a shape. */}
       <div className="flex flex-wrap items-center gap-2">
-        <ExportGrouped from={from} to={to} market={market} department={department} />
+        <ExportGrouped
+          from={from}
+          to={to}
+          market={market}
+          department={department}
+          manager={manager}
+          team={team}
+        />
         <ExportByClient from={from} to={to} market={market} department={department} />
         <ExportTimeDedication />
       </div>
