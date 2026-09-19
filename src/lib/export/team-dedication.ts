@@ -12,9 +12,10 @@
  * actually logged instead would always total 100%, which would make a person
  * who logged twenty hours in a month look perfectly distributed.
  *
- * This is a month's export. Over a week or a quarter both figures are
- * measured against the wrong month -- the assumed side is per month by
- * definition, so no denominator rescues a range that is not one.
+ * 140 is one month, and the range says how many of them there are: a quarter
+ * is 420, half of September is 70. Exact for whole months, proportional for
+ * anything else. Both columns use the same figure, so they stay subtractable
+ * whatever period is chosen.
  */
 import type { TeamDedicationRow } from "@/lib/data/api";
 import type { Shaped } from "@/lib/export/time-dedication";

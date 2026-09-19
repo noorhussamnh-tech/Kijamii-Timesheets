@@ -102,7 +102,7 @@ Worth deciding deliberately rather than discovering it in use.
 
 ---
 
-## Decided: the 140 must scale
+## Done: the 140 scales (shipped 19 Sep 2026)
 
 Assumed Hours is currently `assumed % × 140`, with 140 hard-coded as one
 month. Today that is safe because the export is run a month at a time.
@@ -111,8 +111,11 @@ Under a uniform format with a free date picker, somebody will run a quarter
 and get Assumed Hours a third of the truth.
 
 **Decision (Noor, 19 Sep 2026): 140 is per month. Scale it by the number of
-months in the selected range.** Small fix, but it becomes load-bearing once
-the format is uniform.
+months in the selected range.** Built the same day, ahead of the rest of this
+document — `ts_months_in_range()` counts the fraction of each calendar month
+the range covers and sums it, so a whole month is exactly 1.0 and a quarter
+exactly 3.0. Actual % uses the same figure, or a quarter's hours over a
+month's capacity would read as 300%.
 
 ---
 
