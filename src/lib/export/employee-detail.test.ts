@@ -28,7 +28,6 @@ function row(overrides: Partial<DetailRow> = {}): DetailRow {
     department: "Strategy",
     businessUnit: "Strategy",
     subUnit: "Strategy & Planning",
-    market: "EG",
     team: "Consumer Insights EGY",
     manager: "Bahy Aly Elsayed Aboelezz",
     workDate: "2026-09-01",
@@ -55,7 +54,6 @@ function person(overrides: Partial<DetailEmployee> = {}): DetailEmployee {
     businessUnit: "Strategy",
     subUnit: "Strategy & Planning",
     employeeCode: null,
-    primaryMarket: "EG",
     ...overrides,
   };
 }
@@ -188,14 +186,11 @@ describe("perPositionView", () => {
 
 describe("fullDetailView", () => {
   it("emits one line per entry with the sheet's own column names", () => {
-    const shaped = fullDetailView([
-      row({ hours: 4, projectType: "Campaign", clientName: "BTC", market: "EG" }),
-    ]);
+    const shaped = fullDetailView([row({ hours: 4, projectType: "Campaign", clientName: "BTC" })]);
 
     expect(shaped.headers).toEqual([
       "Name",
       "Day",
-      "Market",
       "Department",
       "Title",
       "Account",
@@ -206,7 +201,6 @@ describe("fullDetailView", () => {
     expect(shaped.rows[0]).toEqual([
       "Noor Hussam",
       "2026-09-01",
-      "EG",
       "Strategy",
       "Strategy Director",
       "BTC",
@@ -238,8 +232,8 @@ describe("fullDetailView", () => {
 
   it("leaves a blank rather than the word null where a title is unset", () => {
     const shaped = fullDetailView([row({ title: null, department: null })]);
-    expect(shaped.rows[0]![4]).toBe("");
     expect(shaped.rows[0]![3]).toBe("");
+    expect(shaped.rows[0]![2]).toBe("");
   });
 });
 
@@ -384,7 +378,6 @@ describe("clientStaffingView", () => {
       jobFunction: "Art",
       businessUnit: "Creative",
       subUnit: "Sports",
-      primaryMarket: "KSA",
     }),
   ];
 
@@ -406,7 +399,6 @@ describe("clientStaffingView", () => {
 
     expect(shaped.headers).toEqual([
       "employee",
-      "entity",
       "business_unit",
       "sub_unit",
       "function",
@@ -414,24 +406,23 @@ describe("clientStaffingView", () => {
       "hours",
     ]);
     expect(shaped.rows).toEqual([
-      ["Bahy Abo El Ezz", "KSA", "Creative", "Sports", "Art", "Art Director", 6],
-      ["Noor Hussam", "EG", "Strategy", "Strategy & Planning", "Strategy", "Strategy Director", 2],
+      ["Bahy Abo El Ezz", "Creative", "Sports", "Art", "Art Director", 6],
+      ["Noor Hussam", "Strategy", "Strategy & Planning", "Strategy", "Strategy Director", 2],
     ]);
   });
 
   it("describes the person from the roster, not from the entry they logged", () => {
     /*
-     * The entry's market is the client's, and the two disagree on purpose:
-     * the employee list has Egypt-entity staff on KSA business. Reading the
-     * entity off the row would file an Egyptian employee under KSA because
-     * that is where the account sits.
+     * The entry says what was done; only the roster says who did it. An entry
+     * logged under somebody else's name in the same file must not change how
+     * this person is described.
      */
     const shaped = clientStaffingView(
-      [row({ hours: 4, clientName: "Castrol Oil", market: "KSA" })],
+      [row({ hours: 4, clientName: "Castrol Oil", title: "Wrong Title" })],
       roster,
       "Castrol Oil",
     );
-    expect(shaped.rows[0]![1]).toBe("EG");
+    expect(shaped.rows[0]![4]).toBe("Strategy Director");
   });
 
   it("counts only the account asked for", () => {
@@ -441,7 +432,7 @@ describe("clientStaffingView", () => {
       "Castrol Oil",
     );
     expect(shaped.rows).toHaveLength(1);
-    expect(shaped.rows[0]![6]).toBe(3);
+    expect(shaped.rows[0]![5]).toBe(3);
   });
 
   it("offers every client that has hours, in name order", () => {

@@ -18,7 +18,7 @@ import {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 
-import { fetchCurrentEmployee } from "@/lib/data/api";
+import { fetchCurrentEmployee, fetchMyTeamScope, type TeamScope } from "@/lib/data/api";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { authRedirectUrl, SUPABASE_CONFIGURED } from "@/lib/supabase/config";
 import type { Employee } from "@/lib/domain/types";
@@ -51,6 +51,16 @@ interface AuthContextValue {
   status: AuthStatus;
   session: Session | null;
   employee: Employee | null;
+  /**
+   * How many people report to them, or null while that is still unknown.
+   *
+   * Separate from the employee record because it is not a fact about the
+   * person, it is a fact about the reporting line drawn around them -- and
+   * because the profile call returns a table row, which has nowhere to put
+   * it. Null and zero are different: null is "not asked yet", and the team
+   * tab stays hidden rather than flickering into view and out again.
+   */
+  teamScope: TeamScope | null;
   error: string | null;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -68,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // True only when the lookup itself failed, as distinct from it having
   // returned "no such employee".
   const [lookupFailed, setLookupFailed] = useState(false);
+  const [teamScope, setTeamScope] = useState<TeamScope | null>(null);
   // Guards against a slow employee lookup landing after a sign-out.
   const loadToken = useRef(0);
 
@@ -75,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = ++loadToken.current;
     if (!active) {
       setEmployee(null);
+      setTeamScope(null);
       setLookupFailed(false);
       return;
     }
@@ -154,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     loadToken.current++;
     setEmployee(null);
+    setTeamScope(null);
     setLookupFailed(false);
     setSession(null);
     await supabase.auth.signOut();
@@ -162,6 +175,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshEmployee = useCallback(async () => {
     await loadEmployee(Boolean(session));
   }, [loadEmployee, session]);
+
+  /*
+   * Asked once the person is known, and never blocking: somebody who manages
+   * nobody sees exactly what they saw before, and a failure here costs the
+   * team tab rather than the session.
+   */
+  useEffect(() => {
+    const id = employee?.id;
+    if (!id) {
+      setTeamScope(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchMyTeamScope()
+      .then((scope) => {
+        if (!cancelled) setTeamScope(scope);
+      })
+      .catch(() => {
+        if (!cancelled) setTeamScope({ reports: 0, filing: 0 });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [employee?.id]);
 
   const status: AuthStatus = useMemo(() => {
     if (!SUPABASE_CONFIGURED) return "misconfigured";
@@ -174,8 +211,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [resolved, session, employee, lookupFailed]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, session, employee, error, signIn, signOut, refreshEmployee }),
-    [status, session, employee, error, signIn, signOut, refreshEmployee],
+    () => ({ status, session, employee, teamScope, error, signIn, signOut, refreshEmployee }),
+    [status, session, employee, teamScope, error, signIn, signOut, refreshEmployee],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

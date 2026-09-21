@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
 import { formatHours } from "@/lib/domain/totals";
-import { MARKET_LABELS } from "@/lib/domain/types";
 import { isBlankRow, missingFields } from "@/lib/domain/validation";
 import { dayLabel, weekRangeLabel } from "@/lib/domain/week";
 import { useTimesheet, type SubmitOutcome } from "@/lib/timesheet-store";
@@ -100,12 +99,6 @@ export function SubmitDialog({
             <dt className="text-muted-foreground">Submitting as</dt>
             <dd className="truncate text-right font-semibold">{employee?.email}</dd>
           </div>
-          {employee?.primaryMarket && (
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Market</dt>
-              <dd className="font-semibold">{MARKET_LABELS[employee.primaryMarket]}</dd>
-            </div>
-          )}
         </dl>
 
         {/*

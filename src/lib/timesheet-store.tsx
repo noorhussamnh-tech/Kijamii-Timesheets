@@ -570,10 +570,12 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
 
   // ------------------------------------------------------------ context
 
-  const availableClients = useMemo(() => {
-    if (!reference || !employee) return [];
-    return api.clientsForEmployee(reference.clients, employee.markets);
-  }, [reference, employee]);
+  /*
+   * Every active account. The list used to be narrowed by the person's
+   * markets, which never narrowed anything -- everybody carries all three --
+   * and market is no longer a thing the company is run by.
+   */
+  const availableClients = useMemo(() => reference?.clients ?? [], [reference]);
 
   const setWeekKey = useCallback((key: WeekKey) => setWeekKeyState(key), []);
 

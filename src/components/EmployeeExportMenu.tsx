@@ -10,7 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { fetchEmployeeDetail, type EmployeeDetailExport } from "@/lib/data/api";
+import { fetchEmployeeDetail, type EmployeeDetailExport, type ReadScope } from "@/lib/data/api";
 import { toDateKey } from "@/lib/domain/week";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
 import { perClientView, perDayView, perMonthView, perWeekView } from "@/lib/export/employee-detail";
@@ -41,7 +41,16 @@ const GROUPINGS = [
  * and it runs a month into the future because a week ahead of today can be
  * filled in.
  */
-export function EmployeeExportMenu({ employeeId, name }: { employeeId: string; name: string }) {
+export function EmployeeExportMenu({
+  employeeId,
+  name,
+  scope = "company",
+}: {
+  employeeId: string;
+  name: string;
+  /** Whose rows the file may be drawn from. The database enforces it. */
+  scope?: ReadScope;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -57,6 +66,7 @@ export function EmployeeExportMenu({ employeeId, name }: { employeeId: string; n
         toDateKey(subDays(today, 760)),
         toDateKey(addDays(today, 30)),
         employeeId,
+        scope,
       );
       const shaped = grouping.shape(data);
 

@@ -5,7 +5,7 @@ import { SearchSelect } from "@/components/SearchSelect";
 import { EXPORT_TRIGGER } from "@/components/export-button";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { fetchEmployeeDetail, type EmployeeDetailExport } from "@/lib/data/api";
+import { fetchEmployeeDetail, type EmployeeDetailExport, type ReadScope } from "@/lib/data/api";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
 import { clientStaffingView, clientsIn } from "@/lib/export/employee-detail";
 
@@ -23,14 +23,18 @@ import { clientStaffingView, clientsIn } from "@/lib/export/employee-detail";
 export function ExportByClient({
   from,
   to,
-  market,
   department,
+  scope = "company",
 }: {
   from: string;
   to: string;
-  /** The page's own filters. "all" means unfiltered. */
-  market: string;
+  /** The page's own filter. "all" means unfiltered. */
   department: string;
+  /**
+   * Whose rows the file is drawn from. The page decides; the database
+   * enforces it.
+   */
+  scope?: ReadScope;
 }) {
   const [data, setData] = useState<EmployeeDetailExport | null>(null);
   const [client, setClient] = useState("");
@@ -45,7 +49,7 @@ export function ExportByClient({
     setData(null);
     setClient("");
     setNote(null);
-    void fetchEmployeeDetail(from, to, null)
+    void fetchEmployeeDetail(from, to, null, scope)
       .then((result) => {
         if (!cancelled) setData(result);
       })
@@ -58,7 +62,7 @@ export function ExportByClient({
     return () => {
       cancelled = true;
     };
-  }, [from, to]);
+  }, [from, to, scope]);
 
   /*
    * Narrowed by the page's filters before the client list is built, so the
@@ -68,15 +72,9 @@ export function ExportByClient({
   const narrowed: EmployeeDetailExport | null = data && {
     ...data,
     employees: data.employees.filter(
-      (person) =>
-        (market === "all" || person.primaryMarket === market) &&
-        (department === "all" || person.department === department),
+      (person) => department === "all" || person.department === department,
     ),
-    rows: data.rows.filter(
-      (row) =>
-        (market === "all" || row.market === market) &&
-        (department === "all" || row.department === department),
-    ),
+    rows: data.rows.filter((row) => department === "all" || row.department === department),
   };
 
   const clients = narrowed ? clientsIn(narrowed.rows) : [];
@@ -147,8 +145,8 @@ export function ExportByClient({
             at wondering whether it is broken. */}
         {!loading && clients.length === 0 && (
           <p className="text-[12px] text-muted-foreground">
-            No client has submitted hours in this period. Widen the dates, or clear the market and
-            department filters.
+            No client has submitted hours in this period. Widen the dates, or clear the department
+            filter.
           </p>
         )}
 

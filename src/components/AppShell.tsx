@@ -1,6 +1,14 @@
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { CalendarClock, ClipboardList, LogOut, Menu, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  CalendarClock,
+  ClipboardList,
+  LogOut,
+  Menu,
+  ShieldCheck,
+  Sparkles,
+  Users,
+} from "lucide-react";
 
 import { AuthGate } from "@/components/AuthGate";
 import { KijamiiMark } from "@/components/KijamiiMark";
@@ -8,14 +16,19 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
-import { MARKET_LABELS } from "@/lib/domain/types";
 import { cn } from "@/lib/utils";
 
+/**
+ * `only` is who the entry is for. Everything without one is for everybody;
+ * "team" appears for whoever the employee list puts somebody under, whether
+ * or not they are an admin, and "admin" only for admins.
+ */
 const NAV = [
-  { to: "/timesheet", label: "My Timesheet", icon: CalendarClock, adminOnly: false },
-  { to: "/submissions", label: "Previous Submissions", icon: ClipboardList, adminOnly: false },
-  { to: "/insights", label: "My Time", icon: Sparkles, adminOnly: false },
-  { to: "/admin", label: "Admin Overview", icon: ShieldCheck, adminOnly: true },
+  { to: "/timesheet", label: "My Timesheet", icon: CalendarClock },
+  { to: "/submissions", label: "Previous Submissions", icon: ClipboardList },
+  { to: "/insights", label: "My Time", icon: Sparkles },
+  { to: "/team", label: "My Team", icon: Users, only: "team" },
+  { to: "/admin", label: "Admin Overview", icon: ShieldCheck, only: "admin" },
 ] as const;
 
 function initialsOf(name: string): string {
@@ -29,12 +42,18 @@ function initialsOf(name: string): string {
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const { employee } = useAuth();
+  const { employee, teamScope } = useAuth();
   const isAdmin = employee?.role === "admin";
+  const managesSomebody = (teamScope?.reports ?? 0) > 0;
+
+  const visible = NAV.filter((item) => {
+    if (!("only" in item)) return true;
+    return item.only === "admin" ? isAdmin : managesSomebody;
+  });
 
   return (
     <nav className="flex flex-col gap-0.5">
-      {NAV.filter((item) => !item.adminOnly || isAdmin).map((item) => {
+      {visible.map((item) => {
         const active = pathname.startsWith(item.to);
         return (
           <Link
@@ -87,8 +106,7 @@ function ShellChrome({
    * to be a control that reopened the questionnaire; there is no questionnaire
    * to reopen.
    */
-  const marketLabel = employee?.primaryMarket ? MARKET_LABELS[employee.primaryMarket] : null;
-  const placement = [marketLabel, employee?.department].filter(Boolean).join(" · ");
+  const placement = employee?.department ?? "";
 
   return (
     <div className="min-h-screen bg-background lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">

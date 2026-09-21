@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { fetchEmployeeDetail, fetchTeamDedication } from "@/lib/data/api";
+import { fetchEmployeeDetail, fetchTeamDedication, type ReadScope } from "@/lib/data/api";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
 import { teamDedicationView } from "@/lib/export/team-dedication";
 import { VIEW_GROUPS, type ExportView } from "@/lib/export/views";
@@ -35,18 +35,30 @@ import { cn } from "@/lib/utils";
 export function ExportGrouped({
   from,
   to,
-  market,
   department,
   manager,
   team,
+  dedication = true,
+  scope = "company",
 }: {
   from: string;
   to: string;
   /** The page's own filters. "all" means unfiltered. */
-  market: string;
   department: string;
   manager: string;
   team: string;
+  /**
+   * Whose rows the file is drawn from. The page decides; the database
+   * enforces it.
+   */
+  scope?: ReadScope;
+  /**
+   * Whether to offer the plan-against-actual file. Off for a manager: the
+   * staffing plan is the whole company's, the database will not hand a
+   * fraction of it to anybody but an admin, and an item that always fails is
+   * worse than an item that is not there.
+   */
+  dedication?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -58,7 +70,7 @@ export function ExportGrouped({
     setNote(null);
     setError(null);
     try {
-      const data = await fetchEmployeeDetail(from, to, null);
+      const data = await fetchEmployeeDetail(from, to, null, scope);
 
       /*
        * The file matches what the page is showing rather than quietly
@@ -67,11 +79,10 @@ export function ExportGrouped({
        * One predicate, over people, and the rows follow whoever it keeps.
        * Team has to work this way -- a person is on several teams, so
        * "is on this team" is a fact about them, not about the hour -- and
-       * running the other three the same way means the roster and the rows
+       * running the other two the same way means the roster and the rows
        * cannot disagree about who is in the file.
        */
       const keep = (person: (typeof data.employees)[number]) =>
-        (market === "all" || person.primaryMarket === market) &&
         (department === "all" || person.department === department) &&
         (manager === "all" || person.manager === manager) &&
         (team === "all" || person.teams.includes(team));
@@ -102,7 +113,7 @@ export function ExportGrouped({
   /*
    * The dedication comparison does not fold out of the detail export like
    * every other view here, so it gets its own runner rather than being bent
-   * into the ExportView shape. It ignores the market and department filters
+   * into the ExportView shape. It ignores the department filter
    * on purpose: it is the whole staffing plan against the whole of what was
    * logged, and a half-filtered plan compares against nothing meaningful.
    */
@@ -162,18 +173,22 @@ export function ExportGrouped({
               ))}
             </div>
           ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel className="label-xs">Plan against actual</DropdownMenuLabel>
-          <DropdownMenuItem
-            onClick={() => void runDedication()}
-            className="flex-col items-start gap-0.5"
-          >
-            <span className="font-medium">Assumed vs actual dedication</span>
-            <span className="text-[11px] leading-snug text-muted-foreground">
-              The OPS list&rsquo;s own columns, with each team&rsquo;s real share beside the assumed
-              one.
-            </span>
-          </DropdownMenuItem>
+          {dedication && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="label-xs">Plan against actual</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => void runDedication()}
+                className="flex-col items-start gap-0.5"
+              >
+                <span className="font-medium">Assumed vs actual dedication</span>
+                <span className="text-[11px] leading-snug text-muted-foreground">
+                  The OPS list&rsquo;s own columns, with each team&rsquo;s real share beside the
+                  assumed one.
+                </span>
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

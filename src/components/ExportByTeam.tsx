@@ -21,7 +21,7 @@ import { teamRosterView, teamsIn } from "@/lib/export/team-dedication";
  * person on a team for five percent of their month is exactly who gets
  * forgotten when it is being staffed, so the cut is "any", not "meaningful".
  *
- * Deliberately not narrowed by the page's market and department filters. The
+ * Deliberately not narrowed by the page's department and manager filters. The
  * list is the whole staffing of one team; half of it, filtered, compares
  * against nothing -- and the assumed side is a plan for the team entire.
  *

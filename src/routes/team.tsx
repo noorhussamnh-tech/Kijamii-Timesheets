@@ -1,18 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
-import { AlertCircle, Search, ShieldAlert } from "lucide-react";
+import { AlertCircle, Search, Users } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { DateRangePicker, rangeLabel } from "@/components/DateRangePicker";
-import { ExportCsv } from "@/components/ExportCsv";
+import { EmployeeExportMenu } from "@/components/EmployeeExportMenu";
 import { ExportByClient } from "@/components/ExportByClient";
-import { ExportByTeam } from "@/components/ExportByTeam";
+import { ExportCsv } from "@/components/ExportCsv";
 import { ExportGrouped } from "@/components/ExportGrouped";
 import { Metric } from "@/components/Metric";
-import { EmployeeExportMenu } from "@/components/EmployeeExportMenu";
-import { SyncDirectory } from "@/components/SyncDirectory";
-import { ExportTimeDedication } from "@/components/ExportTimeDedication";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Select,
@@ -28,148 +25,102 @@ import { formatHours } from "@/lib/domain/totals";
 import { type AdminEmployeeStatus } from "@/lib/domain/types";
 import { currentWeekKey, parseDateKey, toDateKey, weekEnd } from "@/lib/domain/week";
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/team")({
   head: () => ({
     meta: [
-      { title: "Admin Overview — Kijamii Timesheets" },
+      { title: "My Team — Kijamii Timesheets" },
       {
         name: "description",
-        content: "Weekly submission status across Kijamii departments and teams.",
+        content: "What the people who report to you have logged, for any period.",
       },
-      { property: "og:title", content: "Admin Overview — Kijamii Timesheets" },
+      { property: "og:title", content: "My Team — Kijamii Timesheets" },
       {
         property: "og:description",
-        content: "Completion rate, submitted, draft and missing timesheets for any period.",
+        content: "Completion, hours and exports for your own team.",
       },
     ],
   }),
-  component: AdminRoute,
+  component: TeamRoute,
 });
 
-function AdminRoute() {
+function TeamRoute() {
   return (
-    <AppShell title="Admin Overview" description="Submission status for any period">
-      <AdminOverview />
+    <AppShell title="My Team" description="What your people have logged, for any period">
+      <TeamOverview />
     </AppShell>
   );
 }
 
-function AdminOverview() {
-  const { employee, status: authStatus } = useAuth();
-  const isAdmin = employee?.role === "admin";
+/**
+ * The admin overview, narrowed to the people who report to you.
+ *
+ * Team leads asked for it, and the shape of the answer is the shape the admin
+ * page already has -- so it is the same table, the same metrics and the same
+ * export buttons rather than a second dialect of the same figures. Nothing
+ * here decides who is in it: every call goes to the same database function
+ * the admin page calls, which returns the company to an admin and the
+ * reporting line to everybody else. A manager cannot widen it by editing a
+ * filter, and the two pages cannot drift apart.
+ *
+ * "Your people" is everybody underneath, not only the direct reports. A
+ * director who asks what their department is working on means the department.
+ *
+ * Deliberately read-only: no reopening a week, no editing somebody's row, no
+ * sync. Those are the admin's, and a manager who needs one asks for it --
+ * which is a conversation the company already knows how to have.
+ */
+function TeamOverview() {
+  const { teamScope, status: authStatus } = useAuth();
 
-  /*
-   * Any two dates, defaulting to this week -- which is what the page always
-   * showed, so nothing moves for somebody who only ever wants the current one.
-   */
   const [range, setRange] = useState(() => {
     const key = currentWeekKey();
     return { from: parseDateKey(key), to: parseDateKey(weekEnd(key)) };
   });
   const from = toDateKey(range.from);
   const to = toDateKey(range.to);
+
   const [rows, setRows] = useState<AdminEmployeeStatus[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [department, setDepartment] = useState("all");
+  const [query, setQuery] = useState("");
+  const [team, setTeam] = useState("all");
+
+  const manages = (teamScope?.reports ?? 0) > 0;
 
   useEffect(() => {
-    // The client-side role check only decides what to render. The fetch below
-    // is refused by the database for anyone who is not actually an admin.
-    if (authStatus !== "ready" || !isAdmin) return;
+    // The fetch is refused by the database for anybody who manages nobody;
+    // this only avoids making a call whose answer is already known.
+    if (authStatus !== "ready" || !manages) return;
     let cancelled = false;
 
     setRows(null);
     setError(null);
 
-    void fetchRangeOverview(from, to)
+    void fetchRangeOverview(from, to, "team")
       .then((data: AdminEmployeeStatus[]) => {
         if (!cancelled) setRows(data);
       })
       .catch((cause: unknown) => {
         if (!cancelled) {
           setRows([]);
-          setError(cause instanceof Error ? cause.message : "Could not load the overview.");
+          setError(cause instanceof Error ? cause.message : "Could not load your team.");
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [from, to, isAdmin, authStatus]);
-
-  const [query, setQuery] = useState("");
-
-  const [manager, setManager] = useState("all");
-  const [team, setTeam] = useState("all");
+  }, [from, to, manages, authStatus]);
 
   /*
-   * The three filters narrow each other.
-   *
-   * Each list offers only what the other two leave reachable, so a
-   * combination that returns nobody cannot be chosen: picking a manager
-   * leaves the teams their people are actually on. Without it the filters
-   * were independent, and the combinations that produce an empty table were
-   * the ones an admin had to discover by trying them.
-   *
-   * Team is the odd one: a person is on several, so a row matches if any of
-   * theirs is the chosen one.
+   * One filter, not four. An admin needs to cut a company; a manager is
+   * already looking at a short list, and the only cut that earns its place is
+   * the account team -- because somebody with people on two of them asks
+   * about one at a time.
    */
-  const matches = useCallback(
-    (row: AdminEmployeeStatus, skip: "department" | "manager" | "team") =>
-      (skip === "department" || department === "all" || row.department === department) &&
-      (skip === "manager" || manager === "all" || row.manager === manager) &&
-      (skip === "team" || team === "all" || row.teams.includes(team)),
-    [department, manager, team],
-  );
-
-  const departments = useMemo(
-    () =>
-      [
-        ...new Set(
-          (rows ?? [])
-            .filter((row) => matches(row, "department"))
-            .map((row) => row.department)
-            .filter(Boolean),
-        ),
-      ].sort() as string[],
-    [rows, matches],
-  );
-
-  const managers = useMemo(
-    () =>
-      [
-        ...new Set(
-          (rows ?? [])
-            .filter((row) => matches(row, "manager"))
-            .map((row) => row.manager)
-            .filter(Boolean),
-        ),
-      ].sort() as string[],
-    [rows, matches],
-  );
-
   const teams = useMemo(
-    () =>
-      [
-        ...new Set((rows ?? []).filter((row) => matches(row, "team")).flatMap((row) => row.teams)),
-      ].sort(),
-    [rows, matches],
+    () => [...new Set((rows ?? []).flatMap((row) => row.teams))].sort(),
+    [rows],
   );
-
-  /*
-   * A selection the others have just made unreachable falls back to "all"
-   * rather than silently showing an empty table under a filter naming
-   * something real.
-   */
-  useEffect(() => {
-    if (department !== "all" && rows !== null && !departments.includes(department)) {
-      setDepartment("all");
-    }
-  }, [departments, department, rows]);
-
-  useEffect(() => {
-    if (manager !== "all" && rows !== null && !managers.includes(manager)) setManager("all");
-  }, [managers, manager, rows]);
 
   useEffect(() => {
     if (team !== "all" && rows !== null && !teams.includes(team)) setTeam("all");
@@ -179,26 +130,28 @@ function AdminOverview() {
     const needle = query.trim().toLowerCase();
     return (rows ?? []).filter(
       (row) =>
-        (department === "all" || row.department === department) &&
-        (manager === "all" || row.manager === manager) &&
         (team === "all" || row.teams.includes(team)) &&
-        // Email as well as name: two people can share a first name, and the
-        // address is the thing an admin has been given in a message.
         (needle === "" ||
           row.name.toLowerCase().includes(needle) ||
           row.email.toLowerCase().includes(needle)),
     );
-  }, [rows, department, manager, team, query]);
+  }, [rows, team, query]);
 
-  if (!isAdmin) {
+  if (teamScope === null && authStatus === "ready") {
+    return <Skeleton className="h-64 w-full" />;
+  }
+
+  if (!manages) {
     return (
       <div className="mx-auto max-w-md rounded-xl border bg-surface p-6 text-center shadow-card">
-        <span className="mx-auto grid size-10 place-items-center rounded-full bg-destructive/10">
-          <ShieldAlert className="size-5 text-destructive" />
+        <span className="mx-auto grid size-10 place-items-center rounded-full bg-muted">
+          <Users className="size-5 text-muted-foreground" />
         </span>
-        <h2 className="mt-4 text-base font-bold">Admins only</h2>
+        <h2 className="mt-4 text-base font-bold">Nobody reports to you</h2>
         <p className="mt-2 text-[13px] text-muted-foreground">
-          You do not have permission to view the admin overview.
+          This page shows the timesheets of the people the company employee list puts under you. If
+          you manage somebody and they are not here, the Manager column on their row in the list is
+          what decides it.
         </p>
       </div>
     );
@@ -211,51 +164,19 @@ function AdminOverview() {
 
   return (
     <div className="space-y-4">
-      {/* Two rows. The first narrows the list, the second acts on what is
-          left, and Sync directory leads because it is the only control here
-          that changes the roster rather than reading it. */}
       <div className="flex flex-wrap items-center gap-2">
-        <SyncDirectory />
-        {/* Outside the table, so it stays put while the table scrolls
-            sideways on a narrow screen. */}
         <div className="relative">
           <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search employee"
-            aria-label="Search employees by name or email"
+            placeholder="Search your team"
+            aria-label="Search your team by name or email"
             className="h-9 w-[210px] rounded-md border bg-surface pr-2.5 pl-8 text-[13px] focus:outline-2 focus:outline-ring"
           />
         </div>
         <DateRangePicker value={range} onChange={setRange} />
-        <Select value={department} onValueChange={setDepartment}>
-          <SelectTrigger className="h-9 w-[190px] text-[13px]">
-            <SelectValue placeholder="Department" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All departments</SelectItem>
-            {departments.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={manager} onValueChange={setManager}>
-          <SelectTrigger className="h-9 w-[190px] text-[13px]">
-            <SelectValue placeholder="Manager" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All managers</SelectItem>
-            {managers.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Select value={team} onValueChange={setTeam}>
           <SelectTrigger className="h-9 w-[180px] text-[13px]">
             <SelectValue placeholder="Team" />
@@ -269,18 +190,22 @@ function AdminOverview() {
             ))}
           </SelectContent>
         </Select>
-        {/* On this row because it returns exactly what this row describes:
-            the same people over the same period, unfolded. The row below
-            reshapes that into an answer; this one hands it over as it is. */}
-        <ExportCsv from={from} to={to} department={department} manager={manager} team={team} />
+        <ExportCsv from={from} to={to} department="all" manager="all" team={team} scope="team" />
       </div>
 
-      {/* Reads the period and the filters above, and folds them into a shape. */}
+      {/* The same files the admin page produces, over the same rows -- which
+          for this caller are their team's and nobody else's. */}
       <div className="flex flex-wrap items-center gap-2">
-        <ExportGrouped from={from} to={to} department={department} manager={manager} team={team} />
-        <ExportByTeam from={from} to={to} />
-        <ExportByClient from={from} to={to} department={department} />
-        <ExportTimeDedication />
+        <ExportGrouped
+          from={from}
+          to={to}
+          department="all"
+          manager="all"
+          team={team}
+          dedication={false}
+          scope="team"
+        />
+        <ExportByClient from={from} to={to} department="all" scope="team" />
       </div>
 
       {error && (
@@ -301,7 +226,7 @@ function AdminOverview() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            <Metric label="Employees" value={String(filtered.length)} hint="In current filter" />
+            <Metric label="Your team" value={String(filtered.length)} hint="In current filter" />
             <Metric label="Submitted" value={String(submitted)} />
             <Metric label="Draft" value={String(draft)} />
             <Metric label="Missing" value={String(missing)} />
@@ -314,23 +239,23 @@ function AdminOverview() {
 
           {filtered.length === 0 ? (
             <div className="rounded-lg border border-dashed bg-surface px-6 py-12 text-center">
-              <h2 className="text-sm font-bold">No employees match these filters</h2>
+              <h2 className="text-sm font-bold">Nobody on your team matches this filter</h2>
               <p className="mt-1 text-[13px] text-muted-foreground">
-                Everybody on the company employee list appears here, whether or not they have logged
-                anything.
+                Everybody under you who is asked for a timesheet appears here, whether or not they
+                have logged anything.
               </p>
             </div>
           ) : (
             <div className="overflow-hidden rounded-lg border bg-surface shadow-card">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left text-[13px]">
+                <table className="w-full min-w-[720px] text-left text-[13px]">
                   <thead>
                     <tr className="border-b bg-surface-muted">
                       <th scope="col" className="label-xs px-3 py-2.5">
                         Employee
                       </th>
                       <th scope="col" className="label-xs px-3 py-2.5">
-                        Department
+                        Team
                       </th>
                       <th scope="col" className="label-xs px-3 py-2.5 text-right">
                         Hours
@@ -361,7 +286,7 @@ function AdminOverview() {
                           </div>
                         </td>
                         <td className="px-3 py-2.5 text-muted-foreground">
-                          {row.department ?? "—"}
+                          {row.teams.length > 0 ? row.teams.join(", ") : "—"}
                         </td>
                         <td className="num px-3 py-2.5 text-right font-semibold">
                           {formatHours(row.totalHours)}
@@ -385,10 +310,12 @@ function AdminOverview() {
                             ? format(new Date(row.submittedAt), "d MMM · HH:mm")
                             : "—"}
                         </td>
-                        {/* Everything this person has logged, not just the week
-                            the table is showing. */}
                         <td className="px-3 py-2.5">
-                          <EmployeeExportMenu employeeId={row.employeeId} name={row.name} />
+                          <EmployeeExportMenu
+                            employeeId={row.employeeId}
+                            name={row.name}
+                            scope="team"
+                          />
                         </td>
                       </tr>
                     ))}

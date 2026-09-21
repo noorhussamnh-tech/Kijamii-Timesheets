@@ -1,5 +1,15 @@
 /** Shared domain types. These mirror the database enums exactly. */
 
+/**
+ * The three entities that employ people.
+ *
+ * Kept because the database still records one on every person and every
+ * entry -- it is what decides a working week, and what breaks a tie when an
+ * account belongs to more than one of somebody's teams. It is no longer shown
+ * anywhere, filtered on, or exported: the CEO's call is that the company is
+ * not managed by market at this stage, and a column nobody manages by is a
+ * column that only invites the wrong question.
+ */
 export type Market = "EG" | "UAE" | "KSA";
 export type TimesheetConfigId = "EG_UAE" | "KSA";
 export type EmployeeRole = "employee" | "admin";
@@ -8,20 +18,10 @@ export type SubmissionStatus = "draft" | "submitted" | "returned" | "approved";
 /** What the admin overview shows for someone with no record for a week. */
 export type WeekStatus = SubmissionStatus | "missing";
 
-export const MARKETS: readonly Market[] = ["EG", "UAE", "KSA"];
-
-export const MARKET_LABELS: Record<Market, string> = {
-  EG: "Egypt",
-  UAE: "UAE",
-  KSA: "Saudi Arabia",
-};
-
 export interface Employee {
   id: string;
   fullName: string;
   email: string;
-  markets: Market[];
-  primaryMarket: Market | null;
   department: string | null;
   /** Job title, from the company directory. Not editable in the app. */
   title: string | null;
@@ -32,7 +32,7 @@ export interface Employee {
   role: EmployeeRole;
   active: boolean;
   /**
-   * Whether the directory has told us enough to run a timesheet: a market,
+   * Whether the directory has told us enough to run a timesheet: an entity,
    * and therefore a working week. Everybody in the sheet is; somebody whose
    * entity we could not read is not, and is shown what is missing.
    */
@@ -45,8 +45,6 @@ export interface ReferenceOption {
 }
 
 export interface ClientOption extends ReferenceOption {
-  /** Empty means the client is available in every market. */
-  markets: Market[];
   sector: string | null;
   /** The single free-text client; selecting it reveals a name input. */
   isOther: boolean;
@@ -131,8 +129,6 @@ export interface AdminEmployeeStatus {
   employeeId: string;
   name: string;
   email: string;
-  markets: Market[];
-  primaryMarket: Market | null;
   department: string | null;
   manager: string | null;
   /** Every team the OPS list staffs them onto. Empty for the people it

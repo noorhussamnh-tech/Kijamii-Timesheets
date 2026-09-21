@@ -3,9 +3,8 @@ import { AlertCircle, Download, Loader2 } from "lucide-react";
 
 import { RAW_EXPORT_TRIGGER } from "@/components/export-button";
 import { Button } from "@/components/ui/button";
-import { fetchExportRows, type ExportRow } from "@/lib/data/api";
+import { fetchExportRows, type ExportRow, type ReadScope } from "@/lib/data/api";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
-import type { Market } from "@/lib/domain/types";
 import { cn } from "@/lib/utils";
 
 /** The columns of the file, in order. */
@@ -13,7 +12,6 @@ const COLUMNS = [
   { key: "work_date", label: "Date", value: (r: ExportRow) => r.workDate },
   { key: "employee_name", label: "Employee", value: (r: ExportRow) => r.employeeName },
   { key: "employee_email", label: "Email", value: (r: ExportRow) => r.employeeEmail },
-  { key: "market", label: "Market", value: (r: ExportRow) => r.market },
   { key: "department", label: "Department", value: (r: ExportRow) => r.department },
   { key: "client_name", label: "Client", value: (r: ExportRow) => r.clientName },
   { key: "service_name", label: "Service", value: (r: ExportRow) => r.serviceName },
@@ -48,18 +46,22 @@ const COLUMNS = [
 export function ExportCsv({
   from,
   to,
-  market,
   department,
   manager,
   team,
+  scope = "company",
 }: {
   from: string;
   to: string;
   /** "all", or a value to restrict the file to. Mirrors the page filters. */
-  market: string;
   department: string;
   manager: string;
   team: string;
+  /**
+   * Whose rows the file is drawn from. The page decides; the database
+   * enforces it.
+   */
+  scope?: ReadScope;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,8 +78,7 @@ export function ExportCsv({
    */
   const columns = COLUMNS;
 
-  const filtersApplied =
-    market !== "all" || department !== "all" || manager !== "all" || team !== "all";
+  const filtersApplied = department !== "all" || manager !== "all" || team !== "all";
 
   const run = async () => {
     if (busy) return;
@@ -86,12 +87,11 @@ export function ExportCsv({
     setNote(null);
 
     try {
-      const all = await fetchExportRows(from, to);
+      const all = await fetchExportRows(from, to, scope);
       // The file matches what the page is showing, rather than silently
-      // including markets and departments that were filtered out.
+      // including the departments and teams that were filtered out.
       const rows = all.filter(
         (row) =>
-          (market === "all" || row.market === (market as Market)) &&
           (department === "all" || row.department === department) &&
           (manager === "all" || row.manager === manager) &&
           // A person is on several teams; the filter means "is on this one".
@@ -107,9 +107,8 @@ export function ExportCsv({
         return;
       }
 
-      const suffix = market === "all" ? "" : `_${market}`;
       downloadCsv(
-        `kijamii-timesheets_${from}_to_${to}${suffix}.csv`,
+        `kijamii-timesheets_${from}_to_${to}.csv`,
         toCsv(
           columns.map((column) => column.key),
           rows.map((row) => columns.map((column) => column.value(row))),

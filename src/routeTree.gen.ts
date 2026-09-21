@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as SubmissionsRouteImport } from './routes/submissions'
 import { Route as SubmittedRouteImport } from './routes/submitted'
+import { Route as TeamRouteImport } from './routes/team'
 import { Route as TimesheetRouteImport } from './routes/timesheet'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 
@@ -42,6 +43,11 @@ const SubmittedRoute = SubmittedRouteImport.update({
   path: '/submitted',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TeamRoute = TeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TimesheetRoute = TimesheetRouteImport.update({
   id: '/timesheet',
   path: '/timesheet',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/insights': typeof InsightsRoute
   '/submissions': typeof SubmissionsRoute
   '/submitted': typeof SubmittedRoute
+  '/team': typeof TeamRoute
   '/timesheet': typeof TimesheetRoute
   '/auth/callback': typeof AuthCallbackRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/insights': typeof InsightsRoute
   '/submissions': typeof SubmissionsRoute
   '/submitted': typeof SubmittedRoute
+  '/team': typeof TeamRoute
   '/timesheet': typeof TimesheetRoute
   '/auth/callback': typeof AuthCallbackRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/insights': typeof InsightsRoute
   '/submissions': typeof SubmissionsRoute
   '/submitted': typeof SubmittedRoute
+  '/team': typeof TeamRoute
   '/timesheet': typeof TimesheetRoute
   '/auth/callback': typeof AuthCallbackRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/submissions'
     | '/submitted'
+    | '/team'
     | '/timesheet'
     | '/auth/callback'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/submissions'
     | '/submitted'
+    | '/team'
     | '/timesheet'
     | '/auth/callback'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/submissions'
     | '/submitted'
+    | '/team'
     | '/timesheet'
     | '/auth/callback'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   InsightsRoute: typeof InsightsRoute
   SubmissionsRoute: typeof SubmissionsRoute
   SubmittedRoute: typeof SubmittedRoute
+  TeamRoute: typeof TeamRoute
   TimesheetRoute: typeof TimesheetRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
 }
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubmittedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/team': {
+      id: '/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof TeamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/timesheet': {
       id: '/timesheet'
       path: '/timesheet'
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   InsightsRoute: InsightsRoute,
   SubmissionsRoute: SubmissionsRoute,
   SubmittedRoute: SubmittedRoute,
+  TeamRoute: TeamRoute,
   TimesheetRoute: TimesheetRoute,
   AuthCallbackRoute: AuthCallbackRoute,
 }

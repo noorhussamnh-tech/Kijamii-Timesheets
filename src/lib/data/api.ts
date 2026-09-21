@@ -19,7 +19,6 @@ import type {
   WorkType,
   ClientOption,
   Employee,
-  Market,
   ReferenceData,
   ReferenceOption,
   SubmissionSummary,
@@ -81,8 +80,6 @@ interface EmployeeRow {
   id: string;
   full_name: string;
   email: string;
-  markets: Market[] | null;
-  primary_market: Market | null;
   department: string | null;
   title: string | null;
   job_function: string | null;
@@ -98,8 +95,6 @@ function toEmployee(row: EmployeeRow): Employee {
     id: row.id,
     fullName: row.full_name,
     email: row.email,
-    markets: row.markets ?? [],
-    primaryMarket: row.primary_market,
     department: row.department,
     title: row.title,
     jobFunction: row.job_function,
@@ -139,7 +134,7 @@ export async function fetchReferenceData(): Promise<ReferenceData> {
   const [clients, services, projectTypes, taskTypes, departments] = await Promise.all([
     supabase
       .from("ts_clients")
-      .select("id, name, sector, markets, is_other")
+      .select("id, name, sector, is_other")
       .eq("active", true)
       .order("is_other")
       .order("name"),
@@ -164,14 +159,12 @@ export async function fetchReferenceData(): Promise<ReferenceData> {
         id: string;
         name: string;
         sector: string | null;
-        markets: Market[] | null;
         is_other: boolean;
       }[]
     ).map<ClientOption>((r) => ({
       id: r.id,
       name: r.name,
       sector: r.sector,
-      markets: r.markets ?? [],
       isOther: r.is_other,
     })),
     services: asOptions(services.data),
@@ -179,17 +172,6 @@ export async function fetchReferenceData(): Promise<ReferenceData> {
     taskTypes: asOptions(taskTypes.data),
     departments: asOptions(departments.data),
   };
-}
-
-/**
- * Clients an employee may log against: those tied to one of their markets,
- * plus those with no market restriction at all.
- */
-export function clientsForEmployee(clients: ClientOption[], markets: Market[]): ClientOption[] {
-  if (markets.length === 0) return clients;
-  return clients.filter(
-    (client) => client.markets.length === 0 || client.markets.some((m) => markets.includes(m)),
-  );
 }
 
 // -------------------------------------------------------------------- weeks
@@ -352,20 +334,42 @@ export async function fetchMySubmissions(): Promise<SubmissionSummary[]> {
 // -------------------------------------------------------------------- admin
 
 /**
+ * Whose rows a read is about.
+ *
+ * "company" is the admin page: everybody, refused to anybody who is not an
+ * admin. "team" is the manager page: the caller's own reporting line, and
+ * only it, refused to anybody who manages nobody. They are separate database
+ * functions rather than one with a flag, because an admin is often also a
+ * manager -- "everybody, unless you meant your team" is not something a
+ * parameter can express safely.
+ */
+export type ReadScope = "company" | "team";
+
+/**
  * The overview for any period, not only a week.
  *
  * Expected hours come back scaled to the range -- counted in working days, so
  * a month is 176 rather than 40 and the comparison beside it still means
  * something.
+ *
+ * Which people are in it is the database's decision, not the caller's: the
+ * scope picks the function, and the function refuses anybody it is not for.
+ * Both pages fold the same query, so they cannot disagree about a number.
  */
-export async function fetchAdminRange(from: string, to: string): Promise<AdminEmployeeStatus[]> {
-  const data = await rpc<{ employees: AdminEmployeeStatus[] }>("ts_admin_range_overview", {
-    p_from: from,
-    p_to: to,
-  });
+export async function fetchRangeOverview(
+  from: string,
+  to: string,
+  scope: ReadScope = "company",
+): Promise<AdminEmployeeStatus[]> {
+  const data = await rpc<{ employees: AdminEmployeeStatus[] }>(
+    scope === "team" ? "ts_team_range_overview" : "ts_admin_range_overview",
+    {
+      p_from: from,
+      p_to: to,
+    },
+  );
   return (data.employees ?? []).map((row) => ({
     ...row,
-    markets: row.markets ?? [],
     totalHours: Number(row.totalHours),
     expectedHours: Number(row.expectedHours),
   }));
@@ -376,7 +380,6 @@ export interface ExportRow {
   entryId: string;
   employeeName: string;
   employeeEmail: string;
-  market: string;
   department: string | null;
   manager: string | null;
   teams: string[];
@@ -398,8 +401,15 @@ export interface ExportRow {
  * Submitted entries between two dates, for the admin export. Drafts are
  * excluded: unfinished work has no business in a management report.
  */
-export async function fetchExportRows(from: string, to: string): Promise<ExportRow[]> {
-  const rows = await rpc<ExportRow[]>("ts_export_range", { p_from: from, p_to: to });
+export async function fetchExportRows(
+  from: string,
+  to: string,
+  scope: ReadScope = "company",
+): Promise<ExportRow[]> {
+  const rows = await rpc<ExportRow[]>(
+    scope === "team" ? "ts_export_team_range" : "ts_export_range",
+    { p_from: from, p_to: to },
+  );
   return rows ?? [];
 }
 
@@ -414,7 +424,6 @@ export interface TimeDedicationRow {
   employeeCode: string | null;
   employeeName: string;
   department: string | null;
-  market: string | null;
   clientCode: string | null;
   brandName: string | null;
   /** `YYYY-MM`. */
@@ -423,20 +432,21 @@ export interface TimeDedicationRow {
 }
 
 /**
- * Hours by employee, brand and month for the agency job book. Admin-only and
- * EG/UAE only, both enforced in the database: KSA keeps no timesheets, so
- * there is no tab for it to feed.
+ * Hours by employee, brand and month for the agency job book. Admin-only,
+ * enforced in the database.
+ *
+ * The empty array is "everybody". The function still takes a list of entities
+ * because the database still records one on every row; the app no longer has
+ * a reason to pass one, so it does not.
  */
 export async function fetchTimeDedicationRows(
   from: string,
   to: string,
-  /** Empty means every market. Defaults to the job book's Egypt & UAE tab. */
-  markets: Market[] = ["EG", "UAE"],
 ): Promise<TimeDedicationRow[]> {
   const rows = await rpc<TimeDedicationRow[]>("ts_export_time_dedication", {
     p_from: from,
     p_to: to,
-    p_markets: markets,
+    p_markets: [],
   });
   return rows ?? [];
 }
@@ -459,12 +469,16 @@ export async function fetchEmployeeDetail(
   from: string,
   to: string,
   employeeId: string | null,
+  scope: ReadScope = "company",
 ): Promise<EmployeeDetailExport> {
-  const data = await rpc<EmployeeDetailExport>("ts_export_employee_detail", {
-    p_from: from,
-    p_to: to,
-    p_employee_id: employeeId,
-  });
+  const data = await rpc<EmployeeDetailExport>(
+    scope === "team" ? "ts_export_team_detail" : "ts_export_employee_detail",
+    {
+      p_from: from,
+      p_to: to,
+      p_employee_id: employeeId,
+    },
+  );
   return {
     from: data?.from ?? from,
     to: data?.to ?? to,
@@ -495,6 +509,19 @@ export interface DirectorySyncResult {
  */
 export async function syncDirectory(): Promise<DirectorySyncResult> {
   return rpc<DirectorySyncResult>("ts_sync_directory");
+}
+
+/** How many people report to the signed-in employee, directly or below that. */
+export interface TeamScope {
+  /** Everybody underneath them in the OPS list's reporting line. */
+  reports: number;
+  /** Of those, the ones actually asked for a timesheet. */
+  filing: number;
+}
+
+export async function fetchMyTeamScope(): Promise<TeamScope> {
+  const data = await rpc<{ reports: number | string; filing: number | string }>("ts_my_team_scope");
+  return { reports: Number(data?.reports ?? 0), filing: Number(data?.filing ?? 0) };
 }
 
 /** The signed-in employee's own statistics. Scoped by the database to them. */

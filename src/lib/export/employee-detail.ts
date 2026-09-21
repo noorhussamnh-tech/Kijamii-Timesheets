@@ -20,7 +20,6 @@ export interface DetailRow {
   /** Straight from the company employee list, for reporting only. */
   businessUnit: string | null;
   subUnit: string | null;
-  market: string | null;
   workDate: string;
   clientCode: string | null;
   clientName: string | null;
@@ -48,8 +47,6 @@ export interface DetailEmployee {
   /** Every team the OPS list staffs them onto. */
   teams: string[];
   employeeCode: string | null;
-  /** The entity that employs them, which is what the sheet calls Entity. */
-  primaryMarket: string | null;
 }
 
 /**
@@ -185,23 +182,12 @@ export const perManagerView = (rows: readonly DetailRow[]): Shaped =>
  */
 export function fullDetailView(rows: readonly DetailRow[]): Shaped {
   return {
-    headers: [
-      "Name",
-      "Day",
-      "Market",
-      "Department",
-      "Title",
-      "Account",
-      "Team",
-      "Project",
-      "Hours",
-    ],
+    headers: ["Name", "Day", "Department", "Title", "Account", "Team", "Project", "Hours"],
     rows: [...rows]
       .sort((a, b) => byText(a.employeeName, b.employeeName) || byText(a.workDate, b.workDate))
       .map((row) => [
         row.employeeName,
         row.workDate,
-        row.market ?? "",
         row.department ?? "",
         row.title ?? "",
         clientOf(row),
@@ -362,10 +348,7 @@ export function perClientByDayView(rows: readonly DetailRow[]): Shaped {
  * time, and answered by a file per account.
  *
  * The description comes from the roster rather than from whichever entry
- * happened to sort first. An entry knows the market its client belongs to; it
- * does not know which entity employs the person who logged it, and those are
- * routinely different -- the employee list has Egypt-entity staff on KSA
- * business.
+ * happened to sort first: an entry knows what was done, not who did it.
  */
 export function clientStaffingView(
   rows: readonly DetailRow[],
@@ -377,7 +360,7 @@ export function clientStaffingView(
   const byId = new Map(roster.map((person) => [person.id, person]));
 
   return {
-    headers: ["employee", "entity", "business_unit", "sub_unit", "function", "title", "hours"],
+    headers: ["employee", "business_unit", "sub_unit", "function", "title", "hours"],
     rows: [...hours.entries()]
       // Most hours first: the question is who is carrying the account, and the
       // answer should be the first line rather than somewhere alphabetical.
@@ -387,7 +370,6 @@ export function clientStaffingView(
         const anyRow = mine.find((row) => row.employeeId === id);
         return [
           person?.name ?? anyRow?.employeeName ?? "Unknown",
-          person?.primaryMarket ?? "",
           person?.businessUnit ?? "",
           person?.subUnit ?? "",
           person?.jobFunction ?? "",

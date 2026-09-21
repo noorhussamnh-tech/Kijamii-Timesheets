@@ -9,7 +9,6 @@ function row(overrides: Partial<TimeDedicationRow>): TimeDedicationRow {
     employeeCode: null,
     employeeName: "Someone",
     department: null,
-    market: null,
     clientCode: null,
     brandName: null,
     month: null,
@@ -29,7 +28,7 @@ describe("monthKeys", () => {
 });
 
 describe("toWideRows", () => {
-  const HEADER_COLUMNS = 6;
+  const HEADER_COLUMNS = 5;
 
   it("puts each month's hours under its own column", () => {
     const shaped = toWideRows(
@@ -63,11 +62,11 @@ describe("toWideRows", () => {
   });
 
   it("keeps someone who logged nothing, as a row of zeros", () => {
-    const shaped = toWideRows([row({ employeeName: "Quiet", market: "EG" })], 2026);
+    const shaped = toWideRows([row({ employeeName: "Quiet" })], 2026);
 
     expect(shaped.rows).toHaveLength(1);
     expect(shaped.rows[0]![1]).toBe("Quiet");
-    expect(shaped.rows[0]![5]).toBe("");
+    expect(shaped.rows[0]![4]).toBe("");
     expect(shaped.rows[0]!.slice(HEADER_COLUMNS, HEADER_COLUMNS + 12)).toEqual(
       Array.from({ length: 12 }, () => 0),
     );
@@ -131,6 +130,6 @@ describe("toLongRows", () => {
   it("writes blanks rather than the word null for a roster row", () => {
     const shaped = toLongRows([row({ employeeName: "Quiet" })]);
 
-    expect(shaped.rows[0]).toEqual(["", "", "Quiet", "", "", "", "", "", 0]);
+    expect(shaped.rows[0]).toEqual(["", "", "Quiet", "", "", "", "", 0]);
   });
 });
