@@ -136,7 +136,7 @@ export async function fetchCurrentEmployee(): Promise<Employee | null> {
 export async function fetchReferenceData(): Promise<ReferenceData> {
   const supabase = requireSupabaseBrowserClient();
 
-  const [clients, services, projectTypes, taskTypes, departments, teams] = await Promise.all([
+  const [clients, services, projectTypes, taskTypes, departments] = await Promise.all([
     supabase
       .from("ts_clients")
       .select("id, name, sector, markets, is_other")
@@ -147,14 +147,9 @@ export async function fetchReferenceData(): Promise<ReferenceData> {
     supabase.from("ts_project_types").select("id, name").eq("active", true).order("sort_order"),
     supabase.from("ts_task_types").select("id, name").eq("active", true).order("sort_order"),
     supabase.from("ts_departments").select("id, name").eq("active", true).order("sort_order"),
-    // Not a table read: the teams somebody may log against are their own,
-    // and the function decides that from who is asking.
-    supabase.rpc("ts_my_teams"),
   ]);
 
-  const failure = [clients, services, projectTypes, taskTypes, departments, teams].find(
-    (r) => r.error,
-  );
+  const failure = [clients, services, projectTypes, taskTypes, departments].find((r) => r.error);
   if (failure?.error) {
     console.error("[timesheets] reference load failed", { code: failure.error.code });
     throw toApiError(failure.error);
@@ -183,7 +178,6 @@ export async function fetchReferenceData(): Promise<ReferenceData> {
     projectTypes: asOptions(projectTypes.data),
     taskTypes: asOptions(taskTypes.data),
     departments: asOptions(departments.data),
-    teams: asOptions(teams.data),
   };
 }
 
@@ -283,8 +277,9 @@ export async function saveDraft(
     client_other: entry.clientOther || null,
     project_type: entry.projectType || null,
     task: entry.task || null,
+    // team_id is absent on purpose: the database derives it from the
+    // account and this person's teams, so the browser cannot set it.
     work_type: entry.workType,
-    team_id: entry.teamId || null,
     project_note: entry.projectNote || null,
     hours: entry.hours === "" ? null : String(entry.hours),
     billable: entry.billable,

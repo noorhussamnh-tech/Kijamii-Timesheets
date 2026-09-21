@@ -153,16 +153,14 @@ export function EntryField({
 
     case "reference": {
       const options = field.source && reference ? reference[field.source] : [];
-      const key = field.key as "serviceId" | "projectType" | "task" | "teamId";
-      // Service and team are stored by id; project type and task by name.
+      const key = field.key as "serviceId" | "projectType" | "task";
+      // Service is stored by id; project type and task are stored by name.
       const value = row[key];
       return (
         <SearchSelect
           value={value}
           options={
-            key === "serviceId" || key === "teamId"
-              ? options
-              : options.map((o) => ({ id: o.name, name: o.name }))
+            key === "serviceId" ? options : options.map((o) => ({ id: o.name, name: o.name }))
           }
           placeholder={`Select ${field.label.toLowerCase()}`}
           emptyText="No matches"
