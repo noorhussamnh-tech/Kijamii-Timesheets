@@ -18,6 +18,8 @@ export default tseslint.config(
       ".nitro",
       "coverage",
       "src/routeTree.gen.ts",
+      // Standalone static site for the KSA Festival social dashboard
+      "cis-pulse",
     ],
   },
   {

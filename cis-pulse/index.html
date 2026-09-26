@@ -1,0 +1,1116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KSA Festival '26 Social Pulse</title>
+<meta name="description" content="Live social listening for Creative Industry Summit KSA Festival '26, 3-5 October 2026, JAX District, Riyadh.">
+<link rel="icon" href="assets/logo-white.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Poppins:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600&display=swap">
+<style>
+:root {
+  color-scheme: dark;
+  /* Brand: Creative Industry Summit indigo #1C12A1, magenta #EF006E, green #5ABA1C */
+  --brand-indigo: #1C12A1;
+  --brand-magenta: #EF006E;
+  --brand-green: #5ABA1C;
+  --bg: #0B0A24;
+  --surface: #15123F;
+  --surface-2: #1D1A55;
+  --line: rgba(236, 233, 255, 0.09);
+  --ink: #F4F3FF;
+  --ink-2: #BDB9E6;
+  --muted: #8984BD;
+  --accent: #FF2E88;
+  /* Sentiment (diverging: green / grey midpoint / magenta) */
+  --pos: #52A81A;
+  --neu: #8A87A8;
+  --neg: #FF2E88;
+  /* Categorical, validated for CVD on --surface */
+  --c1: #8C7CFF; --c2: #C08400; --c3: #FF2E88; --c4: #1496B5; --c5: #4E9E18; --c6: #B85CE0;
+  --radius: 14px;
+  --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Poppins", "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.5 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-inline: clamp(16px, 3vw, 40px); }
+
+/* ---------- Masthead ---------- */
+.mast {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(239, 0, 110, 0.35), transparent 55%),
+    radial-gradient(90% 120% at 0% 100%, rgba(90, 186, 28, 0.18), transparent 60%),
+    var(--brand-indigo);
+  border-bottom: 1px solid var(--line);
+}
+.mast::after {
+  /* the summit's dash motif, repeated as a faint texture */
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 46px, rgba(255,255,255,.05) 46px 78px, transparent 78px 124px);
+  mask-image: linear-gradient(180deg, transparent, #000 70%);
+  pointer-events: none;
+}
+.mast .wrap { position: relative; z-index: 1; padding-block: 22px 26px; display: grid; gap: 18px; }
+.mast-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.logo { height: 54px; width: auto; display: block; }
+.status { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); }
+.pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px; border-radius: 999px;
+  font-weight: 600; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+  background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.14); color: var(--ink);
+}
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--neu); }
+.pill.live .dot { background: var(--brand-green); box-shadow: 0 0 0 0 rgba(90,186,28,.7); animation: pulse 1.8s infinite; }
+.pill.demo { background: #FFB020; color: #1A1300; border-color: transparent; }
+@keyframes pulse { 70% { box-shadow: 0 0 0 9px rgba(90,186,28,0); } 100% { box-shadow: 0 0 0 0 rgba(90,186,28,0); } }
+h1 {
+  margin: 0;
+  font: 900 clamp(40px, 7.2vw, 96px)/.9 var(--display);
+  font-stretch: 68%;
+  letter-spacing: -.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+h1 .dash { color: var(--brand-magenta); }
+.sub { display: flex; gap: 8px 22px; flex-wrap: wrap; font-size: 14px; color: var(--ink-2); }
+.sub b { color: var(--ink); font-weight: 600; }
+
+/* ---------- Filter bar ---------- */
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+  background: rgba(11, 10, 36, .88);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.bar .wrap { display: flex; gap: 10px 16px; align-items: center; padding-block: 10px; flex-wrap: wrap; }
+.seg { display: flex; gap: 4px; flex-wrap: wrap; }
+.seg button, select, .btn {
+  font: 500 13px var(--body); color: var(--ink-2);
+  background: var(--surface); border: 1px solid var(--line);
+  padding: 7px 13px; border-radius: 999px; cursor: pointer;
+}
+.seg button:hover, .btn:hover { color: var(--ink); border-color: rgba(255,255,255,.22); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+select { border-radius: 10px; padding-right: 28px; }
+.bar .spacer { flex: 1; }
+.bar .meta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---------- Grid ---------- */
+main { padding-block: 22px 60px; display: grid; gap: 18px; }
+.grid { display: grid; gap: 18px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.span-12 { grid-column: span 12; } .span-8 { grid-column: span 8; } .span-7 { grid-column: span 7; }
+.span-6 { grid-column: span 6; } .span-5 { grid-column: span 5; } .span-4 { grid-column: span 4; }
+@media (max-width: 1100px) { .span-8, .span-7, .span-5, .span-4 { grid-column: span 12; } .span-6 { grid-column: span 12; } }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 18px 14px;
+  min-width: 0;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.card-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.card h2 { margin: 0; font: 700 13px/1.3 var(--body); letter-spacing: .09em; text-transform: uppercase; color: var(--ink); }
+.card .note { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+.chart { width: 100%; height: 320px; }
+.chart.tall { height: 400px; }
+.chart.short { height: 260px; }
+.empty { display: grid; place-items: center; height: 100%; color: var(--muted); font-size: 13px; text-align: center; padding: 20px; }
+
+/* ---------- KPIs ---------- */
+.kpis { display: grid; gap: 12px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.kpi .lab { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.kpi .val { font: 800 clamp(26px, 3vw, 38px)/1 var(--display); font-stretch: 80%; font-variant-numeric: tabular-nums; }
+.kpi .delta { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.kpi .delta .up { color: var(--pos); font-weight: 600; }
+.kpi .delta .down { color: var(--neg); font-weight: 600; }
+.kpi.hero { background: linear-gradient(135deg, var(--brand-magenta), #9A0BC9 60%, var(--brand-indigo)); border-color: transparent; }
+.kpi.hero .lab, .kpi.hero .delta { color: rgba(255,255,255,.85); }
+
+/* ---------- Ranked lists / tables ---------- */
+.rank { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.rank li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 13.5px; }
+.rank .n { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+.rank .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank .bar-bg { grid-column: 2 / 4; height: 4px; border-radius: 4px; background: rgba(255,255,255,.06); overflow: hidden; margin-top: -3px; }
+.rank .bar-fg { height: 100%; border-radius: 4px; background: var(--c1); }
+.rank .official .bar-fg { background: var(--accent); }
+.rank .c { font-variant-numeric: tabular-nums; color: var(--ink-2); font-weight: 600; }
+.tag-off { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-left: 6px; font-weight: 700; }
+
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- Feed ---------- */
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-height: 470px; overflow-y: auto; padding-right: 4px; }
+.post { background: var(--surface-2); border-radius: 10px; padding: 11px 13px; display: grid; gap: 6px; }
+.post-h { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.post-h .who { color: var(--ink); font-weight: 600; font-size: 13px; }
+.post p { margin: 0; font-size: 13.5px; color: var(--ink-2); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.post p[dir="rtl"] { font-family: "IBM Plex Sans Arabic", var(--body); }
+.chip { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+.chip.positive { background: rgba(82,168,26,.2); color: #8FE05A; }
+.chip.neutral { background: rgba(138,135,168,.2); color: #C9C6E8; }
+.chip.negative { background: rgba(255,46,136,.18); color: #FF7AB3; }
+.chip.src { background: rgba(140,124,255,.16); color: #C3BAFF; }
+
+/* ---------- Loader / footer ---------- */
+.drop {
+  border: 1.5px dashed rgba(255,255,255,.2); border-radius: var(--radius);
+  padding: 18px; display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  color: var(--ink-2); font-size: 13px;
+}
+.drop.over { border-color: var(--accent); background: rgba(255,46,136,.06); }
+.drop input { display: none; }
+.cols { font-size: 12px; color: var(--muted); }
+.cols code { color: var(--ink-2); }
+footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: flex; gap: 10px 24px; flex-wrap: wrap; justify-content: space-between; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-weight: 600; font-size: 13px; z-index: 50; }
+@media (prefers-reduced-motion: reduce) { .pill.live .dot { animation: none; } }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="wrap">
+    <div class="mast-top">
+      <img class="logo" src="assets/logo-white.png" alt="Creative Industry Summit" width="81" height="54">
+      <div class="status">
+        <span id="demoPill" class="pill demo" hidden>Sample data</span>
+        <span id="stalePill" class="pill demo" hidden>Data is over 2 hours old</span>
+        <span id="phasePill" class="pill"><span class="dot"></span><span id="phaseText">Pre-event</span></span>
+        <span id="updated">Loading…</span>
+      </div>
+    </div>
+    <h1>KSA Festival <span class="dash">—</span>26<br>Social Pulse</h1>
+    <div class="sub">
+      <span><b>3–5 October 2026</b></span>
+      <span>JAX District, Riyadh</span>
+      <span>Summit Stage · Creative Stage · Workshops</span>
+      <span>Updated hourly from Talkwalker</span>
+    </div>
+  </div>
+</header>
+
+<nav class="bar" aria-label="Filters">
+  <div class="wrap">
+    <div class="seg" id="rangeSeg" role="group" aria-label="Time range">
+      <button type="button" data-range="all" aria-pressed="true">All</button>
+      <button type="button" data-range="pre">Build-up</button>
+      <button type="button" data-range="d1">Day 1</button>
+      <button type="button" data-range="d2">Day 2</button>
+      <button type="button" data-range="d3">Day 3</button>
+      <button type="button" data-range="24h">Last 24h</button>
+    </div>
+    <label class="meta" for="srcSel">Channel</label>
+    <select id="srcSel"><option value="">All channels</option></select>
+    <span class="spacer"></span>
+    <span class="meta" id="rowsMeta"></span>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section class="kpis" aria-label="Headline numbers">
+    <div class="kpi hero"><span class="lab">Conversations</span><span class="val" id="kTotal">–</span><span class="delta" id="kTotalD">&nbsp;</span></div>
+    <div class="kpi"><span class="lab">Last full hour</span><span class="val" id="kHour">–</span><span class="delta" id="kHourD">&nbsp;</span></div>
+    <div class="kpi"><span class="lab">Net sentiment</span><span class="val" id="kNet">–</span><span class="delta" id="kNetD">&nbsp;</span></div>
+    <div class="kpi"><span class="lab">Engagement</span><span class="val" id="kEng">–</span><span class="delta" id="kEngD">&nbsp;</span></div>
+    <div class="kpi"><span class="lab">Potential reach</span><span class="val" id="kReach">–</span><span class="delta" id="kReachD">&nbsp;</span></div>
+    <div class="kpi"><span class="lab">Unique voices</span><span class="val" id="kAuth">–</span><span class="delta" id="kAuthD">&nbsp;</span></div>
+  </section>
+
+  <section class="grid">
+    <article class="card span-12">
+      <div class="card-h">
+        <div>
+          <h2>Conversation volume by hour</h2>
+          <p class="note" id="volNote">Riyadh time (AST, UTC+3). Shaded bands are session hours, 17:00–22:00.</p>
+        </div>
+        <div class="seg" id="volMode" role="group" aria-label="Volume view">
+          <button type="button" data-mode="total" aria-pressed="true">Total</button>
+          <button type="button" data-mode="sent">By sentiment</button>
+        </div>
+      </div>
+      <div class="chart tall" id="cVolume" role="img" aria-label="Line area chart of mentions per hour"></div>
+    </article>
+
+    <article class="card span-4">
+      <div class="card-h"><div><h2>Sentiment</h2><p class="note">Share of all conversations</p></div></div>
+      <div class="chart" id="cSentDonut" role="img" aria-label="Sentiment share donut"></div>
+    </article>
+    <article class="card span-8">
+      <div class="card-h"><div><h2>Sentiment by day</h2><p class="note">Share of each day's conversations</p></div></div>
+      <div class="chart" id="cSentDay" role="img" aria-label="Sentiment share per day"></div>
+    </article>
+
+    <article class="card span-6">
+      <div class="card-h"><div><h2>Most discussed speakers</h2><p class="note">Posts naming the speaker, split by sentiment</p></div></div>
+      <div class="chart tall" id="cSpeakers" role="img" aria-label="Top speakers by mentions"></div>
+    </article>
+    <article class="card span-6">
+      <div class="card-h"><div><h2>Most discussed talks &amp; workshops</h2><p class="note">Posts matching each session's keywords</p></div></div>
+      <div class="chart tall" id="cSessions" role="img" aria-label="Top sessions by mentions"></div>
+    </article>
+
+    <article class="card span-7">
+      <div class="card-h"><div><h2>Hashtag cloud</h2><p class="note">Size shows use. Magenta marks official hashtags.</p></div></div>
+      <div class="chart" id="cCloud" role="img" aria-label="Hashtag word cloud"></div>
+    </article>
+    <article class="card span-5">
+      <div class="card-h"><div><h2>Top hashtags</h2><p class="note">Posts using each hashtag</p></div></div>
+      <ol class="rank" id="tagList"></ol>
+    </article>
+
+    <article class="card span-4">
+      <div class="card-h"><div><h2>Channel mix</h2><p class="note">Where the conversation happens</p></div></div>
+      <div class="chart" id="cChannels" role="img" aria-label="Channel share donut"></div>
+    </article>
+    <article class="card span-8">
+      <div class="card-h"><div><h2>When people post</h2><p class="note">Mentions by day and hour of day, Riyadh time</p></div></div>
+      <div class="chart" id="cHeat" role="img" aria-label="Heatmap of mentions by day and hour"></div>
+    </article>
+
+    <article class="card span-6" id="votesCard">
+      <div class="card-h"><div><h2>Top voices</h2><p class="note">Authors ranked by total engagement</p></div></div>
+      <div class="tbl-wrap"><table id="authTbl"><thead><tr><th>Author</th><th>Channel</th><th class="num">Posts</th><th class="num">Engagement</th><th class="num">Reach</th></tr></thead><tbody></tbody></table></div>
+    </article>
+    <article class="card span-6" id="feedCard">
+      <div class="card-h">
+        <div><h2>Conversation feed</h2><p class="note" id="feedNote">Newest first</p></div>
+        <div class="seg" id="feedMode" role="group" aria-label="Feed order">
+          <button type="button" data-mode="latest" aria-pressed="true">Latest</button>
+          <button type="button" data-mode="top">Most engaging</button>
+        </div>
+      </div>
+      <ul class="feed" id="feed"></ul>
+    </article>
+
+    <article class="card span-12">
+      <div class="card-h"><div><h2>Preview a Talkwalker export</h2><p class="note">Drop a CSV or XLSX here to check it before publishing. The preview stays in this browser only.</p></div></div>
+      <label class="drop" id="drop" for="fileIn">
+        <span>Drag the export here, or <u>choose a file</u>.</span>
+        <input type="file" id="fileIn" accept=".csv,.xlsx,.xls,.tsv">
+        <button class="btn" type="button" id="resetBtn">Back to published data</button>
+      </label>
+      <div class="cols" id="colMap"></div>
+    </article>
+  </section>
+</main>
+
+<footer class="wrap">
+  <span>Creative Industry Summit · KSA Festival '26 · Social listening data: Talkwalker</span>
+  <span id="footStamp"></span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  "use strict";
+  const CFG = window.CIS_CONFIG;
+  const TZ = 3; // display timezone: Riyadh, UTC+3
+  const HOUR = 3600e3, DAY = 24 * HOUR;
+  const css = getComputedStyle(document.documentElement);
+  const tok = (n) => css.getPropertyValue(n).trim();
+  const C = {
+    ink: tok("--ink"), ink2: tok("--ink-2"), muted: tok("--muted"), line: "rgba(236,233,255,0.09)",
+    surface: tok("--surface"), pos: tok("--pos"), neu: tok("--neu"), neg: tok("--neg"), accent: tok("--accent"),
+    cat: ["--c1", "--c2", "--c3", "--c4", "--c5", "--c6"].map(tok),
+  };
+  const SENTS = ["positive", "neutral", "negative"];
+  const SENT_COLOR = { positive: C.pos, neutral: C.neu, negative: C.neg };
+  const SENT_LABEL = { positive: "Positive", neutral: "Neutral", negative: "Negative" };
+
+  /* ================= Parsing a Talkwalker export ================= */
+
+  // Talkwalker names columns differently in CSV, Excel and API exports.
+  // Each field lists the headers it accepts, most specific first.
+  const FIELDS = {
+    date: ["published", "published_date", "date published", "publication date", "date", "time", "created", "indexed"],
+    text: ["content", "text", "snippet", "body", "message", "title"],
+    title: ["title", "headline"],
+    sentiment: ["sentiment", "tone", "polarity"],
+    author: ["author", "author name", "extra_author_attributes.name", "author_name", "extra_author_attributes.short_name", "username", "user", "handle", "screen name"],
+    source: ["media type", "source_type", "source type", "channel", "platform", "network", "media", "source", "domain", "host"],
+    engagement: ["engagement", "engagements", "total engagement", "interactions"],
+    reach: ["reach", "potential reach", "estimated reach", "audience", "followers", "extra_author_attributes.followers"],
+    url: ["url", "link", "permalink", "post url"],
+    lang: ["lang", "language"],
+    country: ["country", "extra_source_attributes.world_data.country", "location"],
+    hashtags: ["hashtags", "hashtag", "tags"],
+  };
+
+  function mapColumns(headers) {
+    const norm = headers.map((h) => String(h || "").trim().toLowerCase());
+    const map = {};
+    for (const [field, cands] of Object.entries(FIELDS)) {
+      for (const c of cands) {
+        const i = norm.indexOf(c);
+        if (i !== -1 && !Object.values(map).includes(headers[i])) { map[field] = headers[i]; break; }
+      }
+      if (!map[field]) {
+        // loose match, e.g. "Sentiment (score)"
+        const i = norm.findIndex((h, k) => cands.some((c) => h.startsWith(c)) && !Object.values(map).includes(headers[k]));
+        if (i !== -1) map[field] = headers[i];
+      }
+    }
+    if (map.text === map.title) delete map.title;
+    return map;
+  }
+
+  function num(v) {
+    if (v == null || v === "") return 0;
+    if (typeof v === "number") return isFinite(v) ? v : 0;
+    const s = String(v).replace(/[,\s]/g, "").toLowerCase();
+    const m = s.match(/^(-?[\d.]+)([kmb])?$/);
+    if (!m) return 0;
+    return parseFloat(m[1]) * ({ k: 1e3, m: 1e6, b: 1e9 }[m[2]] || 1);
+  }
+
+  // Returns UTC milliseconds, or NaN.
+  function parseDate(v) {
+    const off = (CFG.event.sourceUtcOffsetHours ?? 3) * HOUR;
+    if (v instanceof Date) {
+      // SheetJS gives wall-clock values in the browser's local zone
+      return Date.UTC(v.getFullYear(), v.getMonth(), v.getDate(), v.getHours(), v.getMinutes(), v.getSeconds()) - off;
+    }
+    if (typeof v === "number" || /^\d{10,13}$/.test(String(v).trim())) {
+      const n = Number(v);
+      if (n > 1e12) return n;
+      if (n > 1e9) return n * 1000;
+      if (n > 20000 && n < 80000) return Math.round((n - 25569) * DAY) - off; // Excel serial
+      return NaN;
+    }
+    const s = String(v || "").trim();
+    if (!s) return NaN;
+    if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s) && /\d{4}-\d{2}-\d{2}/.test(s)) return Date.parse(s.replace(" ", "T"));
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (m) return Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)) - off;
+    m = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})(?:[ ,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?/i);
+    if (m) {
+      let [a, b] = [+m[1], +m[2]];
+      const dmy = (CFG.event.dateOrder || "DMY") === "DMY";
+      const d = dmy ? a : b, mo = dmy ? b : a;
+      let y = +m[3]; if (y < 100) y += 2000;
+      let h = +(m[4] || 0);
+      if (m[7]) { const pm = m[7].toLowerCase() === "pm"; if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; }
+      return Date.UTC(y, mo - 1, d, h, +(m[5] || 0), +(m[6] || 0)) - off;
+    }
+    const t = Date.parse(s);
+    return isNaN(t) ? NaN : t;
+  }
+
+  function parseSentiment(v) {
+    if (v == null || v === "") return "neutral";
+    const n = Number(v);
+    if (!isNaN(n)) return n > 0 ? "positive" : n < 0 ? "negative" : "neutral";
+    const s = String(v).toLowerCase();
+    if (/pos|إيجاب|ايجاب/.test(s)) return "positive";
+    if (/neg|سلب/.test(s)) return "negative";
+    return "neutral";
+  }
+
+  const SOURCE_RULES = [
+    [/twitter|x\.com|^x$|tweet/i, "X"], [/instagram/i, "Instagram"], [/tiktok/i, "TikTok"],
+    [/youtube|youtu\.be/i, "YouTube"], [/facebook|fb\.com/i, "Facebook"], [/linkedin/i, "LinkedIn"],
+    [/snapchat/i, "Snapchat"], [/reddit|forum|message ?board/i, "Forums"], [/blog/i, "Blogs"],
+    [/news|online|press|print|broadcast|tv|radio/i, "News & web"],
+  ];
+  function parseSource(v, url) {
+    const val = String(v || "").trim();
+    for (const s of [val, String(url || "")]) {
+      if (!s) continue;
+      for (const [re, name] of SOURCE_RULES) if (re.test(s)) return name;
+    }
+    return v ? "Other" : "News & web";
+  }
+
+  const AR_RE = /[؀-ۿ]/;
+  function normText(s) {
+    return String(s || "").toLowerCase()
+      .replace(/[ً-ٰٟـ]/g, "") // diacritics, tatweel
+      .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه")
+      .replace(/[’'`]/g, "'").replace(/[_\-–—]/g, " ").replace(/\s+/g, " ");
+  }
+
+  const TAG_RE = /#[\p{L}\p{N}_]+/gu;
+  function matcher(list, key) {
+    return list.map((it, idx) => ({
+      idx,
+      terms: [...(it.skipName ? [] : [it.name]), ...(it[key] || [])].map(normText).filter((t) => t.length > 2),
+    }));
+  }
+  const SPK = matcher(CFG.speakers, "aliases");
+  const SES = matcher(CFG.sessions, "keywords");
+  const OFFICIAL = new Set(CFG.officialHashtags.map((t) => t.toLowerCase()));
+
+  function toRecords(rows, headers) {
+    const map = mapColumns(headers);
+    const out = [];
+    const seen = new Set();
+    for (const r of rows) {
+      const t = parseDate(r[map.date]);
+      if (isNaN(t)) continue;
+      const title = map.title ? String(r[map.title] || "") : "";
+      const body = map.text ? String(r[map.text] || "") : "";
+      const text = body || title;
+      const url = map.url ? String(r[map.url] || "") : "";
+      const key = url || (t + "|" + text.slice(0, 80));
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const all = title && body && !body.includes(title) ? title + " " + body : text;
+      const tags = new Map();
+      for (const m of all.matchAll(TAG_RE)) tags.set(m[0].toLowerCase(), m[0]);
+      if (map.hashtags && r[map.hashtags]) {
+        for (let h of String(r[map.hashtags]).split(/[\s,;|]+/)) {
+          if (!h) continue;
+          if (!h.startsWith("#")) h = "#" + h;
+          tags.set(h.toLowerCase(), h);
+        }
+      }
+      const n = " " + normText(all) + " ";
+      out.push({
+        t, text, url,
+        sent: parseSentiment(r[map.sentiment]),
+        author: String((map.author && r[map.author]) || "Unknown").replace(/^@/, ""),
+        src: parseSource(map.source && r[map.source], url),
+        eng: num(map.engagement && r[map.engagement]),
+        reach: num(map.reach && r[map.reach]),
+        tags: [...tags.entries()],
+        spk: SPK.filter((s) => s.terms.some((term) => n.includes(term))).map((s) => s.idx),
+        ses: SES.filter((s) => s.terms.some((term) => n.includes(term))).map((s) => s.idx),
+        rtl: AR_RE.test(text.slice(0, 60)),
+      });
+    }
+    return { records: out, map, rowsIn: rows.length };
+  }
+
+  function parseCSVText(txt) {
+    const res = Papa.parse(txt.replace(/^﻿/, ""), { header: true, skipEmptyLines: true, dynamicTyping: false });
+    // Talkwalker sometimes prepends a title line above the header
+    if (res.meta.fields && res.meta.fields.length < 3) {
+      const lines = txt.split(/\r?\n/);
+      const hi = lines.findIndex((l) => /url|published|date|content/i.test(l) && l.split(/[,;\t]/).length > 3);
+      if (hi > 0) return parseCSVText(lines.slice(hi).join("\n"));
+    }
+    return { rows: res.data, headers: res.meta.fields || [] };
+  }
+
+  let xlsxReady = null;
+  function loadXLSX() {
+    if (window.XLSX) return Promise.resolve();
+    if (!xlsxReady) {
+      xlsxReady = new Promise((ok, fail) => {
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+        s.onload = ok; s.onerror = fail;
+        document.head.appendChild(s);
+      });
+    }
+    return xlsxReady;
+  }
+  async function parseXLSXBuffer(buf) {
+    await loadXLSX();
+    const wb = XLSX.read(buf, { type: "array", cellDates: true });
+    // the mentions sheet is the one with the most rows
+    let best = null;
+    for (const name of wb.SheetNames) {
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: "" });
+      if (!best || aoa.length > best.length) best = aoa;
+    }
+    if (!best || !best.length) return { rows: [], headers: [] };
+    const hi = Math.max(0, best.findIndex((r) => r.filter(Boolean).length > 3 && r.some((c) => /url|published|date|content/i.test(String(c)))));
+    const headers = best[hi].map(String);
+    const rows = best.slice(hi + 1).map((r) => Object.fromEntries(headers.map((h, i) => [h, r[i]])));
+    return { rows, headers };
+  }
+
+  /* ================= Loading ================= */
+
+  const state = { all: [], source: "", demo: false, preview: false, range: "all", channel: "", volMode: "total", feedMode: "latest", loadedAt: 0, map: {}, rowsIn: 0 };
+
+  async function fetchOne(path) {
+    const res = await fetch(path + (path.includes("?") ? "&" : "?") + "v=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error(path + " " + res.status);
+    if (/\.xlsx?$/i.test(path)) return parseXLSXBuffer(await res.arrayBuffer());
+    return parseCSVText(await res.text());
+  }
+
+  async function loadPublished() {
+    let files = CFG.dataFiles;
+    try {
+      const r = await fetch("data/index.json?v=" + Date.now(), { cache: "no-store" });
+      if (r.ok) { const j = await r.json(); if (Array.isArray(j.files) && j.files.length) files = j.files.map((f) => "data/" + f.replace(/^data\//, "")); }
+    } catch (e) { /* no index: use defaults */ }
+    const parts = [], used = [];
+    for (const f of files) {
+      try {
+        parts.push(await fetchOne(f));
+        used.push(f);
+        if (files === CFG.dataFiles) break; // default list is "first that exists"
+      } catch (e) { /* try next */ }
+    }
+    if (!parts.length) return false;
+    const headers = [...new Set(parts.flatMap((p) => p.headers))];
+    const { records, map, rowsIn } = toRecords(parts.flatMap((p) => p.rows), headers);
+    if (!records.length) return false;
+    Object.assign(state, { all: records, map, rowsIn, demo: false, preview: false, source: used.join(", ") });
+    return true;
+  }
+
+  /* ---------- Sample data, shown only until the first export is published ---------- */
+  function demoData() {
+    let seed = 20261003;
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
+    const pick = (a) => a[Math.floor(rnd() * a.length)];
+    const start = Date.UTC(2026, 8, 27, 0) - TZ * HOUR; // 27 Sep 00:00 AST
+    const end = Date.UTC(2026, 9, 5, 23) - TZ * HOUR;
+    const dayStarts = CFG.event.days.map((d) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) - TZ * HOUR);
+    const extraTags = ["#CreativeEconomy", "#SaudiCreatives", "#Riyadh", "#AI", "#Advertising", "#JAXDistrict", "#الرياض", "#الاقتصاد_الإبداعي", "#Esports", "#SaudiFilm", "#Branding", "#Marketing"];
+    const srcs = [["X", 0.42], ["Instagram", 0.24], ["LinkedIn", 0.12], ["TikTok", 0.1], ["News & web", 0.08], ["YouTube", 0.04]];
+    const authors = ["creativeksa", "riyadh_scene", "adweek_me", "saudi_ads", "mena_marketer", "jax_district", "cannes_fan", "nora.designs", "studio_najd", "arab_ad_news", "film_riyadh", "ai.creators", "brandlab_sa", "khalid_media", "sara.makes", "the_brief_me", "mcl_mena", "creative_pulse", "ux_riyadh", "esports_sa"];
+    const lines = [
+      ["Packed room for {s} at {x}. Saudi creative talent is having a moment", "positive"],
+      ["Best session so far: {x}. {s} did not hold back", "positive"],
+      ["{s} on {x}: execution is cheap now, taste is the product", "positive"],
+      ["Queue at the entrance was long tonight, but {x} made it worth it", "neutral"],
+      ["Notes from {x} with {s}", "neutral"],
+      ["Heading to JAX District for Creative Industry Summit tonight", "neutral"],
+      ["Sound on the Creative Stage kept cutting out during {x}", "negative"],
+      ["Workshop fees are steep for students. Hope {x} gets a recording", "negative"],
+      ["جلسة رائعة مع {s} عن {x}", "positive"],
+      ["الحضور كبير في قمة الإبداع اليوم في جاكس", "positive"],
+      ["ملاحظات من جلسة {x}", "neutral"],
+      ["Who else is at {x}? Loved the take from {s}", "positive"],
+    ];
+    const weightedSpk = CFG.speakers.map((s, i) => [s.name, Math.pow(0.86, i % 18) * (i < 12 ? 2 : 1)]);
+    const wpick = (arr) => { const tot = arr.reduce((a, b) => a + b[1], 0); let r = rnd() * tot; for (const x of arr) { if ((r -= x[1]) <= 0) return x[0]; } return arr[0][0]; };
+    const rows = [];
+    for (let h = start; h <= end; h += HOUR) {
+      const local = new Date(h + TZ * HOUR);
+      const hod = local.getUTCHours();
+      const dIdx = dayStarts.findIndex((d) => h >= d && h < d + DAY);
+      const daysOut = Math.max(0, (dayStarts[0] - h) / DAY);
+      let base = 3 + 10 / (1 + daysOut) + (hod >= 9 && hod <= 23 ? 3 : 0);
+      if (dIdx >= 0) base = 14 + (hod >= 17 && hod < 23 ? 38 + 22 * Math.sin(((hod - 17) / 5) * Math.PI) : hod >= 10 ? 10 : 2) * (dIdx === 1 ? 1.25 : dIdx === 2 ? 0.95 : 1);
+      const n = Math.round(base * (0.75 + rnd() * 0.5));
+      for (let i = 0; i < n; i++) {
+        const t = h + Math.floor(rnd() * HOUR);
+        const sesPool = CFG.sessions.filter((s) => dIdx < 0 || s.day === dIdx + 1);
+        const x = pick(sesPool.length ? sesPool : CFG.sessions);
+        const s = wpick(weightedSpk);
+        let [tpl, sent] = pick(lines);
+        if (rnd() < 0.25) sent = pick(SENTS);
+        const tags = [pick(CFG.officialHashtags)];
+        if (rnd() < 0.55) tags.push(pick(extraTags));
+        if (rnd() < 0.25) tags.push(pick(CFG.officialHashtags));
+        const src = wpick(srcs);
+        const text = tpl.replace("{s}", s).replace("{x}", x.name) + " " + tags.join(" ");
+        rows.push({
+          published: new Date(t).toISOString(), content: text, sentiment: sent === "positive" ? 3 : sent === "negative" ? -3 : 0,
+          author: pick(authors), "media type": src, engagement: Math.round(Math.pow(rnd(), 3) * 2400),
+          reach: Math.round(800 + Math.pow(rnd(), 4) * 250000), url: "",
+        });
+      }
+    }
+    const { records } = toRecords(rows, Object.keys(rows[0]));
+    return records;
+  }
+
+  async function load(initial) {
+    if (state.preview) return;
+    let ok = false;
+    try { ok = await loadPublished(); } catch (e) { ok = false; }
+    if (!ok && (initial || state.demo)) {
+      Object.assign(state, { all: demoData(), demo: true, source: "Sample data", map: {}, rowsIn: 0 });
+    }
+    state.loadedAt = Date.now();
+    render();
+  }
+
+  /* ================= Filtering & aggregation ================= */
+
+  const dayStart = (d) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) - TZ * HOUR;
+  const DAYS = CFG.event.days.map(dayStart);
+
+  function rangeBounds() {
+    const all = state.all;
+    const maxT = all.length ? Math.max(...all.map((r) => r.t)) : Date.now();
+    switch (state.range) {
+      case "pre": return [-Infinity, DAYS[0]];
+      case "d1": return [DAYS[0], DAYS[0] + DAY];
+      case "d2": return [DAYS[1], DAYS[1] + DAY];
+      case "d3": return [DAYS[2], DAYS[2] + DAY];
+      case "24h": return [floorHour(maxT) - 23 * HOUR, Infinity];
+      default: return [-Infinity, Infinity];
+    }
+  }
+  const floorHour = (t) => Math.floor(t / HOUR) * HOUR;
+
+  function filtered() {
+    const [a, b] = rangeBounds();
+    return state.all.filter((r) => r.t >= a && r.t < b && (!state.channel || r.src === state.channel));
+  }
+
+  const fmt = (n) => {
+    if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, "") + "B";
+    if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+    if (n >= 1e4) return (n / 1e3).toFixed(0) + "K";
+    if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
+    return String(Math.round(n));
+  };
+  const fmtFull = (n) => Math.round(n).toLocaleString("en-US");
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+  const local = (t) => new Date(t + TZ * HOUR);
+  const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const hh = (d) => String(d.getUTCHours()).padStart(2, "0") + ":00";
+  const dayLabel = (t) => { const d = local(t); return WD[d.getUTCDay()] + " " + d.getUTCDate() + " " + MO[d.getUTCMonth()]; };
+  const timeLabel = (t) => { const d = local(t); return dayLabel(t) + ", " + String(d.getUTCHours()).padStart(2, "0") + ":" + String(d.getUTCMinutes()).padStart(2, "0"); };
+  const eventDayName = (t) => { const i = DAYS.findIndex((d) => t >= d && t < d + DAY); return i >= 0 ? "Day " + (i + 1) : t < DAYS[0] ? "Build-up" : "After"; };
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  /* ================= Charts ================= */
+
+  const charts = {};
+  function chart(id) {
+    if (!charts[id]) charts[id] = echarts.init(document.getElementById(id), null, { renderer: "canvas" });
+    return charts[id];
+  }
+  window.addEventListener("resize", () => Object.values(charts).forEach((c) => c.resize()));
+
+  const baseText = { color: C.ink2, fontFamily: "Poppins, system-ui, sans-serif", fontSize: 12 };
+  const tooltipBase = {
+    backgroundColor: "#0B0A24", borderColor: "rgba(255,255,255,.15)", borderWidth: 1,
+    textStyle: { color: C.ink, fontFamily: "Poppins, system-ui, sans-serif", fontSize: 12 }, extraCssText: "border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.4);",
+  };
+  const axisBase = {
+    axisLine: { lineStyle: { color: C.line } }, axisTick: { show: false },
+    axisLabel: { color: C.muted, fontSize: 11 }, splitLine: { lineStyle: { color: C.line } },
+  };
+  const legendBase = { textStyle: { color: C.ink2 }, icon: "roundRect", itemWidth: 12, itemHeight: 8, itemGap: 16 };
+
+  function setEmpty(id, msg) {
+    if (charts[id]) { charts[id].dispose(); delete charts[id]; }
+    document.getElementById(id).innerHTML = '<div class="empty">' + esc(msg) + "</div>";
+  }
+  function ensureCanvas(id) {
+    const el = document.getElementById(id);
+    if (el.querySelector(".empty")) el.innerHTML = "";
+  }
+
+  function renderVolume(rows) {
+    const id = "cVolume";
+    if (!rows.length) return setEmpty(id, "No conversations in this range yet.");
+    ensureCanvas(id);
+    const [a, b] = rangeBounds();
+    const minT = floorHour(Math.max(a, Math.min(...rows.map((r) => r.t))));
+    const maxT = floorHour(Math.min(b - 1, Math.max(...rows.map((r) => r.t))));
+    const buckets = new Map();
+    for (let t = minT; t <= maxT; t += HOUR) buckets.set(t, { total: 0, positive: 0, neutral: 0, negative: 0 });
+    for (const r of rows) { const k = buckets.get(floorHour(r.t)); if (k) { k.total++; k[r.sent]++; } }
+    const xs = [...buckets.keys()];
+    const peak = xs.reduce((best, t) => (buckets.get(t).total > buckets.get(best).total ? t : best), xs[0]);
+    // ECharts formats time axes in UTC when useUTC is set, so plot Riyadh wall-clock time
+    const S = TZ * HOUR;
+    const bands = DAYS.map((d) => [{ xAxis: d + S + CFG.event.sessionHours[0] * HOUR }, { xAxis: d + S + CFG.event.sessionHours[1] * HOUR }]);
+    const markArea = { silent: true, itemStyle: { color: "rgba(140,124,255,0.08)" }, data: bands, label: { show: false } };
+    let series;
+    if (state.volMode === "total") {
+      series = [{
+        name: "Mentions", type: "line", smooth: 0.25, showSymbol: false, symbolSize: 8,
+        data: xs.map((t) => [t + S, buckets.get(t).total]),
+        lineStyle: { width: 2, color: C.accent },
+        itemStyle: { color: C.accent, borderColor: C.surface, borderWidth: 2 },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: "rgba(255,46,136,0.55)" }, { offset: 0.6, color: "rgba(140,124,255,0.18)" }, { offset: 1, color: "rgba(140,124,255,0)" }]) },
+        markArea,
+        markPoint: {
+          symbol: "circle", symbolSize: 10, itemStyle: { color: C.ink, borderColor: C.accent, borderWidth: 3 },
+          label: { show: true, position: "top", distance: 10, color: C.ink, fontWeight: 600, fontSize: 12, formatter: () => "Peak " + buckets.get(peak).total + " · " + dayLabel(peak) + " " + hh(local(peak)) },
+          data: [{ coord: [peak + S, buckets.get(peak).total] }],
+        },
+      }];
+    } else {
+      series = SENTS.map((s, i) => ({
+        name: SENT_LABEL[s], type: "line", stack: "s", smooth: 0.25, showSymbol: false,
+        data: xs.map((t) => [t + S, buckets.get(t)[s]]),
+        lineStyle: { width: 1.5, color: SENT_COLOR[s] }, itemStyle: { color: SENT_COLOR[s] },
+        areaStyle: { color: SENT_COLOR[s], opacity: 0.55 },
+        markArea: i === 0 ? markArea : undefined,
+      }));
+    }
+    chart(id).setOption({
+      useUTC: true,
+      animationDuration: 600,
+      textStyle: baseText,
+      grid: { left: 44, right: 20, top: state.volMode === "total" ? 40 : 44, bottom: 58 },
+      legend: state.volMode === "total" ? { show: false } : { ...legendBase, top: 0, left: 0 },
+      tooltip: {
+        ...tooltipBase, trigger: "axis", axisPointer: { type: "line", lineStyle: { color: "rgba(255,255,255,.35)" } },
+        formatter: (ps) => {
+          const t = ps[0].value[0] - S;
+          const b = buckets.get(t);
+          return "<b>" + dayLabel(t) + " · " + hh(local(t)) + "–" + hh(local(t + HOUR)) + "</b><br>" +
+            "Mentions: <b>" + b.total + "</b><br>" +
+            SENTS.map((s) => '<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + SENT_COLOR[s] + ';margin-right:6px"></span>' + SENT_LABEL[s] + ": " + b[s]).join("<br>");
+        },
+      },
+      xAxis: {
+        type: "time", ...axisBase, splitLine: { show: false }, minInterval: HOUR,
+        axisLabel: { color: C.muted, fontSize: 11, hideOverlap: true, formatter: (v) => { const d = new Date(v); return d.getUTCHours() === 0 ? "{d|" + d.getUTCDate() + " " + MO[d.getUTCMonth()] + "}" : hh(d); }, rich: { d: { color: C.ink, fontWeight: 600 } } },
+      },
+      yAxis: { type: "value", ...axisBase, minInterval: 1, splitNumber: 4 },
+      dataZoom: [{ type: "inside" }, { type: "slider", height: 18, bottom: 8, borderColor: "transparent", backgroundColor: "rgba(255,255,255,.04)", fillerColor: "rgba(255,46,136,.18)", dataBackground: { lineStyle: { color: C.muted }, areaStyle: { color: "rgba(255,255,255,.06)" } }, handleStyle: { color: C.ink }, textStyle: { color: C.muted }, labelFormatter: (v) => timeLabel(v - S) }],
+      series,
+    }, true);
+  }
+
+  function renderSentDonut(rows) {
+    const id = "cSentDonut";
+    if (!rows.length) return setEmpty(id, "No data");
+    ensureCanvas(id);
+    const cnt = { positive: 0, neutral: 0, negative: 0 };
+    rows.forEach((r) => cnt[r.sent]++);
+    const net = pct(cnt.positive - cnt.negative, rows.length);
+    chart(id).setOption({
+      textStyle: baseText,
+      tooltip: { ...tooltipBase, trigger: "item", formatter: (p) => "<b>" + p.name + "</b><br>" + fmtFull(p.value) + " posts · " + p.percent + "%" },
+      legend: { ...legendBase, bottom: 0, formatter: (n) => { const k = n.toLowerCase(); return n + "  " + pct(cnt[k], rows.length) + "%"; } },
+      title: { text: (net > 0 ? "+" : "") + net, subtext: "net sentiment", left: "center", top: "35%", textStyle: { color: C.ink, fontFamily: "Archivo, sans-serif", fontSize: 34, fontWeight: 800 }, subtextStyle: { color: C.muted, fontSize: 11 } },
+      series: [{
+        type: "pie", radius: ["58%", "80%"], center: ["50%", "45%"], padAngle: 1.5,
+        itemStyle: { borderRadius: 4, borderColor: C.surface, borderWidth: 2 },
+        label: { show: false },
+        data: SENTS.map((s) => ({ name: SENT_LABEL[s], value: cnt[s], itemStyle: { color: SENT_COLOR[s] } })),
+      }],
+    }, true);
+  }
+
+  function renderSentDay(rows) {
+    const id = "cSentDay";
+    if (!rows.length) return setEmpty(id, "No data");
+    ensureCanvas(id);
+    const byDay = new Map();
+    for (const r of rows) {
+      const d = local(r.t); const key = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - TZ * HOUR;
+      if (!byDay.has(key)) byDay.set(key, { positive: 0, neutral: 0, negative: 0, n: 0 });
+      const b = byDay.get(key); b[r.sent]++; b.n++;
+    }
+    const keys = [...byDay.keys()].sort((a, b) => a - b).slice(-10);
+    const cats = keys.map((k) => { const i = DAYS.indexOf(k); return dayLabel(k) + (i >= 0 ? "\n{ev|DAY " + (i + 1) + "}" : ""); });
+    chart(id).setOption({
+      textStyle: baseText,
+      grid: { left: 40, right: 12, top: 36, bottom: 44 },
+      legend: { ...legendBase, top: 0, left: 0 },
+      tooltip: { ...tooltipBase, trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(255,255,255,.04)" } },
+        formatter: (ps) => { const b = byDay.get(keys[ps[0].dataIndex]); return "<b>" + dayLabel(keys[ps[0].dataIndex]) + "</b> · " + b.n + " posts<br>" + SENTS.map((s) => SENT_LABEL[s] + ": " + b[s] + " (" + pct(b[s], b.n) + "%)").join("<br>"); } },
+      xAxis: { type: "category", data: cats, ...axisBase, axisLabel: { color: C.muted, fontSize: 11, hideOverlap: true, rich: { ev: { color: C.accent, fontWeight: 700, fontSize: 10, padding: [3, 0, 0, 0] } } } },
+      yAxis: { type: "value", max: 100, interval: 25, ...axisBase, axisLabel: { color: C.muted, formatter: "{value}%" } },
+      series: SENTS.map((s, i) => ({
+        name: SENT_LABEL[s], type: "bar", stack: "d", barMaxWidth: 46,
+        data: keys.map((k) => { const b = byDay.get(k); return +(b[s] / b.n * 100).toFixed(1); }),
+        itemStyle: { color: SENT_COLOR[s], borderColor: C.surface, borderWidth: 1, borderRadius: i === 2 ? [4, 4, 0, 0] : 0 },
+      })),
+    }, true);
+  }
+
+  function renderRankedBars(id, rows, key, list, emptyMsg, labelFor) {
+    const counts = list.map(() => ({ positive: 0, neutral: 0, negative: 0, n: 0 }));
+    for (const r of rows) for (const i of r[key]) { counts[i][r.sent]++; counts[i].n++; }
+    const top = counts.map((c, i) => ({ ...c, i })).filter((c) => c.n > 0).sort((a, b) => b.n - a.n).slice(0, 10).reverse();
+    if (!top.length) return setEmpty(id, emptyMsg);
+    ensureCanvas(id);
+    chart(id).setOption({
+      textStyle: baseText,
+      grid: { left: 176, right: 44, top: 30, bottom: 24 },
+      legend: { ...legendBase, top: 0, left: 0 },
+      tooltip: { ...tooltipBase, trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(255,255,255,.04)" } },
+        formatter: (ps) => { const c = top[ps[0].dataIndex]; const it = list[c.i]; return "<b>" + esc(it.name) + "</b><br>" + esc(labelFor(it)) + "<br>" + c.n + " posts<br>" + SENTS.map((s) => SENT_LABEL[s] + ": " + c[s]).join(" · "); } },
+      xAxis: { type: "value", ...axisBase, minInterval: 1, splitNumber: 3 },
+      yAxis: { type: "category", data: top.map((c) => list[c.i].name), ...axisBase, axisLine: { show: false }, axisLabel: { color: C.ink, fontSize: 12, width: 164, overflow: "truncate" } },
+      series: SENTS.map((s, i) => ({
+        name: SENT_LABEL[s], type: "bar", stack: "x", barMaxWidth: 18,
+        data: top.map((c) => c[s]),
+        itemStyle: { color: SENT_COLOR[s], borderColor: C.surface, borderWidth: 1, borderRadius: i === 2 ? [0, 4, 4, 0] : 0 },
+        label: i === 2 ? { show: true, position: "right", color: C.ink2, fontSize: 11, fontWeight: 600, formatter: (p) => top[p.dataIndex].n } : undefined,
+      })),
+    }, true);
+  }
+
+  function tagCounts(rows) {
+    const m = new Map();
+    for (const r of rows) for (const [k, disp] of r.tags) {
+      if (!m.has(k)) m.set(k, { k, disp, n: 0 });
+      m.get(k).n++;
+    }
+    return [...m.values()].sort((a, b) => b.n - a.n);
+  }
+
+  function renderTags(rows) {
+    const tags = tagCounts(rows);
+    const list = document.getElementById("tagList");
+    const top = tags.slice(0, 10);
+    const max = top[0] ? top[0].n : 1;
+    list.innerHTML = top.length ? top.map((t, i) =>
+      '<li class="' + (OFFICIAL.has(t.k) ? "official" : "") + '"><span class="n">' + (i + 1) + '</span><span class="t"><bdi>' + esc(t.disp) + "</bdi>" + (OFFICIAL.has(t.k) ? '<span class="tag-off">Official</span>' : "") + '</span><span class="c">' + fmtFull(t.n) + '</span><span class="bar-bg"><span class="bar-fg" style="display:block;width:' + (t.n / max * 100).toFixed(1) + '%"></span></span></li>'
+    ).join("") : '<li class="empty">No hashtags in this range.</li>';
+
+    const id = "cCloud";
+    if (!tags.length) return setEmpty(id, "No hashtags in this range.");
+    ensureCanvas(id);
+    const palette = [C.cat[0], C.cat[3], C.cat[4], C.cat[1], C.cat[5]];
+    chart(id).setOption({
+      tooltip: { ...tooltipBase, formatter: (p) => "<b>" + esc(p.name) + "</b><br>" + fmtFull(p.value) + " posts" },
+      series: [{
+        type: "wordCloud", shape: "circle", left: "center", top: "center", width: "96%", height: "92%",
+        sizeRange: [14, 44], rotationRange: [0, 0], gridSize: 8, drawOutOfBound: false, shrinkToFit: true, layoutAnimation: false,
+        textStyle: { fontFamily: "Archivo, 'IBM Plex Sans Arabic', sans-serif", fontWeight: 800 },
+        emphasis: { textStyle: { color: C.ink } },
+        data: tags.slice(0, 60).map((t, i) => ({ name: t.disp, value: t.n, textStyle: { color: OFFICIAL.has(t.k) ? C.accent : palette[i % palette.length] } })),
+      }],
+    }, true);
+  }
+
+  function renderChannels(rows) {
+    const id = "cChannels";
+    if (!rows.length) return setEmpty(id, "No data");
+    ensureCanvas(id);
+    const m = new Map();
+    rows.forEach((r) => m.set(r.src, (m.get(r.src) || 0) + 1));
+    let arr = [...m.entries()].sort((a, b) => b[1] - a[1]);
+    if (arr.length > 6) { const rest = arr.slice(5).reduce((a, b) => a + b[1], 0); arr = arr.slice(0, 5).concat([["Other", rest]]); }
+    // colour follows the channel, never its rank
+    const ORDER = ["X", "Instagram", "TikTok", "LinkedIn", "News & web", "YouTube"];
+    const colorFor = (name) => { const i = ORDER.indexOf(name); return i >= 0 ? C.cat[i] : C.neu; };
+    chart(id).setOption({
+      textStyle: baseText,
+      tooltip: { ...tooltipBase, trigger: "item", formatter: (p) => "<b>" + esc(p.name) + "</b><br>" + fmtFull(p.value) + " posts · " + p.percent + "%" },
+      legend: { ...legendBase, bottom: 0, itemGap: 10 },
+      series: [{
+        type: "pie", radius: ["40%", "72%"], center: ["50%", "42%"], roseType: false, padAngle: 1.5,
+        itemStyle: { borderRadius: 4, borderColor: C.surface, borderWidth: 2 },
+        label: { show: true, color: C.ink, fontSize: 11, fontWeight: 600, formatter: (p) => (p.percent >= 6 ? Math.round(p.percent) + "%" : ""), position: "inside" },
+        data: arr.map(([name, v]) => ({ name, value: v, itemStyle: { color: colorFor(name) } })),
+      }],
+    }, true);
+  }
+
+  function renderHeat(rows) {
+    const id = "cHeat";
+    if (!rows.length) return setEmpty(id, "No data");
+    ensureCanvas(id);
+    const byDay = new Map();
+    for (const r of rows) {
+      const d = local(r.t); const key = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - TZ * HOUR;
+      if (!byDay.has(key)) byDay.set(key, new Array(24).fill(0));
+      byDay.get(key)[d.getUTCHours()]++;
+    }
+    const keys = [...byDay.keys()].sort((a, b) => a - b).slice(-9);
+    const data = []; let max = 1;
+    keys.forEach((k, y) => byDay.get(k).forEach((v, x) => { data.push([x, y, v]); if (v > max) max = v; }));
+    chart(id).setOption({
+      textStyle: baseText,
+      grid: { left: 8, right: 12, top: 8, bottom: 50, containLabel: true },
+      tooltip: { ...tooltipBase, formatter: (p) => "<b>" + dayLabel(keys[p.value[1]]) + ", " + String(p.value[0]).padStart(2, "0") + ":00</b><br>" + p.value[2] + " mentions" },
+      xAxis: { type: "category", data: [...Array(24).keys()].map((h) => String(h).padStart(2, "0")), ...axisBase, splitArea: { show: false }, axisLabel: { color: C.muted, fontSize: 10, interval: 1 } },
+      yAxis: { type: "category", data: keys.map((k) => dayLabel(k) + (DAYS.includes(k) ? "  ●" : "")), ...axisBase, axisLine: { show: false }, axisLabel: { color: C.ink2, fontSize: 11 } },
+      visualMap: { min: 0, max, calculable: false, orient: "horizontal", left: "center", bottom: 0, itemWidth: 10, itemHeight: 140, text: [String(max), "0"], textStyle: { color: C.muted, fontSize: 11 },
+        inRange: { color: ["#1D1A55", "#3A2A9E", "#8C3FD1", "#E0217E", "#FF7AB3"] } },
+      series: [{ type: "heatmap", data, itemStyle: { borderColor: C.surface, borderWidth: 2, borderRadius: 3 }, emphasis: { itemStyle: { borderColor: C.ink, borderWidth: 1 } } }],
+    }, true);
+  }
+
+  function renderAuthors(rows) {
+    const m = new Map();
+    for (const r of rows) {
+      if (!m.has(r.author)) m.set(r.author, { a: r.author, src: new Map(), n: 0, eng: 0, reach: 0 });
+      const o = m.get(r.author); o.n++; o.eng += r.eng; o.reach = Math.max(o.reach, r.reach); o.src.set(r.src, (o.src.get(r.src) || 0) + 1);
+    }
+    const top = [...m.values()].filter((o) => o.a !== "Unknown").sort((a, b) => b.eng - a.eng || b.n - a.n).slice(0, 10);
+    document.querySelector("#authTbl tbody").innerHTML = top.length ? top.map((o) => {
+      const src = [...o.src.entries()].sort((a, b) => b[1] - a[1])[0][0];
+      return '<tr><td dir="auto">' + esc(o.a) + '</td><td><span class="chip src">' + esc(src) + '</span></td><td class="num">' + fmtFull(o.n) + '</td><td class="num">' + fmt(o.eng) + '</td><td class="num">' + (o.reach ? fmt(o.reach) : "–") + "</td></tr>";
+    }).join("") : '<tr><td colspan="5" class="empty">No authors in this range.</td></tr>';
+  }
+
+  function renderFeed(rows) {
+    const list = state.feedMode === "top" ? [...rows].sort((a, b) => b.eng - a.eng) : [...rows].sort((a, b) => b.t - a.t);
+    document.getElementById("feedNote").textContent = state.feedMode === "top" ? "Highest engagement first" : "Newest first";
+    document.getElementById("feed").innerHTML = list.slice(0, 40).map((r) => {
+      const who = esc(r.author);
+      const text = esc(r.text.length > 400 ? r.text.slice(0, 400) + "…" : r.text).replace(/(#[\p{L}\p{N}_]+)/gu, '<b style="color:var(--ink)">$1</b>');
+      const link = /^https?:\/\//.test(r.url) ? ' · <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Open</a>' : "";
+      return '<li class="post"><div class="post-h"><span class="who" dir="auto">' + who + '</span><span class="chip src">' + esc(r.src) + '</span><span class="chip ' + r.sent + '">' + SENT_LABEL[r.sent] + "</span><span>" + timeLabel(r.t) + (r.eng ? " · " + fmt(r.eng) + " eng." : "") + link + '</span></div><p dir="' + (r.rtl ? "rtl" : "auto") + '">' + text + "</p></li>";
+    }).join("") || '<li class="empty">No conversations in this range yet.</li>';
+  }
+
+  function renderKPIs(rows) {
+    const all = state.all.filter((r) => !state.channel || r.src === state.channel);
+    const set = (id, v) => { document.getElementById(id).innerHTML = v; };
+    const n = rows.length;
+    set("kTotal", fmtFull(n));
+    set("kTotalD", n ? pct(rows.filter((r) => DAYS.some((d) => r.t >= d && r.t < d + DAY)).length, n) + "% during the festival days" : "&nbsp;");
+
+    // last full hour in the data vs the hour before
+    const latest = all.length ? floorHour(Math.max(...all.map((r) => r.t))) : 0;
+    const lastFull = latest - HOUR;
+    const cur = all.filter((r) => r.t >= lastFull && r.t < latest).length;
+    const prev = all.filter((r) => r.t >= lastFull - HOUR && r.t < lastFull).length;
+    set("kHour", fmtFull(cur));
+    const diff = prev ? Math.round(((cur - prev) / prev) * 100) : 0;
+    set("kHourD", all.length ? hh(local(lastFull)) + "–" + hh(local(latest)) + " · " + (prev ? '<span class="' + (diff >= 0 ? "up" : "down") + '">' + (diff >= 0 ? "▲ " : "▼ ") + Math.abs(diff) + "%</span> vs hour before" : "first hour") : "&nbsp;");
+
+    const pos = rows.filter((r) => r.sent === "positive").length, neg = rows.filter((r) => r.sent === "negative").length;
+    const net = pct(pos - neg, n);
+    set("kNet", n ? (net > 0 ? "+" : "") + net : "–");
+    set("kNetD", n ? '<span class="up">' + pct(pos, n) + "% positive</span> · " + '<span class="down">' + pct(neg, n) + "% negative</span>" : "&nbsp;");
+
+    const eng = rows.reduce((a, r) => a + r.eng, 0);
+    set("kEng", fmt(eng));
+    set("kEngD", n ? fmt(eng / n) + " per post" : "&nbsp;");
+    const reach = rows.reduce((a, r) => a + r.reach, 0);
+    set("kReach", reach ? fmt(reach) : "–");
+    set("kReachD", reach ? "sum of audience per post" : "no reach column in export");
+    const authors = new Set(rows.map((r) => r.author).filter((a) => a !== "Unknown"));
+    set("kAuth", fmtFull(authors.size));
+    set("kAuthD", authors.size ? (n / authors.size).toFixed(1) + " posts per voice" : "&nbsp;");
+  }
+
+  function renderStatus() {
+    const all = state.all;
+    const maxT = all.length ? Math.max(...all.map((r) => r.t)) : 0;
+    const now = Date.now();
+    let phase = "Build-up", live = false;
+    if (now >= DAYS[0] && now < DAYS[2] + DAY) { phase = "Live · " + eventDayName(now); live = true; }
+    else if (now >= DAYS[2] + DAY) phase = "Festival wrapped";
+    // during the festival an export older than two hours means an upload was missed
+    const inWindow = now >= DAYS[0] - DAY && now < DAYS[2] + DAY + 6 * HOUR;
+    document.getElementById("stalePill").hidden = state.demo || state.preview || !maxT || !inWindow || now - maxT < 2 * HOUR;
+    document.getElementById("phaseText").textContent = phase;
+    document.getElementById("phasePill").classList.toggle("live", live);
+    document.getElementById("demoPill").hidden = !state.demo && !state.preview;
+    document.getElementById("demoPill").textContent = state.preview ? "Preview, not published" : "Sample data";
+    document.getElementById("updated").textContent = maxT ? "Data through " + timeLabel(maxT) + " AST" : "No data yet";
+    document.getElementById("rowsMeta").textContent = fmtFull(filtered().length) + " of " + fmtFull(all.length) + " posts";
+    document.getElementById("footStamp").textContent = "Checked for new data " + new Date(state.loadedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) + " · refreshes every " + CFG.refreshMinutes + " min";
+
+    const colMap = document.getElementById("colMap");
+    if (state.demo) {
+      colMap.innerHTML = "Showing <b>sample data</b> so you can see the layout. It disappears as soon as <code>data/mentions.csv</code> is published.";
+    } else {
+      const miss = ["date", "text", "sentiment", "author", "source", "engagement", "reach", "url"].filter((f) => !state.map[f]);
+      colMap.innerHTML = "Source: <code>" + esc(state.source) + "</code> · " + fmtFull(state.rowsIn) + " rows read, " + fmtFull(all.length) + " unique posts kept.<br>Columns used: " +
+        Object.entries(state.map).map(([k, v]) => k + " ← <code>" + esc(v) + "</code>").join(", ") +
+        (miss.length ? '<br><span style="color:var(--neg)">Missing: ' + miss.join(", ") + ". Add these columns to the Talkwalker export template.</span>" : "");
+    }
+  }
+
+  function fillChannels() {
+    const sel = document.getElementById("srcSel");
+    const cur = state.channel;
+    const srcs = [...new Set(state.all.map((r) => r.src))].sort();
+    sel.innerHTML = '<option value="">All channels</option>' + srcs.map((s) => '<option value="' + esc(s) + '"' + (s === cur ? " selected" : "") + ">" + esc(s) + "</option>").join("");
+    if (cur && !srcs.includes(cur)) state.channel = "";
+  }
+
+  function render() {
+    const show = CFG.show || {};
+    const hideFeed = show.feed === false, hideVoices = show.topVoices === false;
+    document.getElementById("feedCard").hidden = hideFeed;
+    document.getElementById("votesCard").hidden = hideVoices;
+    document.getElementById(hideFeed ? "votesCard" : "feedCard").style.gridColumn = hideFeed !== hideVoices ? "span 12" : "";
+    fillChannels();
+    const rows = filtered();
+    renderStatus();
+    renderKPIs(rows);
+    renderVolume(rows);
+    renderSentDonut(rows);
+    renderSentDay(rows);
+    renderRankedBars("cSpeakers", rows, "spk", CFG.speakers, "No speaker mentions yet. Add aliases in config.js if names are spelled differently.", (s) => s.org || "");
+    renderRankedBars("cSessions", rows, "ses", CFG.sessions, "No session mentions yet. Add keywords in config.js.", (s) => s.type + " · Day " + s.day + " · " + s.stage);
+    renderTags(rows);
+    renderChannels(rows);
+    renderHeat(rows);
+    renderAuthors(rows);
+    renderFeed(rows);
+  }
+
+  /* ================= Controls ================= */
+
+  function segment(id, key, attr) {
+    const el = document.getElementById(id);
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      state[key] = b.dataset[attr];
+      try { localStorage.setItem("cis-" + key, state[key]); } catch (err) { /* storage unavailable */ }
+      render();
+    });
+    try {
+      const saved = localStorage.getItem("cis-" + key);
+      const btn = saved && el.querySelector('[data-' + attr + '="' + saved + '"]');
+      if (btn) { state[key] = saved; el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === btn))); }
+    } catch (err) { /* storage unavailable */ }
+  }
+  segment("rangeSeg", "range", "range");
+  segment("volMode", "volMode", "mode");
+  segment("feedMode", "feedMode", "mode");
+  document.getElementById("srcSel").addEventListener("change", (e) => { state.channel = e.target.value; render(); });
+
+  function toast(msg) {
+    const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+  }
+
+  async function previewFile(file) {
+    try {
+      const parsed = /\.xlsx?$/i.test(file.name) ? await parseXLSXBuffer(await file.arrayBuffer()) : parseCSVText(await file.text());
+      const { records, map, rowsIn } = toRecords(parsed.rows, parsed.headers);
+      if (!records.length) { toast("No rows with a readable date. Check the export has a Published/Date column."); return; }
+      Object.assign(state, { all: records, map, rowsIn, demo: false, preview: true, source: file.name + " (preview)" });
+      state.loadedAt = Date.now();
+      render();
+      toast("Previewing " + fmtFull(records.length) + " posts from " + file.name);
+    } catch (e) {
+      toast("Could not read " + file.name + ". Export as CSV or XLSX and try again.");
+    }
+  }
+  const drop = document.getElementById("drop");
+  document.getElementById("fileIn").addEventListener("change", (e) => { if (e.target.files[0]) previewFile(e.target.files[0]); e.target.value = ""; });
+  ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) previewFile(f); });
+  document.getElementById("resetBtn").addEventListener("click", (e) => { e.preventDefault(); state.preview = false; load(true); });
+
+  load(true);
+  setInterval(() => load(false), Math.max(1, CFG.refreshMinutes) * 60e3);
+  setInterval(renderStatus, 60e3);
+})();
+</script>
+</body>
+</html>
