@@ -16,30 +16,6 @@ const STYLES: Record<WeekStatus, { label: string; className: string }> = {
   missing: { label: "Missing", className: "bg-muted text-muted-foreground border-border-strong" },
 };
 
-/**
- * The same status, said in the colour of a name rather than a badge.
- *
- * Green for filed, amber for started, red for nothing. Missing is red and not
- * the badge's grey on purpose: grey is how a page says "ignore this", and the
- * people who have logged nothing are the only ones on the page anybody has to
- * do something about.
- *
- * Colour is never the only signal -- every name coloured this way sits beside
- * the badge or a status column that says the same thing in words, because a
- * red name means nothing to somebody who cannot see red.
- */
-const TEXT: Record<WeekStatus, string> = {
-  draft: "text-warning",
-  submitted: "text-success",
-  returned: "text-destructive",
-  approved: "text-brand",
-  missing: "text-destructive",
-};
-
-export function statusTextClass(status: WeekStatus): string {
-  return TEXT[status] ?? "";
-}
-
 export function StatusBadge({
   status,
   className,

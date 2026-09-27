@@ -77,3 +77,34 @@ export function calculateTotals(
 export function formatHours(value: number): string {
   return `${Number.isInteger(value) ? value : Number(value.toFixed(2))}h`;
 }
+
+/**
+ * How much of a period somebody has actually filed.
+ *
+ * Three buckets, because that is how the question is asked when a lead is
+ * chasing: done, started, not started. The line between the last two is at
+ * half, so somebody who logged one day of five is not sitting in the same
+ * bucket as somebody who logged four.
+ *
+ * Measured on filed hours against the hours the period expects -- not on
+ * days covered, and not including drafts. A draft is a sentence somebody has
+ * not finished; counting it as filled would mean the page says "done" about
+ * work nobody has actually handed in, which is the one thing a chase list
+ * must never do.
+ */
+export type FillLevel = "full" | "partial" | "none";
+
+export function fillLevel(hours: number, expected: number): FillLevel {
+  // A range with no working days in it expects nothing, so anything at all is
+  // everything, and nothing is not a failure to do anything.
+  if (expected <= 0) return hours > 0 ? "full" : "none";
+  const share = hours / expected;
+  if (share >= 1) return "full";
+  return share >= 0.5 ? "partial" : "none";
+}
+
+/** The share of the period filed, as a whole number, for a label. */
+export function fillPercent(hours: number, expected: number): number {
+  if (expected <= 0) return hours > 0 ? 100 : 0;
+  return Math.round((hours / expected) * 100);
+}

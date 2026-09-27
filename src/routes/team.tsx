@@ -8,7 +8,9 @@ import { ExportByClient } from "@/components/ExportByClient";
 import { ExportCsv } from "@/components/ExportCsv";
 import { ExportGrouped } from "@/components/ExportGrouped";
 import { Metric } from "@/components/Metric";
-import { StatusBadge, statusTextClass } from "@/components/StatusBadge";
+import { FillMark } from "@/components/FillMark";
+import { FILL_LEVELS, fillLabel, fillNote, fillTextClass } from "@/components/fill-marks";
+import { StatusBadge } from "@/components/StatusBadge";
 import {
   Select,
   SelectContent,
@@ -19,7 +21,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
 import { fetchExportRows, fetchRangeOverview, type ExportRow } from "@/lib/data/api";
-import { formatHours } from "@/lib/domain/totals";
+import { fillLevel, fillPercent, formatHours, type FillLevel } from "@/lib/domain/totals";
 import { type AdminEmployeeStatus } from "@/lib/domain/types";
 import { cn } from "@/lib/utils";
 import { currentWeekKey, parseDateKey, shortDayLabel, toDateKey, weekEnd } from "@/lib/domain/week";
@@ -96,6 +98,7 @@ function TeamOverview() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [team, setTeam] = useState("all");
+  const [fill, setFill] = useState<FillLevel | "all">("all");
 
   const manages = (teamScope?.reports ?? 0) > 0;
 
@@ -152,11 +155,12 @@ function TeamOverview() {
     return (people ?? []).filter(
       (person) =>
         (team === "all" || person.teams.includes(team)) &&
+        (fill === "all" || fillLevel(person.totalHours, person.expectedHours) === fill) &&
         (needle === "" ||
           person.name.toLowerCase().includes(needle) ||
           person.email.toLowerCase().includes(needle)),
     );
-  }, [people, team, query]);
+  }, [people, team, fill, query]);
 
   /*
    * Rows against the person who logged them, matched on the address rather
@@ -247,6 +251,23 @@ function TeamOverview() {
             ))}
           </SelectContent>
         </Select>
+        {/* The chase, in one control: who is done, who is halfway, who has
+            barely started. The threshold is written beside each one rather
+            than left for somebody to work out from the results. */}
+        <Select value={fill} onValueChange={(value) => setFill(value as FillLevel | "all")}>
+          <SelectTrigger className="h-9 w-[210px] text-[13px]">
+            <SelectValue placeholder="How much is filled" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Filled or not</SelectItem>
+            {FILL_LEVELS.map((level) => (
+              <SelectItem key={level} value={level}>
+                {fillLabel(level)}
+                <span className="ml-2 text-[11px] text-muted-foreground">{fillNote(level)}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {error && (
@@ -309,6 +330,7 @@ function TeamOverview() {
                   <tbody>
                     {filtered.map((person) => {
                       const rows = byEmail.get(person.email.toLowerCase()) ?? [];
+                      const level = fillLevel(person.totalHours, person.expectedHours);
                       return (
                         <Fragment key={person.employeeId}>
                           <tr className="border-b bg-background/70">
@@ -318,18 +340,27 @@ function TeamOverview() {
                               className="px-2.5 py-2.5 text-left font-semibold"
                             >
                               <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                                <span
-                                  className={cn(
-                                    "text-[15px] font-bold",
-                                    statusTextClass(person.status),
-                                  )}
-                                >
-                                  {person.name}
+                                {/* The mark and the colour say the same thing
+                                    twice, on purpose: one of them survives
+                                    colour blindness and the other survives a
+                                    glance. */}
+                                <span className="flex items-center gap-1.5">
+                                  <FillMark level={level} className="size-4" />
+                                  <span
+                                    className={cn("text-[15px] font-bold", fillTextClass(level))}
+                                  >
+                                    {person.name}
+                                  </span>
                                 </span>
                                 <span className="text-[11px] font-normal text-muted-foreground">
                                   {person.email}
                                 </span>
                                 <StatusBadge status={person.status} />
+                                <span
+                                  className={cn("text-[11px] font-semibold", fillTextClass(level))}
+                                >
+                                  {fillPercent(person.totalHours, person.expectedHours)}% filled
+                                </span>
                                 <span className="num ml-auto text-[13px] font-semibold">
                                   {formatHours(person.totalHours)}
                                   <span className="ml-1 text-[11px] font-normal text-muted-foreground">

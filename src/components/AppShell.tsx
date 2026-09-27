@@ -1,14 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import {
-  CalendarClock,
-  ClipboardList,
-  LogOut,
-  Menu,
-  ShieldCheck,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { CalendarClock, History, LogOut, Menu, ShieldCheck, Sparkles, Users } from "lucide-react";
 
 import { AuthGate } from "@/components/AuthGate";
 import { KijamiiMark } from "@/components/KijamiiMark";
@@ -24,8 +16,11 @@ import { cn } from "@/lib/utils";
  * or not they are an admin, and "admin" only for admins.
  */
 const NAV = [
-  { to: "/timesheet", label: "My Timesheet", icon: CalendarClock },
-  { to: "/submissions", label: "Previous Submissions", icon: ClipboardList },
+  // "My Week", not "My Timesheet". The word is what people resist, and the
+  // page is a week either way.
+  { to: "/timesheet", label: "My Week", icon: CalendarClock },
+  // A clipboard said "a list"; the page is the weeks behind you.
+  { to: "/submissions", label: "Previous Submissions", icon: History },
   { to: "/insights", label: "My Time", icon: Sparkles },
   { to: "/team", label: "My Team", icon: Users, only: "team" },
   { to: "/admin", label: "Admin Overview", icon: ShieldCheck, only: "admin" },
@@ -68,7 +63,10 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
             )}
           >
-            <item.icon className="size-4 shrink-0" />
+            {/* The icon takes the accent on the page you are on, so the
+                sidebar answers "where am I" from the shape as well as the
+                fill behind it. */}
+            <item.icon className={cn("size-[17px] shrink-0", active && "text-sidebar-primary")} />
             <span className="truncate">{item.label}</span>
           </Link>
         );

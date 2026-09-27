@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { EG_UAE_CONFIG, KSA_CONFIG, configById, configForMarket } from "./config";
-import { calculateTotals, formatHours } from "./totals";
+import { calculateTotals, fillLevel, fillPercent, formatHours } from "./totals";
 import type { TimesheetEntry } from "./types";
 
 const WEEK = "2026-08-23";
@@ -149,5 +149,42 @@ describe("hour formatting", () => {
     expect(formatHours(7.25)).toBe("7.25h");
     expect(formatHours(0)).toBe("0h");
     expect(formatHours(7.5)).toBe("7.5h");
+  });
+});
+
+describe("fillLevel", () => {
+  it("calls a period filed only when the expected hours are all there", () => {
+    expect(fillLevel(40, 40)).toBe("full");
+    expect(fillLevel(39.75, 40)).toBe("partial");
+  });
+
+  it("puts the line between partial and nothing at half", () => {
+    expect(fillLevel(20, 40)).toBe("partial");
+    expect(fillLevel(19.75, 40)).toBe("none");
+  });
+
+  it("counts over-logging as filled rather than as its own state", () => {
+    // Somebody who logged 50 hours against 40 has filed their week. Whether
+    // they are overworked is a different question, and not this page's.
+    expect(fillLevel(50, 40)).toBe("full");
+  });
+
+  it("does not fail a period that expected nothing", () => {
+    // A range of weekends expects no hours, so nothing is not a failure and
+    // anything at all is everything.
+    expect(fillLevel(0, 0)).toBe("none");
+    expect(fillLevel(3, 0)).toBe("full");
+  });
+});
+
+describe("fillPercent", () => {
+  it("rounds to a whole number a person can read", () => {
+    expect(fillPercent(30, 40)).toBe(75);
+    expect(fillPercent(13, 40)).toBe(33);
+  });
+
+  it("never divides by an expectation of nothing", () => {
+    expect(fillPercent(0, 0)).toBe(0);
+    expect(fillPercent(5, 0)).toBe(100);
   });
 });

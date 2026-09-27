@@ -25,12 +25,12 @@ import { useTimesheet } from "@/lib/timesheet-store";
 export const Route = createFileRoute("/timesheet")({
   head: () => ({
     meta: [
-      { title: "My Timesheet — Kijamii Timesheets" },
+      { title: "My Week — Kijamii Timesheets" },
       {
         name: "description",
         content: "Log weekly hours per client and service, then submit the week for review.",
       },
-      { property: "og:title", content: "My Timesheet — Kijamii Timesheets" },
+      { property: "og:title", content: "My Week — Kijamii Timesheets" },
       {
         property: "og:description",
         content: "Weekly time entry for Kijamii teams with saved drafts and locked submissions.",
@@ -236,7 +236,7 @@ function TimesheetPage() {
 function MyTimesheet() {
   return (
     <AppShell
-      title="My Timesheet"
+      title="My Week"
       actions={
         <div className="hidden items-center gap-2 sm:flex">
           <TimesheetStatus />
