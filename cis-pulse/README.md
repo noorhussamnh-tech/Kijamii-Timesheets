@@ -22,6 +22,23 @@ the browser, so there is no server, no database and no build step. Hosting is fr
 Filters: Build-up / Day 1 / Day 2 / Day 3 / Last 24h, and channel.
 The page checks for new data every 5 minutes. It flags data that is more than 2 hours old during the festival.
 
+## Qualitative insights
+
+| Section | Where it comes from |
+|---|---|
+| The story so far | Written at each insight review and approved before publishing, as `data/insights.json` (copy `insights.example.json`). Optional `quotes` pins hand-picked quotes in place of the automatic ones |
+| What people are talking about | Automatic. Posts are grouped into the `themes` in `config.js`, with share, sentiment and the most engaging line per theme |
+| Moments that moved the conversation | Automatic. Hours at least twice the usual level, with the session, speaker, theme and hashtag behind them |
+| Voices of the festival | Automatic: most engaging, loudest praise, critical voice, and an Arabic or press post. Hidden when `show.feed` is off |
+| Against the last edition | Last edition's export as `data/benchmark.csv`, with `benchmark.firstDay` set in `config.js` |
+
+## Relevance cleaning
+
+Add a `Relevant` column during review (in Google Sheets or Excel) and mark noise `N`.
+Those rows are dropped when the file is published. Recurring noise goes into
+`relevance.excludeTerms` and `relevance.excludeAuthors` in `config.js`, so later
+exports are cleaned automatically. The bottom of the dashboard shows how many rows were removed.
+
 ## Hourly update (about 2 minutes, no code)
 
 1. In Talkwalker, run the saved export template (see *Export template* below) for

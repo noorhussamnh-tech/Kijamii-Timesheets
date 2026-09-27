@@ -1,0 +1,12 @@
+{
+  "updated": "2026-10-03T21:00:00+03:00",
+  "by": "Kijamii insights team",
+  "headline": "One sentence on what the conversation is about right now.",
+  "points": [
+    "Up to three points. Each one is an observation backed by the charts below.",
+    "Name the speaker, session or theme behind it.",
+    "Keep each one short enough to read on a screen across the room."
+  ],
+  "watch": ["Optional. A risk or complaint the team should act on."],
+  "quotes": []
+}

@@ -177,6 +177,51 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .chip.negative { background: rgba(255,46,136,.18); color: #FF7AB3; }
 .chip.src { background: rgba(140,124,255,.16); color: #C3BAFF; }
 
+/* ---------- Qualitative insights ---------- */
+.story {
+  background: linear-gradient(120deg, rgba(239,0,110,.16), rgba(28,18,161,.35) 55%, rgba(90,186,28,.10));
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--radius); padding: 22px 24px;
+  display: grid; gap: 14px;
+}
+.eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--accent); display: flex; gap: 10px; flex-wrap: wrap; }
+.eyebrow span + span { color: var(--muted); font-weight: 500; }
+.story h3 { margin: 0; font: 800 clamp(24px, 3.2vw, 40px)/1.05 var(--display); font-stretch: 78%; text-wrap: balance; max-width: 30ch; }
+.story-cols { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px 28px; }
+@media (max-width: 800px) { .story-cols { grid-template-columns: 1fr; } }
+.story ul { margin: 0; padding-left: 18px; display: grid; gap: 7px; color: var(--ink-2); font-size: 14px; max-width: 70ch; }
+.watch { background: rgba(0,0,0,.22); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; font-size: 13.5px; color: var(--ink-2); align-content: start; }
+.watch b { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #FFB020; }
+.story .none { color: var(--muted); font-size: 13.5px; margin: 0; }
+
+.themes { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.theme { display: grid; gap: 6px; }
+.theme-h { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.theme-h .nm { font-weight: 600; font-size: 14px; }
+.theme-h .fig { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.theme-h .fig b { color: var(--ink); font-size: 14px; }
+.tri { display: flex; height: 8px; border-radius: 4px; overflow: hidden; gap: 2px; background: rgba(255,255,255,.05); }
+.tri span { display: block; height: 100%; }
+.theme q { font-size: 12.5px; color: var(--ink-2); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; quotes: "\201C" "\201D"; }
+
+.moments { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.moment { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: start; background: var(--surface-2); border-radius: 10px; padding: 11px 13px; }
+.moment .big { font: 800 28px/1 var(--display); font-stretch: 80%; color: var(--accent); font-variant-numeric: tabular-nums; }
+.moment .big small { display: block; font: 500 10.5px var(--body); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-top: 3px; }
+.moment .when { font-weight: 600; font-size: 13.5px; }
+.moment .why { font-size: 12.5px; color: var(--ink-2); }
+
+.quotes { display: grid; gap: 14px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .quotes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .quotes { grid-template-columns: 1fr; } }
+.quote { background: var(--surface-2); border-radius: 12px; padding: 14px 15px; display: grid; gap: 8px; align-content: start; position: relative; }
+.quote .kind { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
+.quote blockquote { margin: 0; font-size: 14.5px; line-height: 1.45; color: var(--ink); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+.quote blockquote[dir="rtl"] { font-family: "IBM Plex Sans Arabic", var(--body); }
+.quote .by { font-size: 12px; color: var(--muted); }
+.bench-kpis { display: flex; gap: 10px 28px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
+.bench-kpis b { font: 800 24px/1 var(--display); font-stretch: 80%; color: var(--ink); display: block; margin-bottom: 2px; }
+
 /* ---------- Loader / footer ---------- */
 .drop {
   border: 1.5px dashed rgba(255,255,255,.2); border-radius: var(--radius);
@@ -242,6 +287,8 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     <div class="kpi"><span class="lab">Unique voices</span><span class="val" id="kAuth">–</span><span class="delta" id="kAuthD">&nbsp;</span></div>
   </section>
 
+  <section class="story" id="story" aria-label="The story so far"></section>
+
   <section class="grid">
     <article class="card span-12">
       <div class="card-h">
@@ -255,6 +302,26 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
         </div>
       </div>
       <div class="chart tall" id="cVolume" role="img" aria-label="Line area chart of mentions per hour"></div>
+    </article>
+
+    <article class="card span-7">
+      <div class="card-h"><div><h2>What people are talking about</h2><p class="note">Share of conversations per theme, sentiment split, and the most engaging line</p></div></div>
+      <ul class="themes" id="themes"></ul>
+    </article>
+    <article class="card span-5">
+      <div class="card-h"><div><h2>Moments that moved the conversation</h2><p class="note">Hours well above the usual level, and what drove them</p></div></div>
+      <ul class="moments" id="moments"></ul>
+    </article>
+
+    <article class="card span-12" id="voicesCard">
+      <div class="card-h"><div><h2>Voices of the festival</h2><p class="note">Picked from the posts in this range</p></div></div>
+      <div class="quotes" id="quotes"></div>
+    </article>
+
+    <article class="card span-12">
+      <div class="card-h"><div><h2 id="benchTitle">Against the last edition</h2><p class="note">Conversations per day, lined up by festival day</p></div></div>
+      <div class="bench-kpis" id="benchKpis"></div>
+      <div class="chart short" id="cBench" role="img" aria-label="Daily conversations this year against the last edition"></div>
     </article>
 
     <article class="card span-4">
@@ -363,6 +430,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     lang: ["lang", "language"],
     country: ["country", "extra_source_attributes.world_data.country", "location"],
     hashtags: ["hashtags", "hashtag", "tags"],
+    relevant: ["relevant", "relevance", "keep", "approved", "include"],
   };
 
   function mapColumns(headers) {
@@ -459,20 +527,36 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   }
 
   const TAG_RE = /#[\p{L}\p{N}_]+/gu;
-  function matcher(list, key) {
+  // Latin terms match whole words only, so "ai" does not match "said".
+  // Arabic terms match anywhere, so prefixes like ال and و still match.
+  function termTest(term) {
+    if (/^[a-z0-9 .'&]+$/.test(term)) {
+      const re = new RegExp("(^|[^a-z0-9])" + term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "($|[^a-z0-9])");
+      return (n) => re.test(n);
+    }
+    return (n) => n.includes(term);
+  }
+  function matcher(list, key, minLen) {
     return list.map((it, idx) => ({
       idx,
-      terms: [...(it.skipName ? [] : [it.name]), ...(it[key] || [])].map(normText).filter((t) => t.length > 2),
+      tests: [...(it.skipName ? [] : [it.name]), ...(it[key] || [])].map(normText).map((t) => t.trim()).filter((t) => t.length >= minLen).map(termTest),
     }));
   }
-  const SPK = matcher(CFG.speakers, "aliases");
-  const SES = matcher(CFG.sessions, "keywords");
+  const hits = (list, n) => list.filter((s) => s.tests.some((f) => f(n))).map((s) => s.idx);
+  const SPK = matcher(CFG.speakers, "aliases", 3);
+  const SES = matcher(CFG.sessions, "keywords", 3);
+  const THEMES = CFG.themes || [];
+  const THM = matcher(THEMES.map((t) => ({ ...t, skipName: true })), "keywords", 2);
+  const REL = CFG.relevance || {};
+  const EXCL = (REL.excludeTerms || []).map(normText).map((t) => t.trim()).filter(Boolean).map(termTest);
+  const EXCL_AUTH = new Set((REL.excludeAuthors || []).map((a) => String(a).toLowerCase().replace(/^@/, "")));
   const OFFICIAL = new Set(CFG.officialHashtags.map((t) => t.toLowerCase()));
 
   function toRecords(rows, headers) {
     const map = mapColumns(headers);
     const out = [];
     const seen = new Set();
+    let dropped = 0;
     for (const r of rows) {
       const t = parseDate(r[map.date]);
       if (isNaN(t)) continue;
@@ -494,20 +578,24 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
         }
       }
       const n = " " + normText(all) + " ";
+      const author = String((map.author && r[map.author]) || "Unknown").replace(/^@/, "");
+      if (map.relevant && /^(n|no|0|false|x|irrelevant|exclude)$/i.test(String(r[map.relevant] ?? "").trim())) { dropped++; continue; }
+      if (EXCL.some((f) => f(n)) || EXCL_AUTH.has(author.toLowerCase())) { dropped++; continue; }
       out.push({
         t, text, url,
         sent: parseSentiment(r[map.sentiment]),
-        author: String((map.author && r[map.author]) || "Unknown").replace(/^@/, ""),
+        author,
         src: parseSource(map.source && r[map.source], url),
         eng: num(map.engagement && r[map.engagement]),
         reach: num(map.reach && r[map.reach]),
         tags: [...tags.entries()],
-        spk: SPK.filter((s) => s.terms.some((term) => n.includes(term))).map((s) => s.idx),
-        ses: SES.filter((s) => s.terms.some((term) => n.includes(term))).map((s) => s.idx),
+        spk: hits(SPK, n),
+        ses: hits(SES, n),
+        th: hits(THM, n),
         rtl: AR_RE.test(text.slice(0, 60)),
       });
     }
-    return { records: out, map, rowsIn: rows.length };
+    return { records: out, map, rowsIn: rows.length, dropped };
   }
 
   function parseCSVText(txt) {
@@ -552,7 +640,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
 
   /* ================= Loading ================= */
 
-  const state = { all: [], source: "", demo: false, preview: false, range: "all", channel: "", volMode: "total", feedMode: "latest", loadedAt: 0, map: {}, rowsIn: 0 };
+  const state = { all: [], source: "", demo: false, preview: false, range: "all", channel: "", volMode: "total", feedMode: "latest", loadedAt: 0, map: {}, rowsIn: 0, dropped: 0, insights: null, bench: null };
 
   async function fetchOne(path) {
     const res = await fetch(path + (path.includes("?") ? "&" : "?") + "v=" + Date.now(), { cache: "no-store" });
@@ -577,10 +665,30 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     }
     if (!parts.length) return false;
     const headers = [...new Set(parts.flatMap((p) => p.headers))];
-    const { records, map, rowsIn } = toRecords(parts.flatMap((p) => p.rows), headers);
+    const { records, map, rowsIn, dropped } = toRecords(parts.flatMap((p) => p.rows), headers);
     if (!records.length) return false;
-    Object.assign(state, { all: records, map, rowsIn, demo: false, preview: false, source: used.join(", ") });
+    Object.assign(state, { all: records, map, rowsIn, dropped, demo: false, preview: false, source: used.join(", ") });
+    state.insights = await loadInsights();
+    state.bench = await loadBenchmark();
     return true;
+  }
+
+  // The editor's note: written at each insight review, approved, then published.
+  async function loadInsights() {
+    try {
+      const r = await fetch("data/insights.json?v=" + Date.now(), { cache: "no-store" });
+      return r.ok ? await r.json() : null;
+    } catch (e) { return null; }
+  }
+
+  async function loadBenchmark() {
+    const B = CFG.benchmark || {};
+    if (!B.file || !B.firstDay) return null;
+    try {
+      const p = await fetchOne(B.file);
+      const { records } = toRecords(p.rows, p.headers);
+      return records.length ? { records, firstDay: dayStart(B.firstDay), label: B.label || "Last edition" } : null;
+    } catch (e) { return null; }
   }
 
   /* ---------- Sample data, shown only until the first export is published ---------- */
@@ -607,6 +715,15 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       ["الحضور كبير في قمة الإبداع اليوم في جاكس", "positive"],
       ["ملاحظات من جلسة {x}", "neutral"],
       ["Who else is at {x}? Loved the take from {s}", "positive"],
+      ["The AI conversation at {x} was the most useful thing I've heard this year", "positive"],
+      ["Three pages of notes from the workshop at {x}. {s} is a great teacher", "positive"],
+      ["Parking at JAX District is a nightmare, 40 minutes to get in", "negative"],
+      ["Agencies need to hear what {s} said about brands and budgets at {x}", "positive"],
+      ["Esports and gaming finally treated as a creative industry. Big moment at {x}", "positive"],
+      ["التنظيم ممتاز والحضور كبير. شكراً قمة الإبداع", "positive"],
+      ["الزحمة عند المدخل صعبة، نحتاج تنظيم أفضل", "negative"],
+      ["الذكاء الاصطناعي كان محور جلسة {x}", "neutral"],
+      ["Investors are finally paying attention to the Saudi creative economy. {s} at {x}", "positive"],
     ];
     const weightedSpk = CFG.speakers.map((s, i) => [s.name, Math.pow(0.86, i % 18) * (i < 12 ? 2 : 1)]);
     const wpick = (arr) => { const tot = arr.reduce((a, b) => a + b[1], 0); let r = rnd() * tot; for (const x of arr) { if ((r -= x[1]) <= 0) return x[0]; } return arr[0][0]; };
@@ -625,7 +742,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
         const x = pick(sesPool.length ? sesPool : CFG.sessions);
         const s = wpick(weightedSpk);
         let [tpl, sent] = pick(lines);
-        if (rnd() < 0.25) sent = pick(SENTS);
+        if (rnd() < 0.15) sent = "neutral";
         const tags = [pick(CFG.officialHashtags)];
         if (rnd() < 0.55) tags.push(pick(extraTags));
         if (rnd() < 0.25) tags.push(pick(CFG.officialHashtags));
@@ -641,13 +758,32 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const { records } = toRecords(rows, Object.keys(rows[0]));
     return records;
   }
+  function demoBenchmark(records) {
+    // last edition: same shape a year earlier, about 35% less volume
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
+    const shift = 364 * DAY;
+    return { records: records.filter(() => rnd() > 0.35).map((r) => ({ ...r, t: r.t - shift })), firstDay: DAYS[0] - shift, label: "Last edition (sample)" };
+  }
+  const DEMO_INSIGHTS = {
+    updated: "2026-10-05T23:00:00+03:00",
+    by: "Kijamii insights team",
+    headline: "The evening sessions carry the conversation, and AI owns the room.",
+    points: [
+      "Every spike lands between 18:00 and 21:00, when the Summit Stage is running.",
+      "AI is the biggest theme, and it stays positive. People talk about it as a tool for Saudi talent, not a threat.",
+      "Praise centres on the calibre of Saudi speakers, quoted more often than international names.",
+    ],
+    watch: ["Parking and entrance queues are the main complaint on all three nights. Worth a note to the venue team before Day 3."],
+  };
 
   async function load(initial) {
     if (state.preview) return;
     let ok = false;
     try { ok = await loadPublished(); } catch (e) { ok = false; }
     if (!ok && (initial || state.demo)) {
-      Object.assign(state, { all: demoData(), demo: true, source: "Sample data", map: {}, rowsIn: 0 });
+      const all = demoData();
+      Object.assign(state, { all, demo: true, source: "Sample data", map: {}, rowsIn: 0, dropped: 0, insights: DEMO_INSIGHTS, bench: demoBenchmark(all) });
     }
     state.loadedAt = Date.now();
     render();
@@ -751,7 +887,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
         markArea,
         markPoint: {
           symbol: "circle", symbolSize: 10, itemStyle: { color: C.ink, borderColor: C.accent, borderWidth: 3 },
-          label: { show: true, position: "top", distance: 10, color: C.ink, fontWeight: 600, fontSize: 12, formatter: () => "Peak " + buckets.get(peak).total + " · " + dayLabel(peak) + " " + hh(local(peak)) },
+          label: { show: true, position: (() => { const f = xs.indexOf(peak) / Math.max(1, xs.length - 1); return f > 0.65 ? "left" : f < 0.2 ? "right" : "top"; })(), distance: 10, color: C.ink, fontWeight: 600, fontSize: 12, formatter: () => "Peak " + buckets.get(peak).total + (document.getElementById(id).clientWidth < 600 ? "" : " · " + dayLabel(peak) + " " + hh(local(peak))) },
           data: [{ coord: [peak + S, buckets.get(peak).total] }],
         },
       }];
@@ -969,6 +1105,142 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     }).join("") || '<li class="empty">No conversations in this range yet.</li>';
   }
 
+  /* ================= Qualitative insights ================= */
+
+  function renderStory() {
+    const I = state.insights;
+    const el = document.getElementById("story");
+    if (!I || !I.headline) {
+      el.innerHTML = '<div class="eyebrow"><span>The story so far</span></div><p class="none">The editor\'s note appears here after each insight review. Publish it as <code>data/insights.json</code>.</p>';
+      return;
+    }
+    const when = I.updated && !isNaN(Date.parse(I.updated)) ? timeLabel(Date.parse(I.updated)) + " AST" : "";
+    el.innerHTML =
+      '<div class="eyebrow"><span>The story so far</span>' + (when ? "<span>Updated " + esc(when) + "</span>" : "") + (I.by ? "<span>" + esc(I.by) + "</span>" : "") + (state.demo ? "<span>Sample copy</span>" : "") + "</div>" +
+      '<h3 dir="auto">' + esc(I.headline) + "</h3>" +
+      '<div class="story-cols">' +
+        ((I.points || []).length ? "<ul>" + I.points.map((p) => '<li dir="auto">' + esc(p) + "</li>").join("") + "</ul>" : "<div></div>") +
+        ((I.watch || []).length ? '<div class="watch"><b>Watch</b>' + I.watch.map((w) => '<span dir="auto">' + esc(w) + "</span>").join("") + "</div>" : "") +
+      "</div>";
+  }
+
+  const sentSplit = (list) => { const c = { positive: 0, neutral: 0, negative: 0 }; list.forEach((r) => c[r.sent]++); return c; };
+  const topBy = (list, f) => list.reduce((best, r) => (!best || f(r) > f(best) ? r : best), null);
+  const clip = (t, n) => { t = t.replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1) + "…" : t; };
+
+  function renderThemes(rows) {
+    const el = document.getElementById("themes");
+    const groups = THEMES.map((th, i) => ({ th, list: rows.filter((r) => r.th.includes(i)) })).filter((g) => g.list.length).sort((a, b) => b.list.length - a.list.length);
+    if (!groups.length) { el.innerHTML = '<li class="empty">No themed conversations in this range. Add keywords to themes in config.js.</li>'; return; }
+    const max = groups[0].list.length;
+    el.innerHTML = groups.map((g) => {
+      const n = g.list.length, c = sentSplit(g.list), net = pct(c.positive - c.negative, n);
+      const q = topBy(g.list, (r) => r.eng + r.reach / 1e6);
+      const seg = (k) => (c[k] ? '<span style="flex:' + c[k] + ";background:" + SENT_COLOR[k] + '" title="' + SENT_LABEL[k] + ": " + c[k] + '"></span>' : "");
+      return '<li class="theme"><div class="theme-h"><span class="nm">' + esc(g.th.name) + '</span><span class="fig"><b>' + pct(n, rows.length) + "%</b> · " + fmtFull(n) + " posts · net " + (net > 0 ? "+" : "") + net + "</span></div>" +
+        '<div class="tri" style="width:' + Math.max(6, (n / max) * 100).toFixed(1) + '%">' + seg("positive") + seg("neutral") + seg("negative") + "</div>" +
+        (q ? '<q dir="auto">' + esc(clip(q.text.replace(TAG_RE, "").trim() || q.text, 140)) + "</q>" : "") + "</li>";
+    }).join("");
+  }
+
+  function drivers(list) {
+    const top = (key, names) => {
+      const m = new Map();
+      list.forEach((r) => r[key].forEach((i) => m.set(i, (m.get(i) || 0) + 1)));
+      const best = [...m.entries()].sort((a, b) => b[1] - a[1])[0];
+      return best && best[1] >= 2 ? names[best[0]].name : null;
+    };
+    const tags = tagCounts(list).filter((t) => !OFFICIAL.has(t.k));
+    return [top("ses", CFG.sessions), top("spk", CFG.speakers), top("th", THEMES), tags[0] && tags[0].n >= 2 ? tags[0].disp : null].filter(Boolean);
+  }
+
+  function renderMoments(rows) {
+    const el = document.getElementById("moments");
+    if (rows.length < 20) { el.innerHTML = '<li class="empty">Moments appear once there is enough conversation to compare hours.</li>'; return; }
+    const byHour = new Map();
+    rows.forEach((r) => { const h = floorHour(r.t); if (!byHour.has(h)) byHour.set(h, []); byHour.get(h).push(r); });
+    const hs = [...byHour.keys()].sort((a, b) => a - b);
+    const counts = [];
+    for (let h = hs[0]; h <= hs[hs.length - 1]; h += HOUR) counts.push((byHour.get(h) || []).length);
+    const sorted = [...counts].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)] || 0;
+    const bar = Math.max(median * 2, median + 5, 5);
+    const n = (h) => (byHour.get(h) || []).length;
+    const peaks = hs.filter((h) => n(h) >= bar && n(h) >= n(h - HOUR) && n(h) >= n(h + HOUR)).sort((a, b) => n(b) - n(a)).slice(0, 4);
+    if (!peaks.length) { el.innerHTML = '<li class="empty">No spikes in this range. Every hour is close to the usual level of ' + median + " posts.</li>"; return; }
+    el.innerHTML = peaks.map((h) => {
+      const list = byHour.get(h), c = sentSplit(list), d = drivers(list);
+      const x = median ? (list.length / median).toFixed(1).replace(/\.0$/, "") + "× the usual hour" : "well above the usual hour";
+      return '<li class="moment"><div class="big">' + list.length + "<small>posts</small></div><div><div class=\"when\">" + dayLabel(h) + " · " + hh(local(h)) + "–" + hh(local(h + HOUR)) + ' <span class="chip ' + (c.negative > c.positive ? "negative" : c.positive >= c.neutral ? "positive" : "neutral") + '">' + pct(Math.max(c.positive, c.negative, c.neutral), list.length) + "% " + (c.negative > c.positive ? "negative" : c.positive >= c.neutral ? "positive" : "neutral") + '</span></div><div class="why">' + x + (d.length ? ". Driven by " + d.map(esc).join(" · ") : "") + "</div></div></li>";
+    }).join("");
+  }
+
+  function renderQuotes(rows) {
+    const el = document.getElementById("quotes");
+    const used = new Set();
+    const pick = (list) => { const r = topBy(list.filter((x) => !used.has(x)), (x) => x.eng + x.reach / 1e6); if (r) used.add(r); return r; };
+    let cards;
+    const curated = state.insights && Array.isArray(state.insights.quotes) && state.insights.quotes.length ? state.insights.quotes : null;
+    if (curated) {
+      cards = curated.map((q) => ({ kind: q.kind || "Voice", color: "#C3BAFF", r: { text: q.text || "", author: q.author || "", src: q.channel || "", eng: 0, t: NaN, url: q.url || "", rtl: AR_RE.test(q.text || "") } }));
+    } else {
+      cards = [
+        { kind: "Most engaging", color: "#C3BAFF", r: pick(rows) },
+        { kind: "Loudest praise", color: "#8FE05A", r: pick(rows.filter((r) => r.sent === "positive")) },
+        { kind: "Critical voice", color: "#FF7AB3", r: pick(rows.filter((r) => r.sent === "negative")) },
+        (() => { const ar = pick(rows.filter((r) => r.rtl)); return ar ? { kind: "In Arabic", color: "#FFB020", r: ar } : { kind: "From the press", color: "#FFB020", r: pick(rows.filter((r) => r.src === "News & web")) }; })(),
+      ];
+    }
+    cards = cards.filter((c) => c.r && c.r.text);
+    el.innerHTML = cards.length ? cards.map((c) => {
+      const r = c.r;
+      const link = /^https?:\/\//.test(r.url) ? ' · <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Open</a>' : "";
+      return '<figure class="quote" style="margin:0"><span class="kind" style="color:' + c.color + '">' + esc(c.kind) + '</span><blockquote dir="' + (r.rtl ? "rtl" : "auto") + '">' + esc(clip(r.text, 320)) + '</blockquote><figcaption class="by"><bdi>' + esc(r.author) + "</bdi>" + (r.src ? " · " + esc(r.src) : "") + (r.eng ? " · " + fmt(r.eng) + " eng." : "") + (isNaN(r.t) ? "" : " · " + timeLabel(r.t)) + link + "</figcaption></figure>";
+    }).join("") : '<div class="empty">No posts in this range yet.</div>';
+  }
+
+  function renderBench() {
+    const id = "cBench";
+    const B = state.bench;
+    const kp = document.getElementById("benchKpis");
+    document.getElementById("benchTitle").textContent = "Against " + (B ? B.label : "the last edition");
+    if (!B) {
+      kp.innerHTML = "";
+      return setEmpty(id, "Add last edition's Talkwalker export as data/benchmark.csv and set benchmark.firstDay in config.js to compare.");
+    }
+    ensureCanvas(id);
+    const ch = (r) => !state.channel || r.src === state.channel;
+    const cur = state.all.filter(ch), old = B.records.filter(ch);
+    const rel = (t, first) => Math.floor((t - first) / DAY);
+    const idx = [-7, -6, -5, -4, -3, -2, -1, 0, 1, 2];
+    const count = (list, first) => { const m = new Map(idx.map((i) => [i, 0])); list.forEach((r) => { const d = rel(r.t, first); if (m.has(d)) m.set(d, m.get(d) + 1); }); return m; };
+    const a = count(cur, DAYS[0]), b = count(old, B.firstDay);
+    const latest = cur.length ? Math.max(...cur.map((r) => r.t)) : DAYS[0] - 7 * DAY;
+    const lastIdx = rel(latest, DAYS[0]);
+    const cats = idx.map((i) => (i < 0 ? "D" + i : "Day " + (i + 1)));
+    // "same point": everything up to the same hour relative to opening day
+    const cut = latest - DAYS[0];
+    const inWin = (list, first) => list.filter((r) => r.t - first >= -7 * DAY && r.t - first <= cut).length;
+    const nowA = inWin(cur, DAYS[0]), nowB = inWin(old, B.firstDay);
+    const diff = nowB ? Math.round(((nowA - nowB) / nowB) * 100) : null;
+    kp.innerHTML =
+      "<div><b>" + fmtFull(nowA) + "</b>this year to date</div>" +
+      "<div><b>" + fmtFull(nowB) + "</b>" + esc(B.label) + " at the same point</div>" +
+      (diff == null ? "" : '<div><b style="color:' + (diff >= 0 ? C.pos : C.neg) + '">' + (diff >= 0 ? "+" : "") + diff + "%</b>difference</div>");
+    chart(id).setOption({
+      textStyle: baseText,
+      grid: { left: 40, right: 12, top: 30, bottom: 26 },
+      legend: { ...legendBase, top: 0, left: 0 },
+      tooltip: { ...tooltipBase, trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(255,255,255,.04)" } } },
+      xAxis: { type: "category", data: cats, ...axisBase, axisLabel: { color: C.muted, fontSize: 11, hideOverlap: true } },
+      yAxis: { type: "value", ...axisBase, minInterval: 1, splitNumber: 3 },
+      series: [
+        { name: "This year", type: "bar", barMaxWidth: 22, barGap: "15%", data: idx.map((i) => (i <= lastIdx ? a.get(i) : null)), itemStyle: { color: C.accent, borderRadius: [4, 4, 0, 0] } },
+        { name: B.label, type: "bar", barMaxWidth: 22, data: idx.map((i) => b.get(i)), itemStyle: { color: C.cat[0], borderRadius: [4, 4, 0, 0] } },
+      ],
+    }, true);
+  }
+
   function renderKPIs(rows) {
     const all = state.all.filter((r) => !state.channel || r.src === state.channel);
     const set = (id, v) => { document.getElementById(id).innerHTML = v; };
@@ -1024,7 +1296,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       colMap.innerHTML = "Showing <b>sample data</b> so you can see the layout. It disappears as soon as <code>data/mentions.csv</code> is published.";
     } else {
       const miss = ["date", "text", "sentiment", "author", "source", "engagement", "reach", "url"].filter((f) => !state.map[f]);
-      colMap.innerHTML = "Source: <code>" + esc(state.source) + "</code> · " + fmtFull(state.rowsIn) + " rows read, " + fmtFull(all.length) + " unique posts kept.<br>Columns used: " +
+      colMap.innerHTML = "Source: <code>" + esc(state.source) + "</code> · " + fmtFull(state.rowsIn) + " rows read, " + fmtFull(state.dropped || 0) + " removed as not relevant, " + fmtFull(all.length) + " unique posts kept.<br>Columns used: " +
         Object.entries(state.map).map(([k, v]) => k + " ← <code>" + esc(v) + "</code>").join(", ") +
         (miss.length ? '<br><span style="color:var(--neg)">Missing: ' + miss.join(", ") + ". Add these columns to the Talkwalker export template.</span>" : "");
     }
@@ -1044,11 +1316,17 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     document.getElementById("feedCard").hidden = hideFeed;
     document.getElementById("votesCard").hidden = hideVoices;
     document.getElementById(hideFeed ? "votesCard" : "feedCard").style.gridColumn = hideFeed !== hideVoices ? "span 12" : "";
+    document.getElementById("voicesCard").hidden = hideFeed;
     fillChannels();
     const rows = filtered();
+    renderStory();
     renderStatus();
     renderKPIs(rows);
     renderVolume(rows);
+    renderThemes(rows);
+    renderMoments(rows);
+    renderQuotes(rows);
+    renderBench();
     renderSentDonut(rows);
     renderSentDay(rows);
     renderRankedBars("cSpeakers", rows, "spk", CFG.speakers, "No speaker mentions yet. Add aliases in config.js if names are spelled differently.", (s) => s.org || "");
@@ -1090,9 +1368,9 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   async function previewFile(file) {
     try {
       const parsed = /\.xlsx?$/i.test(file.name) ? await parseXLSXBuffer(await file.arrayBuffer()) : parseCSVText(await file.text());
-      const { records, map, rowsIn } = toRecords(parsed.rows, parsed.headers);
+      const { records, map, rowsIn, dropped } = toRecords(parsed.rows, parsed.headers);
       if (!records.length) { toast("No rows with a readable date. Check the export has a Published/Date column."); return; }
-      Object.assign(state, { all: records, map, rowsIn, demo: false, preview: true, source: file.name + " (preview)" });
+      Object.assign(state, { all: records, map, rowsIn, dropped, demo: false, preview: true, source: file.name + " (preview)", insights: null, bench: null });
       state.loadedAt = Date.now();
       render();
       toast("Previewing " + fmtFull(records.length) + " posts from " + file.name);

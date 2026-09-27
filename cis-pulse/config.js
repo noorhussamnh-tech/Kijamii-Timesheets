@@ -34,7 +34,37 @@ window.CIS_CONFIG = {
   // individual posts or account names shown.
   show: { feed: true, topVoices: true },
 
-  // Official hashtags are highlighted in the hashtag charts.
+  // Relevance cleaning. Posts are dropped when:
+  // - the export has a Relevant / Keep column set to N, No, 0 or FALSE
+  //   (add this column in Google Sheets during review), or
+  // - they contain any excludeTerms, or come from an excludeAuthors account.
+  // Add false positives here as you find them during review.
+  relevance: {
+    excludeTerms: [],
+    excludeAuthors: [],
+  },
+
+  // Last edition, for benchmarking. Export last edition's Talkwalker data
+  // with the same template, save it as data/benchmark.csv, and set the
+  // first festival day so days line up (Day 1 against Day 1).
+  benchmark: {
+    file: "data/benchmark.csv",
+    label: "Last edition",
+    firstDay: "", // e.g. "2025-10-04"
+  },
+
+  // Conversation themes for the qualitative view. A post can sit in more
+  // than one theme. Latin keywords match whole words only ("ai" won't match "said").
+  themes: [
+    { name: "AI & the future of creative work", keywords: ["ai", "artificial intelligence", "genai", "generative", "prompt", "humain", "الذكاء الاصطناعي", "ذكاء اصطناعي"] },
+    { name: "Saudi film & talent", keywords: ["film", "films", "cinema", "actor", "director", "talent", "telfaz11", "فيلم", "سينما", "مخرج", "ممثل", "مواهب"] },
+    { name: "Esports & gaming", keywords: ["esports", "e-sports", "gaming", "gamers", "الرياضات الالكترونيه", "الالعاب", "قيمنق"] },
+    { name: "Advertising & brands", keywords: ["advertising", "campaign", "brand", "brands", "agency", "marketing", "اعلان", "تسويق", "حمله", "العلامه التجاريه"] },
+    { name: "Business of creativity", keywords: ["investment", "investors", "smart money", "budget", "growth", "economy", "startup", "استثمار", "اقتصاد", "الاقتصاد الابداعي"] },
+    { name: "Workshops & learning", keywords: ["workshop", "workshops", "masterclass", "learned", "learning", "ورشه", "ورش", "تعلمت"] },
+    { name: "Venue & experience", keywords: ["queue", "parking", "venue", "sound", "seats", "crowd", "crowded", "tickets", "entrance", "organisation", "organization", "زحمه", "مواقف", "تذاكر", "التنظيم", "الصوت"] },
+  ],
+
   officialHashtags: [
     "#CreativeIndustrySummit",
     "#KSAFestival26",
