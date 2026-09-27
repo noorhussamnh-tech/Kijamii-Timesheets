@@ -74,8 +74,13 @@ function workTypeLabel(row: ExportRow): string {
  * still in draft is counted in the heading and left out of the rows: a
  * half-typed line is not work somebody should be asked about.
  *
+ * "Your team" is you and everybody underneath, not only the direct reports. A
+ * director who asks what their department is working on means the department;
+ * and their own hours are part of what it spent, so a file called the team's
+ * effort that leaves out the person leading it is wrong on its face.
+ *
  * Nothing here decides who is in it. Every call goes to a database function
- * that returns the caller's own reporting line and refuses anybody else, so a
+ * that answers with that set and refuses anybody who leads nobody, so a
  * filter cannot widen it and this page and the admin page cannot disagree
  * about a number.
  *
