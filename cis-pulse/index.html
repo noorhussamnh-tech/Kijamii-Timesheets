@@ -1378,14 +1378,19 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     }).sort((a, b) => a.t - b.t);
     const tot = (h) => h.pos + h.neu + h.neg;
     const now = Date.now();
-    const lastFull = hours.filter((h) => h.t + HOUR <= now).slice(-1)[0];
+    // Talkwalker leaves out empty hours at the end, so line the counts up
+    // against the clock and treat missing hours as zero.
+    const byT = new Map(hours.map((h) => [h.t, h]));
+    const clock = [];
+    for (let t = floorHour(now) - 47 * HOUR; t <= floorHour(now); t += HOUR) clock.push(byT.get(t) || { t, pos: 0, neu: 0, neg: 0 });
+    const lastFull = clock[clock.length - 2];
     const day = hours.filter((h) => h.t >= now - DAY).reduce((a, h) => a + tot(h), 0);
     const upd = Date.parse(LIVE.updated);
     document.getElementById("liveKpis").innerHTML =
       "<div><b>" + (lastFull ? fmtFull(tot(lastFull)) : "–") + "</b>last full hour" + (lastFull ? " (" + hh(local(lastFull.t)) + ")" : "") + "</div>" +
       "<div><b>" + fmtFull(day) + "</b>last 24 hours</div>" +
       "<div><b>" + (isNaN(upd) ? "–" : hh(local(floorHour(upd))).slice(0, 2) + ":" + String(local(upd).getUTCMinutes()).padStart(2, "0")) + "</b>last checked (AST)</div>";
-    const last = hours.slice(-48);
+    const last = clock;
     const id = "cLive"; ensureCanvas(id);
     chart(id).setOption({
       textStyle: baseText,
