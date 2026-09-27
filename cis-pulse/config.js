@@ -28,6 +28,17 @@ window.CIS_CONFIG = {
   // Where the dashboard reads data from. Replace the file each hour.
   // Either a single export, or data/index.json listing several files to merge.
   dataFiles: ["data/mentions.csv", "data/mentions.xlsx"],
+
+  // Google Sheet as the source (recommended). In the sheet: File → Share →
+  // Publish to web → choose a tab → CSV → Publish. Paste each link here.
+  // When postsCsvUrl is set, it replaces dataFiles.
+  sheet: {
+    postsCsvUrl: "", // the Approved tab
+    notesCsvUrl: "", // the Notes tab
+  },
+  insightsBy: "Kijamii insights team",
+  // Leave false on the live site: the story only appears once approved.
+  showDraftNotes: false,
   refreshMinutes: 5,
 
   // Turn these off for a public screen if the client does not want
@@ -40,8 +51,10 @@ window.CIS_CONFIG = {
   // - they contain any excludeTerms, or come from an excludeAuthors account.
   // Add false positives here as you find them during review.
   relevance: {
-    excludeTerms: [],
-    excludeAuthors: [],
+    // Seen in the build-up: a recruitment firm called "قمة الإبداع للتوظيف" (PIE).
+    excludeTerms: ["قمة الإبداع للتوظيف", "قمة الابداع للتوظيف"],
+    // The organiser's own accounts (earned conversation only), and the recruitment firm.
+    excludeAuthors: ["creativeindsa", "creativeindksa", "creativeindmena", "Creative Summit KSA", "Creative Summit قمة الإبداع", "peak_innova_x"],
   },
 
   // Optional: last edition, for benchmarking. Leave firstDay empty to
@@ -57,73 +70,82 @@ window.CIS_CONFIG = {
   // Conversation themes for the qualitative view. A post can sit in more
   // than one theme. Latin keywords match whole words only ("ai" won't match "said").
   themes: [
-    { name: "AI & the future of creative work", keywords: ["ai", "artificial intelligence", "genai", "generative", "prompt", "humain", "الذكاء الاصطناعي", "ذكاء اصطناعي"] },
+    { name: "AI & human creativity", keywords: ["ai", "artificial intelligence", "genai", "generative", "prompt", "humain", "الذكاء الاصطناعي", "ذكاء اصطناعي", "behind every intelligence", "وراء كل ذكاء"] },
+    { name: "Content creators & hosts", keywords: ["content creator", "content creators", "creator pass", "hosts", "صناع المحتوى", "صانع محتوى", "صناع محتوى"] },
     { name: "Saudi film & talent", keywords: ["film", "films", "cinema", "actor", "director", "talent", "telfaz11", "فيلم", "سينما", "مخرج", "ممثل", "مواهب"] },
     { name: "Esports & gaming", keywords: ["esports", "e-sports", "gaming", "gamers", "الرياضات الالكترونيه", "الالعاب", "قيمنق"] },
     { name: "Advertising & brands", keywords: ["advertising", "campaign", "brand", "brands", "agency", "marketing", "اعلان", "تسويق", "حمله", "العلامه التجاريه"] },
     { name: "Business of creativity", keywords: ["investment", "investors", "smart money", "budget", "growth", "economy", "startup", "استثمار", "اقتصاد", "الاقتصاد الابداعي"] },
     { name: "Workshops & learning", keywords: ["workshop", "workshops", "masterclass", "learned", "learning", "ورشه", "ورش", "تعلمت"] },
-    { name: "Venue & experience", keywords: ["queue", "parking", "venue", "sound", "seats", "crowd", "crowded", "tickets", "entrance", "organisation", "organization", "زحمه", "مواقف", "تذاكر", "التنظيم", "الصوت"] },
+    { name: "Venue & experience", keywords: ["queue", "parking", "venue", "sound", "seats", "crowded", "tickets", "entrance", "organisation", "organization", "زحمه", "مواقف", "تذاكر", "التنظيم", "الصوت"] },
   ],
 
+  // The organiser's own accounts. Their posts are excluded above, so the
+  // dashboard shows earned conversation only.
+  officialAccounts: ["creativeindsa", "creativeindksa", "creativeindmena"],
+
   officialHashtags: [
-    "#CreativeIndustrySummit",
-    "#KSAFestival26",
-    "#CIS26",
     "#قمة_الإبداع",
+    "#قمة_الابداع",
+    "#أنا_في_قمة_الإبداع",
+    "#CreativeSummit2026",
+    "#قمة_الإبداع_2026",
+    "#قمة_الابداع_2026",
   ],
 
   speakers: [
-    { name: "Abdullah Oseilan", org: "Hodaj Production", aliases: ["عبدالله العسيلان", "عبدالله عسيلان"] },
-    { name: "Ahmed Arafa", org: "101 Red", aliases: ["أحمد عرفة"] },
-    { name: "Ahmed Hussein", org: "Film Director", aliases: [] },
+    { name: "Abdullah Oseilan", org: "Hodaj Production", aliases: ["عبدالله العسيلان", "عبدالله عسيلان", "@abdullah_oseilan"] },
+    { name: "Ahmed Arafa", org: "101 Red", aliases: ["أحمد عرفة", "@ahmed.gamal.arafa", "Ahmed Gamal Arafa"] },
+    { name: "Ahmed Hussein", org: "Film Director", aliases: ["@ahmedhussein_"] },
     { name: "Ahmed Bayoumi", org: "Berain", aliases: ["Ahmed Mohamed Mohamed Bayoumi", "أحمد بيومي"] },
     { name: "Alaa Yousef Fadan", org: "Telfaz11", aliases: ["Alaa Fadan"] },
     { name: "Amal Dokhan", org: "500 Global", aliases: ["أمل دخان"] },
-    { name: "Amr El-Tobgi", org: "Cannes Lions", aliases: ["Amr El Tobgi", "Amr Eltobgi", "عمرو الطوبجي"] },
+    { name: "Amr El-Tobgi", org: "Cannes Lions", aliases: ["Amr El Tobgi", "Amr Eltobgi", "عمرو الطوبجي", "@atobgiz"] },
     { name: "Aziz Al Jasmi", org: "Film Director", aliases: ["Aziz Aljasmi", "عزيز الجاسمي"] },
     { name: "Bandar Altowairqi", org: "Habbar", aliases: ["Bandar Al Towairqi", "بندر الطويرقي"] },
-    { name: "Christina Habib", org: "Strategic Advisor", aliases: ["كريستينا حبيب"] },
-    { name: "Dana Muhanna", org: "Content Creator", aliases: ["دانة مهنا", "دانه مهنا"] },
+    { name: "Christina Habib", org: "Strategic Advisor", aliases: ["كريستينا حبيب", "@habib.christina", "@christinahabib7"] },
+    { name: "Dana Muhanna", org: "Content Creator", aliases: ["دانة مهنا", "دانه مهنا", "@0dmuh", "@dana_muh17"] },
     { name: "Dina El-Dessouky", org: "Brand & Creative Strategist", aliases: ["Dina El Dessouky", "Dina Eldessouky", "دينا الدسوقي"] },
-    { name: "Fahad Alahmed", org: "The Fullstop Creative Agency", aliases: ["Fahad Al Ahmed", "فهد الأحمد"] },
-    { name: "Faisal Aldokhi", org: "Black Light Films", aliases: ["Faisal Al Dokhi", "فيصل الدوخي"] },
-    { name: "Hassan Alansari", org: "Habbar", aliases: ["Hassan Al Ansari", "حسن الأنصاري"] },
+    { name: "Fahad Alahmed", org: "The Fullstop Creative Agency", aliases: ["Fahad Al Ahmed", "فهد الأحمد", "@fudzworld"] },
+    { name: "Faisal Aldokhi", org: "Black Light Films", aliases: ["Faisal Al Dokhi", "فيصل الدوخي", "@faiisall2", "@faisalaldokhi"] },
+    { name: "Hassan Alansari", org: "Habbar", aliases: ["Hassan Al Ansari", "حسن الأنصاري", "@hassaanings"] },
     { name: "Lina Sakr", org: "101 Red", aliases: ["لينا صقر"] },
-    { name: "Maram Muhandes", org: "PepsiCo", aliases: ["مرام مهندس"] },
+    { name: "Maram Muhandes", org: "PepsiCo", aliases: ["مرام مهندس", "@marammuhandes"] },
     { name: "Maximilian Schneider", org: "HUMAIN", aliases: ["Max Schneider"] },
-    { name: "Meshal Massoud Shukair", org: "101 Red", aliases: ["Meshal Shukair", "مشعل شقير"] },
-    { name: "Mohamed El Bassiouni", org: "Tayarah", aliases: ["Mohamed Bassiouni", "محمد البسيوني"] },
+    { name: "Meshal Massoud Shukair", org: "101 Red", aliases: ["Meshal Shukair", "مشعل شقير", "@m.shukair1"] },
+    { name: "Mohamed El Bassiouni", org: "Tayarah", aliases: ["Mohamed Bassiouni", "محمد البسيوني", "@mohamedelbassiouni"] },
     { name: "Mohamed Rasheedy", org: "101 Platforms", aliases: ["محمد رشيدي"] },
     { name: "Norah Altowairgi", org: "Habbar Creative House", aliases: ["Norah Al Towairgi", "نورة الطويرقي"] },
-    { name: "Rana", org: "OSN", aliases: ["Rana OSN"], skipName: true },
+    { name: "Rana Arafa", org: "OSN", aliases: ["@ranaarafa", "رنا عرفة"] },
     { name: "Rawan Nasser", org: "Programme & Project Manager", aliases: ["روان ناصر"] },
     { name: "Rola Alothman", org: "Norom", aliases: ["رولا العثمان"] },
-    { name: "Saleh Alodan", org: "Kalamashii", aliases: ["صالح العودان"] },
-    { name: "Samer AlHussein", org: "McCann", aliases: ["Samer Al Hussein", "سامر الحسين"] },
+    { name: "Saleh Alodan", org: "Kalamashii", aliases: ["صالح العودان", "@salehio"] },
+    { name: "Samer AlHussein", org: "McCann", aliases: ["Samer Al Hussein", "سامر الحسين", "@ah_samer", "Samer Alhussain"] },
     { name: "Sliman Aldubayei", org: "Salt and Pepper", aliases: ["سليمان الدبيعي"] },
-    { name: "Suliman Alhaddad", org: "TTP", aliases: ["Suliman Al Haddad", "سليمان الحداد"] },
-    { name: "Taghrid Alhowish", org: "Master of Ceremonies", aliases: ["تغريد الحويش"] },
+    { name: "Suliman Alhaddad", org: "TTP", aliases: ["Suliman Al Haddad", "سليمان الحداد", "Suliman Alhadad"] },
+    { name: "Taghrid Alhowish", org: "Master of Ceremonies", aliases: ["تغريد الحويش", "@taghridalhowish", "تغريد الهويش"] },
     { name: "Thekra Al Joaid", org: "Foaj Communications", aliases: ["ذكرى الجعيد"] },
     { name: "Wahab Alshehri", org: "Film Director", aliases: ["وهاب الشهري"] },
     { name: "Yara Murad", org: "Habbar Creative House", aliases: ["يارا مراد"] },
-    { name: "Ahmed Alayad", org: "Fasllah", aliases: ["أحمد العياد"] },
-    { name: "Ahmed Alshouni", org: "Takt", aliases: ["أحمد مصطفى الشوني", "أحمد الشوني"] },
-    { name: "Ahmed Ezzeldin", org: "MBC Group", aliases: ["احمد محمود عز الدين", "أحمد عز الدين"] },
-    { name: "Khaled Alqahtani", org: "Shoot", aliases: ["خالد سعود القحطاني"] },
-    { name: "Dr. Kholoud Almanea", org: "HKB Tech", aliases: ["خلود صالح المانع", "خلود المانع"] },
+    { name: "Iyad Addawood", org: "TTP Media Group", aliases: ["Iyad Al Dawood", "Iyad Aldawood"] },
+    { name: "Karim Ezzat", org: "Tact", aliases: ["كريم عزت"] },
+    { name: "Ahmed Alayad", org: "Fasllah", aliases: ["أحمد العياد", "@ahmedalayyad", "Ahmed Alayyad"] },
+    { name: "Ahmed Alshouni", org: "Takt", aliases: ["أحمد مصطفى الشوني", "أحمد الشوني", "Ahmed Elshouny"] },
+    { name: "Ahmed Ezzeldin", org: "MBC Group", aliases: ["احمد محمود عز الدين", "أحمد عز الدين", "@a.ezzeldin", "@aezzeldin", "@ahmedezzeldin"] },
+    { name: "Khaled Alqahtani", org: "Shoot", aliases: ["خالد سعود القحطاني", "@khaled_s22", "@khaled_q28"] },
+    { name: "Dr. Kholoud Almanea", org: "HKB Tech", aliases: ["خلود صالح المانع", "خلود المانع", "@khulood_almani", "Khulood Almani", "Kholoud Almani"] },
     { name: "Rajeh Alharthi", org: "Media", aliases: ["راجح الحارثي"] },
     { name: "Rawan Albutairi", org: "Saudi Esports Federation", aliases: ["روان عادل البتيري", "روان البتيري"] },
-    { name: "Abdullah Alqallaf", org: "Word Up", aliases: ["عبدالله القلاف"] },
+    { name: "Abdullah Alqallaf", org: "Word Up", aliases: ["عبدالله القلاف", "@gallaf"] },
     { name: "Obaidullah Aleissa", org: "Thmanyah", aliases: ["عبيدالله العيسي"] },
     { name: "Ali Alkalthami", org: "Telfaz11", aliases: ["علي الكلثمي", "Ali Kalthami"] },
-    { name: "Meshal Alsadhan", org: "TTP", aliases: ["مشعل السدحان"] },
-    { name: "Najla Alotaibi", org: "King Salman Park Foundation", aliases: ["نجلا العتيبي", "نجلاء العتيبي"] },
-    { name: "Norah Bin Saidan", org: "Norah Bin Saidan Arts", aliases: ["نوره بن سعيدان", "نورة بن سعيدان"] },
-    { name: "Hashem Alhawsawi", org: "NOB", aliases: ["هاشم سليمان الهوساوي", "هاشم الهوساوي"] },
-    { name: "Hadeel Albreiki", org: "Corporate Communications", aliases: ["هديل البريكي"] },
-    { name: "Yazeed Almujayyil", org: "Actor", aliases: ["يزيد بن عبدالله المجيول", "يزيد المجيول"] },
-    { name: "Youssef Gado", org: "101", aliases: ["يوسف عمرو عبد المجيد جادو", "يوسف جادو", "Youssef Gadou"] },
+    { name: "Meshal Alsadhan", org: "TTP", aliases: ["مشعل السدحان", "@mesh3ls"] },
+    { name: "Najla Alotaibi", org: "King Salman Park Foundation", aliases: ["نجلا العتيبي", "نجلاء العتيبي", "@najlaie"] },
+    { name: "Norah Bin Saidan", org: "Norah Bin Saidan Arts", aliases: ["نوره بن سعيدان", "نورة بن سعيدان", "@nourabinsaidan", "@nourabinsaidan1", "Noura Binsaidan"] },
+    { name: "Hashem Alhawsawi", org: "NOB", aliases: ["هاشم سليمان الهوساوي", "هاشم الهوساوي", "@hashimo93", "Hashim Al Hawsawi"] },
+    { name: "Hadeel Albreiki", org: "Corporate Communications", aliases: ["هديل البريكي", "@hadeel.alburaiki", "@hadeel_alburaiki", "@hadeel_buraiki", "Hadeel Alburaiki"] },
+    { name: "Yazeed Almujayyil", org: "Actor", aliases: ["يزيد بن عبدالله المجيول", "يزيد المجيول", "@yazalmajyul"] },
+    { name: "Youssef Gado", org: "101", aliases: ["يوسف عمرو عبد المجيد جادو", "يوسف جادو", "Youssef Gadou", "@youssefgado_8"] },
   ],
 
   // Talks, workshops and masterclasses. "keywords" are phrases people are

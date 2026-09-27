@@ -176,6 +176,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .chip.neutral { background: rgba(138,135,168,.2); color: #C9C6E8; }
 .chip.negative { background: rgba(255,46,136,.18); color: #FF7AB3; }
 .chip.src { background: rgba(140,124,255,.16); color: #C3BAFF; }
+.chip.official { background: var(--accent); color: #fff; }
 
 /* ---------- Qualitative insights ---------- */
 .story {
@@ -293,8 +294,12 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     <article class="card span-12">
       <div class="card-h">
         <div>
-          <h2>Conversation volume by hour</h2>
-          <p class="note" id="volNote">Riyadh time (AST, UTC+3). Shaded bands are session hours, 17:00–22:00.</p>
+          <h2 id="volTitle">Conversation volume by hour</h2>
+          <p class="note" id="volNote">Riyadh time (AST, UTC+3). Shaded bands are session hours, 17:00–22:00. The quiet build-up shows by day.</p>
+        </div>
+        <div class="seg" id="volGrain" role="group" aria-label="Time step">
+          <button type="button" data-grain="hour">Hourly</button>
+          <button type="button" data-grain="day">Daily</button>
         </div>
         <div class="seg" id="volMode" role="group" aria-label="Volume view">
           <button type="button" data-mode="total" aria-pressed="true">Total</button>
@@ -431,6 +436,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     country: ["country", "extra_source_attributes.world_data.country", "location"],
     hashtags: ["hashtags", "hashtag", "tags"],
     relevant: ["relevant", "relevance", "keep", "approved", "include"],
+    handle: ["handle", "extra_author_attributes.short_name", "screen name"],
   };
 
   function mapColumns(headers) {
@@ -551,6 +557,8 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   const EXCL = (REL.excludeTerms || []).map(normText).map((t) => t.trim()).filter(Boolean).map(termTest);
   const EXCL_AUTH = new Set((REL.excludeAuthors || []).map((a) => String(a).toLowerCase().replace(/^@/, "")));
   const OFFICIAL = new Set(CFG.officialHashtags.map((t) => t.toLowerCase()));
+  const OWNED = new Set((CFG.officialAccounts || []).map((a) => String(a).toLowerCase().replace(/^@/, "")));
+  const ownedChip = (author) => (OWNED.has(String(author).toLowerCase()) ? ' <span class="chip official">Official</span>' : "");
 
   function toRecords(rows, headers) {
     const map = mapColumns(headers);
@@ -580,11 +588,12 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       const n = " " + normText(all) + " ";
       const author = String((map.author && r[map.author]) || "Unknown").replace(/^@/, "");
       if (map.relevant && /^(n|no|0|false|x|irrelevant|exclude)$/i.test(String(r[map.relevant] ?? "").trim())) { dropped++; continue; }
-      if (EXCL.some((f) => f(n)) || EXCL_AUTH.has(author.toLowerCase())) { dropped++; continue; }
+      const handle = String((map.handle && r[map.handle]) || "").replace(/^@/, "");
+      if (EXCL.some((f) => f(n)) || EXCL_AUTH.has(author.toLowerCase()) || EXCL_AUTH.has(handle.toLowerCase())) { dropped++; continue; }
       out.push({
         t, text, url,
         sent: parseSentiment(r[map.sentiment]),
-        author,
+        author, handle,
         src: parseSource(map.source && r[map.source], url),
         eng: num(map.engagement && r[map.engagement]),
         reach: num(map.reach && r[map.reach]),
@@ -640,7 +649,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
 
   /* ================= Loading ================= */
 
-  const state = { all: [], source: "", demo: false, preview: false, range: "all", channel: "", volMode: "total", feedMode: "latest", loadedAt: 0, map: {}, rowsIn: 0, dropped: 0, insights: null, bench: null };
+  const state = { all: [], source: "", demo: false, preview: false, range: "all", channel: "", volMode: "total", grain: "auto", feedMode: "latest", loadedAt: 0, map: {}, rowsIn: 0, dropped: 0, insights: null, bench: null };
 
   async function fetchOne(path) {
     const res = await fetch(path + (path.includes("?") ? "&" : "?") + "v=" + Date.now(), { cache: "no-store" });
@@ -651,6 +660,8 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
 
   async function loadPublished() {
     let files = CFG.dataFiles;
+    const SHEET = CFG.sheet || {};
+    if (SHEET.postsCsvUrl) files = [SHEET.postsCsvUrl];
     try {
       const r = await fetch("data/index.json?v=" + Date.now(), { cache: "no-store" });
       if (r.ok) { const j = await r.json(); if (Array.isArray(j.files) && j.files.length) files = j.files.map((f) => "data/" + f.replace(/^data\//, "")); }
@@ -667,18 +678,38 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const headers = [...new Set(parts.flatMap((p) => p.headers))];
     const { records, map, rowsIn, dropped } = toRecords(parts.flatMap((p) => p.rows), headers);
     if (!records.length) return false;
-    Object.assign(state, { all: records, map, rowsIn, dropped, demo: false, preview: false, source: used.join(", ") });
+    Object.assign(state, { all: records, map, rowsIn, dropped, demo: false, preview: false, source: SHEET.postsCsvUrl ? "Google Sheet (Approved tab)" : used.join(", ") });
     state.insights = await loadInsights();
     state.bench = await loadBenchmark();
     return true;
   }
 
   // The editor's note: written at each insight review, approved, then published.
+  // It comes from the Google Sheet's Notes tab, or from data/insights.json.
   async function loadInsights() {
+    const url = (CFG.sheet || {}).notesCsvUrl;
     try {
+      if (url) {
+        const r = await fetch(url + (url.includes("?") ? "&" : "?") + "v=" + Date.now(), { cache: "no-store" });
+        return r.ok ? notesFromRows(Papa.parse(await r.text(), { skipEmptyLines: true }).data) : null;
+      }
       const r = await fetch("data/insights.json?v=" + Date.now(), { cache: "no-store" });
       return r.ok ? await r.json() : null;
     } catch (e) { return null; }
+  }
+
+  // Notes tab rows: [field, text, status]. Published only once "approved" says yes.
+  function notesFromRows(rows) {
+    const f = {};
+    rows.forEach((r) => { if (r[0]) f[String(r[0]).trim().toLowerCase()] = [String(r[1] || "").trim(), String(r[2] || "").trim()]; });
+    const approved = /^(yes|y|approved|نعم)$/i.test((f.approved || [""])[0]) || /^(yes|y|approved|نعم)$/i.test((f.approved || ["", ""])[1]);
+    if (!approved && !CFG.showDraftNotes) return null;
+    const val = (k) => (f[k] ? f[k][0] : "");
+    return {
+      updated: val("updated"), by: CFG.insightsBy || "", headline: val("headline"), draft: !approved,
+      points: ["point 1", "point 2", "point 3", "point 4"].map(val).filter(Boolean),
+      watch: [val("watch")].filter(Boolean),
+    };
   }
 
   async function loadBenchmark() {
@@ -853,16 +884,30 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     if (el.querySelector(".empty")) el.innerHTML = "";
   }
 
+  // The build-up is too quiet for an hourly line, so show it by day
+  // unless the viewer picks hourly.
+  function effectiveGrain(rows) {
+    if (state.grain === "hour" || state.grain === "day") return state.grain;
+    const latest = rows.length ? Math.max(...rows.map((r) => r.t)) : 0;
+    return (state.range === "all" || state.range === "pre") && latest < DAYS[0] ? "day" : "hour";
+  }
+
   function renderVolume(rows) {
     const id = "cVolume";
     if (!rows.length) return setEmpty(id, "No conversations in this range yet.");
     ensureCanvas(id);
     const [a, b] = rangeBounds();
-    const minT = floorHour(Math.max(a, Math.min(...rows.map((r) => r.t))));
-    const maxT = floorHour(Math.min(b - 1, Math.max(...rows.map((r) => r.t))));
+    const grain = effectiveGrain(rows);
+    const STEP = grain === "day" ? DAY : HOUR;
+    const floorT = grain === "day" ? (t) => Math.floor((t + TZ * HOUR) / DAY) * DAY - TZ * HOUR : floorHour;
+    document.getElementById("volTitle").textContent = "Conversation volume by " + grain;
+    document.querySelectorAll("#volGrain button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.grain === grain)));
+    const minT = floorT(Math.max(a, Math.min(...rows.map((r) => r.t))));
+    const maxT = floorT(Math.min(b - 1, Math.max(...rows.map((r) => r.t))));
     const buckets = new Map();
-    for (let t = minT; t <= maxT; t += HOUR) buckets.set(t, { total: 0, positive: 0, neutral: 0, negative: 0 });
-    for (const r of rows) { const k = buckets.get(floorHour(r.t)); if (k) { k.total++; k[r.sent]++; } }
+    for (let t = minT; t <= maxT; t += STEP) buckets.set(t, { total: 0, positive: 0, neutral: 0, negative: 0 });
+    for (const r of rows) { const k = buckets.get(floorT(r.t)); if (k) { k.total++; k[r.sent]++; } }
+    const when = (t) => (grain === "day" ? dayLabel(t) : dayLabel(t) + " · " + hh(local(t)) + "–" + hh(local(t + HOUR)));
     const xs = [...buckets.keys()];
     const peak = xs.reduce((best, t) => (buckets.get(t).total > buckets.get(best).total ? t : best), xs[0]);
     // ECharts formats time axes in UTC when useUTC is set, so plot Riyadh wall-clock time
@@ -880,7 +925,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
         markArea,
         markPoint: {
           symbol: "circle", symbolSize: 10, itemStyle: { color: C.ink, borderColor: C.accent, borderWidth: 3 },
-          label: { show: true, position: (() => { const f = xs.indexOf(peak) / Math.max(1, xs.length - 1); return f > 0.65 ? "left" : f < 0.2 ? "right" : "top"; })(), distance: 10, color: C.ink, fontWeight: 600, fontSize: 12, formatter: () => "Peak " + buckets.get(peak).total + (document.getElementById(id).clientWidth < 600 ? "" : " · " + dayLabel(peak) + " " + hh(local(peak))) },
+          label: { show: true, position: (() => { const f = xs.indexOf(peak) / Math.max(1, xs.length - 1); return f > 0.65 ? "left" : f < 0.2 ? "right" : "top"; })(), distance: 10, color: C.ink, fontWeight: 600, fontSize: 12, formatter: () => "Peak " + buckets.get(peak).total + (document.getElementById(id).clientWidth < 600 ? "" : " · " + (grain === "day" ? dayLabel(peak) : dayLabel(peak) + " " + hh(local(peak)))) },
           data: [{ coord: [peak + S, buckets.get(peak).total] }],
         },
       }];
@@ -904,14 +949,14 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
         formatter: (ps) => {
           const t = ps[0].value[0] - S;
           const b = buckets.get(t);
-          return "<b>" + dayLabel(t) + " · " + hh(local(t)) + "–" + hh(local(t + HOUR)) + "</b><br>" +
+          return "<b>" + when(t) + "</b><br>" +
             "Mentions: <b>" + b.total + "</b><br>" +
             SENTS.map((s) => '<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + SENT_COLOR[s] + ';margin-right:6px"></span>' + SENT_LABEL[s] + ": " + b[s]).join("<br>");
         },
       },
       xAxis: {
-        type: "time", ...axisBase, splitLine: { show: false }, minInterval: HOUR,
-        axisLabel: { color: C.muted, fontSize: 11, hideOverlap: true, formatter: (v) => { const d = new Date(v); return d.getUTCHours() === 0 ? "{d|" + d.getUTCDate() + " " + MO[d.getUTCMonth()] + "}" : hh(d); }, rich: { d: { color: C.ink, fontWeight: 600 } } },
+        type: "time", ...axisBase, splitLine: { show: false }, minInterval: STEP,
+        axisLabel: { color: C.muted, fontSize: 11, hideOverlap: true, formatter: (v) => { const d = new Date(v); return grain === "day" || d.getUTCHours() === 0 ? "{d|" + d.getUTCDate() + " " + MO[d.getUTCMonth()] + "}" : hh(d); }, rich: { d: { color: C.ink, fontWeight: 600 } } },
       },
       yAxis: { type: "value", ...axisBase, minInterval: 1, splitNumber: 4 },
       dataZoom: [{ type: "inside" }, { type: "slider", height: 18, bottom: 8, borderColor: "transparent", backgroundColor: "rgba(255,255,255,.04)", fillerColor: "rgba(255,46,136,.18)", dataBackground: { lineStyle: { color: C.muted }, areaStyle: { color: "rgba(255,255,255,.06)" } }, handleStyle: { color: C.ink }, textStyle: { color: C.muted }, labelFormatter: (v) => timeLabel(v - S) }],
@@ -1083,7 +1128,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const top = [...m.values()].filter((o) => o.a !== "Unknown").sort((a, b) => b.eng - a.eng || b.n - a.n).slice(0, 10);
     document.querySelector("#authTbl tbody").innerHTML = top.length ? top.map((o) => {
       const src = [...o.src.entries()].sort((a, b) => b[1] - a[1])[0][0];
-      return '<tr><td dir="auto">' + esc(o.a) + '</td><td><span class="chip src">' + esc(src) + '</span></td><td class="num">' + fmtFull(o.n) + '</td><td class="num">' + fmt(o.eng) + '</td><td class="num">' + (o.reach ? fmt(o.reach) : "–") + "</td></tr>";
+      return '<tr><td><bdi>' + esc(o.a) + "</bdi>" + ownedChip(o.a) + '</td><td><span class="chip src">' + esc(src) + '</span></td><td class="num">' + fmtFull(o.n) + '</td><td class="num">' + fmt(o.eng) + '</td><td class="num">' + (o.reach ? fmt(o.reach) : "–") + "</td></tr>";
     }).join("") : '<tr><td colspan="5" class="empty">No authors in this range.</td></tr>';
   }
 
@@ -1094,7 +1139,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       const who = esc(r.author);
       const text = esc(r.text.length > 400 ? r.text.slice(0, 400) + "…" : r.text).replace(/(#[\p{L}\p{N}_]+)/gu, '<b style="color:var(--ink)">$1</b>');
       const link = /^https?:\/\//.test(r.url) ? ' · <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Open</a>' : "";
-      return '<li class="post"><div class="post-h"><span class="who" dir="auto">' + who + '</span><span class="chip src">' + esc(r.src) + '</span><span class="chip ' + r.sent + '">' + SENT_LABEL[r.sent] + "</span><span>" + timeLabel(r.t) + (r.eng ? " · " + fmt(r.eng) + " eng." : "") + link + '</span></div><p dir="' + (r.rtl ? "rtl" : "auto") + '">' + text + "</p></li>";
+      return '<li class="post"><div class="post-h"><span class="who"><bdi>' + who + "</bdi>" + ownedChip(r.author) + '</span><span class="chip src">' + esc(r.src) + '</span><span class="chip ' + r.sent + '">' + SENT_LABEL[r.sent] + "</span><span>" + timeLabel(r.t) + (r.eng ? " · " + fmt(r.eng) + " eng." : "") + link + '</span></div><p dir="' + (r.rtl ? "rtl" : "auto") + '">' + text + "</p></li>";
     }).join("") || '<li class="empty">No conversations in this range yet.</li>';
   }
 
@@ -1107,9 +1152,9 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       el.innerHTML = '<div class="eyebrow"><span>The story so far</span></div><p class="none">The editor\'s note appears here after each insight review. Publish it as <code>data/insights.json</code>.</p>';
       return;
     }
-    const when = I.updated && !isNaN(Date.parse(I.updated)) ? timeLabel(Date.parse(I.updated)) + " AST" : "";
+    const when = !I.updated ? "" : !isNaN(Date.parse(I.updated)) && /T|Z|\+/.test(I.updated) ? timeLabel(Date.parse(I.updated)) + " AST" : I.updated;
     el.innerHTML =
-      '<div class="eyebrow"><span>The story so far</span>' + (when ? "<span>Updated " + esc(when) + "</span>" : "") + (I.by ? "<span>" + esc(I.by) + "</span>" : "") + (state.demo ? "<span>Sample copy</span>" : "") + "</div>" +
+      '<div class="eyebrow"><span>The story so far</span>' + (when ? "<span>Updated " + esc(when) + "</span>" : "") + (I.by ? "<span>" + esc(I.by) + "</span>" : "") + (state.demo ? "<span>Sample copy</span>" : "") + (I.draft ? '<span style="color:#FFB020">Draft, awaiting approval</span>' : "") + "</div>" +
       '<h3 dir="auto">' + esc(I.headline) + "</h3>" +
       '<div class="story-cols">' +
         ((I.points || []).length ? "<ul>" + I.points.map((p) => '<li dir="auto">' + esc(p) + "</li>").join("") + "</ul>" : "<div></div>") +
@@ -1384,6 +1429,10 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   }
   segment("rangeSeg", "range", "range");
   segment("volMode", "volMode", "mode");
+  document.getElementById("volGrain").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    state.grain = b.dataset.grain; render();
+  });
   segment("feedMode", "feedMode", "mode");
   document.getElementById("srcSel").addEventListener("change", (e) => { state.channel = e.target.value; render(); });
 
