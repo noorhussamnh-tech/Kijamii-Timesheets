@@ -182,7 +182,7 @@ const BEHIND: Line[] = [
   { emoji: "🫱", text: "Plenty of days open. One at a time is the only way anybody does this." },
   { emoji: "🛋️", text: "Five minutes now saves an unpleasant hour at the end of the month." },
   { emoji: "🔦", text: "Start anywhere. The hardest part is deciding which day to do first." },
-  { emoji: "🧊", text: "It is smaller than it feels. One entry proves that." },
+  { emoji: "🧊", text: "The pile is shorter than it looks from here. One entry and you see it." },
 ];
 
 /** Deterministic PRNG, so the same day produces the same order everywhere. */
