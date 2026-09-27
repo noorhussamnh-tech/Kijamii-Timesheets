@@ -319,7 +319,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     </article>
 
     <article class="card span-12">
-      <div class="card-h"><div><h2 id="benchTitle">Against the last edition</h2><p class="note">Conversations per day, lined up by festival day</p></div></div>
+      <div class="card-h"><div><h2 id="benchTitle">Festival lift</h2><p class="note" id="benchNote">Conversations per day against the build-up average</p></div></div>
       <div class="bench-kpis" id="benchKpis"></div>
       <div class="chart short" id="cBench" role="img" aria-label="Daily conversations this year against the last edition"></div>
     </article>
@@ -758,13 +758,6 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const { records } = toRecords(rows, Object.keys(rows[0]));
     return records;
   }
-  function demoBenchmark(records) {
-    // last edition: same shape a year earlier, about 35% less volume
-    let seed = 7;
-    const rnd = () => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
-    const shift = 364 * DAY;
-    return { records: records.filter(() => rnd() > 0.35).map((r) => ({ ...r, t: r.t - shift })), firstDay: DAYS[0] - shift, label: "Last edition (sample)" };
-  }
   const DEMO_INSIGHTS = {
     updated: "2026-10-05T23:00:00+03:00",
     by: "Kijamii insights team",
@@ -783,7 +776,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     try { ok = await loadPublished(); } catch (e) { ok = false; }
     if (!ok && (initial || state.demo)) {
       const all = demoData();
-      Object.assign(state, { all, demo: true, source: "Sample data", map: {}, rowsIn: 0, dropped: 0, insights: DEMO_INSIGHTS, bench: demoBenchmark(all) });
+      Object.assign(state, { all, demo: true, source: "Sample data", map: {}, rowsIn: 0, dropped: 0, insights: DEMO_INSIGHTS, bench: null });
     }
     state.loadedAt = Date.now();
     render();
@@ -1203,11 +1196,9 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const id = "cBench";
     const B = state.bench;
     const kp = document.getElementById("benchKpis");
-    document.getElementById("benchTitle").textContent = "Against " + (B ? B.label : "the last edition");
-    if (!B) {
-      kp.innerHTML = "";
-      return setEmpty(id, "Add last edition's Talkwalker export as data/benchmark.csv and set benchmark.firstDay in config.js to compare.");
-    }
+    document.getElementById("benchTitle").textContent = B ? "Against " + B.label : "Festival lift";
+    document.getElementById("benchNote").textContent = B ? "Conversations per day, lined up by festival day" : "Conversations per day against the build-up average";
+    if (!B) return renderLift(id, kp);
     ensureCanvas(id);
     const ch = (r) => !state.channel || r.src === state.channel;
     const cur = state.all.filter(ch), old = B.records.filter(ch);
@@ -1238,6 +1229,42 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
         { name: "This year", type: "bar", barMaxWidth: 22, barGap: "15%", data: idx.map((i) => (i <= lastIdx ? a.get(i) : null)), itemStyle: { color: C.accent, borderRadius: [4, 4, 0, 0] } },
         { name: B.label, type: "bar", barMaxWidth: 22, data: idx.map((i) => b.get(i)), itemStyle: { color: C.cat[0], borderRadius: [4, 4, 0, 0] } },
       ],
+    }, true);
+  }
+
+  // Without last edition's data, the festival is measured against its own build-up.
+  function renderLift(id, kp) {
+    const ch = (r) => !state.channel || r.src === state.channel;
+    const cur = state.all.filter(ch);
+    if (!cur.length) { kp.innerHTML = ""; return setEmpty(id, "No data yet"); }
+    const first = Math.min(...cur.map((r) => r.t)), latest = Math.max(...cur.map((r) => r.t));
+    const d0 = Math.max(Math.floor((first - DAYS[0]) / DAY), -14);
+    const d1 = Math.min(Math.floor((latest - DAYS[0]) / DAY), 2);
+    const idx = []; for (let i = d0; i <= Math.max(d1, 2); i++) idx.push(i);
+    const m = new Map(idx.map((i) => [i, 0]));
+    cur.forEach((r) => { const d = Math.floor((r.t - DAYS[0]) / DAY); if (m.has(d)) m.set(d, m.get(d) + 1); });
+    // average of complete build-up days only (the first day of an export is usually partial)
+    const pre = idx.filter((i) => i < 0 && i > d0 && (i < d1 || d1 >= 0));
+    const base = pre.length ? pre.reduce((a, i) => a + m.get(i), 0) / pre.length : 0;
+    const fest = [0, 1, 2].filter((i) => i <= d1);
+    const best = fest.length ? fest.reduce((a, i) => (m.get(i) > m.get(a) ? i : a), fest[0]) : null;
+    kp.innerHTML =
+      "<div><b>" + (base ? fmtFull(Math.round(base)) : "–") + "</b>average build-up day" + (pre.length ? " (" + pre.length + " days)" : "") + "</div>" +
+      (best != null && base ? "<div><b>" + fmtFull(m.get(best)) + "</b>best festival day so far (Day " + (best + 1) + ")</div>" +
+        '<div><b style="color:' + C.accent + '">' + (m.get(best) / base).toFixed(1).replace(/\.0$/, "") + "×</b>lift on the build-up</div>" : "<div>Lift appears from Day 1.</div>");
+    ensureCanvas(id);
+    chart(id).setOption({
+      textStyle: baseText,
+      grid: { left: 40, right: 12, top: 24, bottom: 26 },
+      tooltip: { ...tooltipBase, trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(255,255,255,.04)" } },
+        formatter: (ps) => { const i = idx[ps[0].dataIndex], v = m.get(i); return "<b>" + dayLabel(DAYS[0] + i * DAY) + (i >= 0 ? " · Day " + (i + 1) : "") + "</b><br>" + fmtFull(v) + " posts" + (base ? "<br>" + (v / base).toFixed(1) + "× the build-up average" : ""); } },
+      xAxis: { type: "category", data: idx.map((i) => (i < 0 ? "D" + i : "Day " + (i + 1))), ...axisBase, axisLabel: { color: C.muted, fontSize: 11, hideOverlap: true } },
+      yAxis: { type: "value", ...axisBase, minInterval: 1, splitNumber: 3 },
+      series: [{
+        type: "bar", barMaxWidth: 26,
+        data: idx.map((i) => ({ value: i <= d1 ? m.get(i) : null, itemStyle: { color: i >= 0 ? C.accent : C.cat[0], borderRadius: [4, 4, 0, 0] } })),
+        markLine: base ? { symbol: "none", silent: true, lineStyle: { color: C.ink2, type: "dashed", width: 1.5 }, label: { color: C.ink2, fontSize: 11, formatter: "Build-up avg " + Math.round(base), position: "insideStartTop" }, data: [{ yAxis: base }] } : undefined,
+      }],
     }, true);
   }
 

@@ -44,9 +44,10 @@ window.CIS_CONFIG = {
     excludeAuthors: [],
   },
 
-  // Last edition, for benchmarking. Export last edition's Talkwalker data
-  // with the same template, save it as data/benchmark.csv, and set the
-  // first festival day so days line up (Day 1 against Day 1).
+  // Optional: last edition, for benchmarking. Leave firstDay empty to
+  // measure the festival against its own build-up instead ("Festival lift").
+  // If last edition's data becomes available (e.g. from the organiser),
+  // save it as data/benchmark.csv and set its first festival day.
   benchmark: {
     file: "data/benchmark.csv",
     label: "Last edition",

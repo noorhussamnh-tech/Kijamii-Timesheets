@@ -30,7 +30,7 @@ The page checks for new data every 5 minutes. It flags data that is more than 2 
 | What people are talking about | Automatic. Posts are grouped into the `themes` in `config.js`, with share, sentiment and the most engaging line per theme |
 | Moments that moved the conversation | Automatic. Hours at least twice the usual level, with the session, speaker, theme and hashtag behind them |
 | Voices of the festival | Automatic: most engaging, loudest praise, critical voice, and an Arabic or press post. Hidden when `show.feed` is off |
-| Against the last edition | Last edition's export as `data/benchmark.csv`, with `benchmark.firstDay` set in `config.js` |
+| Festival lift | Automatic. Each festival day against the average build-up day. If last edition's data becomes available, save it as `data/benchmark.csv` and set `benchmark.firstDay` in `config.js`, and the chart compares Day 1 with Day 1 |
 
 ## Relevance cleaning
 
