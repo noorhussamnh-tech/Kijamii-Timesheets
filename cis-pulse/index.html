@@ -289,6 +289,14 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     <div class="kpi"><span class="lab">Unique voices</span><span class="val" id="kAuth">–</span><span class="delta" id="kAuthD">&nbsp;</span></div>
   </section>
 
+  <section class="card" id="liveCard" hidden aria-label="Live count from Talkwalker">
+    <div class="card-h">
+      <div><h2>Live count from Talkwalker</h2><p class="note" id="liveNote">Every match for the topic, before cleaning. Updates hourly.</p></div>
+      <div class="bench-kpis" id="liveKpis"></div>
+    </div>
+    <div class="chart short" id="cLive" style="height:150px" role="img" aria-label="Talkwalker matches per hour, last 48 hours"></div>
+  </section>
+
   <section class="story" id="story" aria-label="The story so far"></section>
 
   <section class="grid">
@@ -831,6 +839,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       const all = demoData();
       Object.assign(state, { all, demo: true, source: "Sample data", map: {}, rowsIn: 0, dropped: 0, insights: DEMO_INSIGHTS, bench: null });
     }
+    await loadLive();
     state.loadedAt = Date.now();
     render();
   }
@@ -1345,6 +1354,49 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     }, true);
   }
 
+  // Hourly counts written by the scheduled Talkwalker job (data/live.json).
+  let LIVE = null;
+  async function loadLive() {
+    try {
+      const r = await fetch("data/live.json?v=" + Date.now(), { cache: "no-store" });
+      LIVE = r.ok ? await r.json() : null;
+    } catch (e) { LIVE = null; }
+  }
+  function renderLive() {
+    const card = document.getElementById("liveCard");
+    const d = LIVE && LIVE.sentiment && LIVE.sentiment.data;
+    if (!d || !d.length || state.preview) { card.hidden = true; return; }
+    card.hidden = false;
+    // header gives the order of values (POSITIVE, NEUTRAL, NEGATIVE); fall back to that order
+    const hdr = (LIVE.sentiment.header || []).map((h) => String(h && (h.name || h.label || h.id || h)).toLowerCase());
+    const idx = (k) => { const i = hdr.findIndex((h) => h.startsWith(k)); return i >= 0 ? i : { pos: 0, neu: 1, neg: 2 }[k]; };
+    const hours = d.map((x) => {
+      const v = Array.isArray(x.v) ? x.v : [Number(x.v || 0), 0, 0];
+      return { t: Number(x.t), pos: v[idx("pos")] || 0, neu: v[idx("neu")] || 0, neg: v[idx("neg")] || 0 };
+    }).sort((a, b) => a.t - b.t);
+    const tot = (h) => h.pos + h.neu + h.neg;
+    const now = Date.now();
+    const lastFull = hours.filter((h) => h.t + HOUR <= now).slice(-1)[0];
+    const day = hours.filter((h) => h.t >= now - DAY).reduce((a, h) => a + tot(h), 0);
+    const upd = Date.parse(LIVE.updated);
+    document.getElementById("liveKpis").innerHTML =
+      "<div><b>" + (lastFull ? fmtFull(tot(lastFull)) : "–") + "</b>last full hour" + (lastFull ? " (" + hh(local(lastFull.t)) + ")" : "") + "</div>" +
+      "<div><b>" + fmtFull(day) + "</b>last 24 hours</div>" +
+      "<div><b>" + (isNaN(upd) ? "–" : hh(local(floorHour(upd))).slice(0, 2) + ":" + String(local(upd).getUTCMinutes()).padStart(2, "0")) + "</b>last checked (AST)</div>";
+    const last = hours.slice(-48);
+    const id = "cLive"; ensureCanvas(id);
+    chart(id).setOption({
+      textStyle: baseText,
+      grid: { left: 36, right: 8, top: 8, bottom: 22 },
+      tooltip: { ...tooltipBase, trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(255,255,255,.04)" } },
+        formatter: (ps) => { const h = last[ps[0].dataIndex]; return "<b>" + dayLabel(h.t) + " · " + hh(local(h.t)) + "</b><br>" + tot(h) + " matches<br>" + SENTS.map((s, i) => SENT_LABEL[s] + ": " + [h.pos, h.neu, h.neg][i]).join(" · "); } },
+      xAxis: { type: "category", data: last.map((h) => (local(h.t).getUTCHours() === 0 ? dayLabel(h.t) : hh(local(h.t)))), ...axisBase, axisLabel: { color: C.muted, fontSize: 10, hideOverlap: true } },
+      yAxis: { type: "value", ...axisBase, minInterval: 1, splitNumber: 2 },
+      series: SENTS.map((s, i) => ({ name: SENT_LABEL[s], type: "bar", stack: "l", barMaxWidth: 10, data: last.map((h) => [h.pos, h.neu, h.neg][i]),
+        itemStyle: { color: SENT_COLOR[s], borderRadius: i === 2 ? [3, 3, 0, 0] : 0 } })),
+    }, true);
+  }
+
   function renderKPIs(rows) {
     const all = state.all.filter((r) => !state.channel || r.src === state.channel);
     const set = (id, v) => { document.getElementById(id).innerHTML = v; };
@@ -1427,6 +1479,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     fillChannels();
     const rows = filtered();
     renderStory();
+    renderLive();
     renderStatus();
     renderKPIs(rows);
     renderVolume(rows);
