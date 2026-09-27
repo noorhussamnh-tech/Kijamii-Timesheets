@@ -403,11 +403,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       <div class="tbl-wrap"><table id="authTbl"><thead><tr><th data-i18n="c_author">Account</th><th data-i18n="c_channel">Channel</th><th class="num" data-i18n="c_posts">Posts</th><th class="num" data-i18n="c_eng">Engagement</th></tr></thead><tbody></tbody></table></div>
     </article>
 
-    <article class="card span-12">
-      <div class="card-h"><div><h2 id="benchTitle"></h2><p class="note" id="benchNote"></p></div></div>
-      <div class="bench-kpis" id="benchKpis"></div>
-      <div class="chart short" id="cBench" role="img"></div>
-    </article>
+
 
     <article class="card span-12" id="opsCard" hidden>
       <div class="card-h"><div><h2>Team only: preview an export</h2><p class="note">Drop a CSV or XLSX to check it before publishing. The preview stays in this browser. Only visible with ?team in the address.</p></div></div>
@@ -536,9 +532,10 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     url: ["url", "link", "permalink", "post url"],
     lang: ["lang", "language"],
     country: ["country", "extra_source_attributes.world_data.country", "location"],
-    hashtags: ["hashtags", "hashtag", "tags"],
+    hashtags: ["hashtags", "hashtag"],
     relevant: ["relevant", "relevance", "keep", "approved", "include"],
     handle: ["handle", "extra_author_attributes.short_name", "screen name"],
+    bio: ["extra_author_attributes.description", "author description", "bio"],
   };
 
   function mapColumns(headers) {
@@ -549,7 +546,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
         const i = norm.indexOf(c);
         if (i !== -1 && !Object.values(map).includes(headers[i])) { map[field] = headers[i]; break; }
       }
-      if (!map[field]) {
+      if (!map[field] && field !== "hashtags") {
         // loose match, e.g. "Sentiment (score)"
         const i = norm.findIndex((h, k) => cands.some((c) => h.startsWith(c)) && !Object.values(map).includes(headers[k]));
         if (i !== -1) map[field] = headers[i];
@@ -700,7 +697,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       out.push({
         t, text, url,
         sent: parseSentiment(r[map.sentiment]),
-        author, handle,
+        author, handle, bio: map.bio ? String(r[map.bio] || "") : "",
         src: parseSource(map.source && r[map.source], url),
         eng: num(map.engagement && r[map.engagement]),
         reach: num(map.reach && r[map.reach]),
@@ -1176,14 +1173,20 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     }, true);
   }
 
-  const isMedia = (r) => r.src === "News & web" || r.src === "Blogs";
-  // Only approved hashtags are shown: the official ones plus the event-related
-  // ones listed in config.js (hashtagAllowlist). Nothing else can appear.
-  const TAG_ALLOW = new Set([...CFG.officialHashtags, ...(CFG.hashtagAllowlist || [])].map((x) => x.toLowerCase()));
+  // Media: news sites and blogs, plus social accounts run by outlets or
+  // journalists (spotted from their bio or name, or listed in config.js).
+  const MEDIA_RE = /صحيف|جريدة|أخبار|اخبار|الإخبارية|الاخبارية|مجلة|إذاع|اذاع|تلفزيون|تليفزيون|قناة|منصة إعلامية|منصة اعلامية|عاجل|إعلامي|اعلامي|\bnews\b|magazine|\bnewspaper|\bmedia\b|\btv\b|radio|journalist|editor/i;
+  const MEDIA_ACC = new Set((CFG.mediaAccounts || []).map((x) => x.toLowerCase().replace(/^@/, "")));
+  const isRT = (r) => /^RT @/.test(r.text || "");
+  const isMedia = (r) => r.src === "News & web" || r.src === "Blogs" || MEDIA_ACC.has(String(r.handle || "").toLowerCase()) || MEDIA_RE.test(r.author + " " + (r.handle || "") + " " + (r.bio || ""));
+  // Hashtags people use. Media outlets add their own house hashtags, so
+  // those count only when official; blocked tags never show.
+  const TAG_BLOCK = new Set((CFG.hashtagBlocklist || []).map((x) => x.toLowerCase()));
   function tagCounts(rows) {
     const m = new Map();
     for (const r of rows) for (const [k, disp] of r.tags) {
-      if (!TAG_ALLOW.has(k)) continue;
+      if (TAG_BLOCK.has(k)) continue;
+      if ((isMedia(r) || isRT(r)) && !OFFICIAL.has(k)) continue;
       if (!m.has(k)) m.set(k, { k, disp, n: 0 });
       m.get(k).n++;
     }
@@ -1283,7 +1286,8 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   const AV_COL = ["#8C7CFF", "#C08400", "#FF2E88", "#1496B5", "#4E9E18", "#B85CE0"];
   function renderFeed(rows) {
     const who = state.feedWho || "people";
-    const pool = rows.filter((r) => r.sent !== "negative" && r.text && (who === "media" ? isMedia(r) : !isMedia(r)));
+    // People: original posts only (a retweet repeats someone else's words)
+    const pool = rows.filter((r) => r.sent !== "negative" && r.text && (who === "media" ? isMedia(r) : !isMedia(r) && !isRT(r)));
     const list = state.feedMode === "top" ? [...pool].sort((a, b) => b.eng - a.eng || b.t - a.t) : [...pool].sort((a, b) => b.t - a.t);
     document.getElementById("feedNote").textContent = t(who === "media" ? "feed_media" : "feed_people");
     const items = list.slice(0, feedShown).map((r, i) => {
@@ -1551,7 +1555,6 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     renderTags(rows);
     renderHeat(rows);
     renderAuthors(rows);
-    renderBench();
   }
 
   /* ================= Controls ================= */

@@ -94,13 +94,12 @@ window.CIS_CONFIG = {
   // dashboard shows earned conversation only.
   officialAccounts: ["creativeindsa", "creativeindksa", "creativeindmena"],
 
-  // Event-related hashtags that may also appear in the hashtag charts.
-  // Only these and the official hashtags are ever shown.
-  hashtagAllowlist: [
-    "#CreativeSummit", "#CreativeSummitRiyadh", "#CreativeIndMena", "#SaudiCreativity",
-    "#JAXDistrict", "#حي_جاكس", "#قمة_الابداع_2026", "#الاقتصاد_الإبداعي", "#الاقتصاد_الابداعي",
-    "#وراء_كل_ذكاء_إنسان", "#CreativeEconomy", "#SaudiCreatives",
-  ],
+  // Hashtags that never show (add one here if anything unwanted appears).
+  hashtagBlocklist: [],
+
+  // Social accounts run by media outlets whose bio doesn't say so. Their
+  // posts go to the Media tab. Most outlets are recognised from their bio.
+  mediaAccounts: ["scenenowsaudi", "Saudi_con", "arabnews", "TheBrewAE", "upwaab", "trndflash", "arabian65847"],
 
   officialHashtags: [
     "#قمة_الإبداع",
