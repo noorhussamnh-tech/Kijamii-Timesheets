@@ -13,8 +13,6 @@ import { Metric } from "@/components/Metric";
 import { EmployeeExportMenu } from "@/components/EmployeeExportMenu";
 import { SyncDirectory } from "@/components/SyncDirectory";
 import { ExportTimeDedication } from "@/components/ExportTimeDedication";
-import { FillMark } from "@/components/FillMark";
-import { fillTextClass } from "@/components/fill-marks";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Select,
@@ -26,10 +24,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
 import { fetchRangeOverview } from "@/lib/data/api";
-import { fillLevel, formatHours } from "@/lib/domain/totals";
+import { formatHours } from "@/lib/domain/totals";
 import { type AdminEmployeeStatus } from "@/lib/domain/types";
 import { currentWeekKey, parseDateKey, toDateKey, weekEnd } from "@/lib/domain/week";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -357,17 +354,12 @@ function AdminOverview() {
                       >
                         <td className="px-3 py-2.5">
                           <div className="min-w-0">
-                            <p className="flex items-center gap-1.5 font-medium">
-                              <FillMark level={fillLevel(row.totalHours, row.expectedHours)} />
-                              <span
-                                className={cn(
-                                  "truncate",
-                                  fillTextClass(fillLevel(row.totalHours, row.expectedHours)),
-                                )}
-                              >
-                                {row.name}
-                              </span>
-                            </p>
+                            {/* No colour and no mark on this one. It is the whole company,
+                and a hundred and fourteen red names is not a signal, it is a
+                wall -- the Status column already says which is which, once,
+                where somebody looks for it. The marks stay on My Team, where
+                the list is short enough for them to pick anything out. */}
+                            <p className="truncate font-medium">{row.name}</p>
                             <p className="truncate text-[11px] text-muted-foreground">
                               {row.email}
                             </p>
