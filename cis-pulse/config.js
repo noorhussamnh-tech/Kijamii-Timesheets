@@ -42,8 +42,9 @@ window.CIS_CONFIG = {
   // When postsCsvUrl is set, it replaces dataFiles.
   sheet: {
     rawCsvUrl: "", // the Raw tab: paste each Talkwalker export here
+    postsCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTiobvMh6smgFHiSiSHs2NFM32_KO-OGddiq3XEMyFFNJDEhXFRpJ0fMZ6ekQ02dw6zVm8lNu5FRbYm/pub?gid=1263254393&single=true&output=csv", // the Approved tab (used until Raw is set)
     overridesCsvUrl: "", // the Overrides tab: URL + Y/N to keep or hide a post
-    notesCsvUrl: "", // the Notes tab: the story, published once approved
+    notesCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTiobvMh6smgFHiSiSHs2NFM32_KO-OGddiq3XEMyFFNJDEhXFRpJ0fMZ6ekQ02dw6zVm8lNu5FRbYm/pub?gid=1124441607&single=true&output=csv", // the Notes tab: the story, published once approved
   },
   insightsBy: "Kijamii insights team",
   // Leave false on the live site: the story only appears once approved.
