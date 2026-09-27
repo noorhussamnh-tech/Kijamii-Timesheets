@@ -138,12 +138,19 @@ export const PEOPLE_VIEWS: ExportView[] = [
   },
 ];
 
-/** The menu, in groups, in the order they are offered. */
-export const VIEW_GROUPS: { label: string; views: ExportView[] }[] = [
-  { label: "Everything", views: DETAIL_VIEWS },
-  { label: "By period", views: PERIOD_VIEWS },
-  { label: "By work", views: WORK_VIEWS },
-  { label: "By person", views: PEOPLE_VIEWS },
+/**
+ * The menu, in groups, in the order they are offered.
+ *
+ * The id is there so a page can leave a group out without matching on the
+ * label somebody will reword one day. "people" is the one that gets left out:
+ * the org-chart cuts answer nothing for a single team, where everybody shares
+ * a manager and most share a business unit.
+ */
+export const VIEW_GROUPS: { id: string; label: string; views: ExportView[] }[] = [
+  { id: "everything", label: "Everything", views: DETAIL_VIEWS },
+  { id: "period", label: "By period", views: PERIOD_VIEWS },
+  { id: "work", label: "By work", views: WORK_VIEWS },
+  { id: "people", label: "By person", views: PEOPLE_VIEWS },
 ];
 
 export const ALL_VIEWS: ExportView[] = VIEW_GROUPS.flatMap((group) => group.views);

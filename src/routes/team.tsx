@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { format } from "date-fns";
 import { AlertCircle, Search, Users } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { DateRangePicker, rangeLabel } from "@/components/DateRangePicker";
-import { EmployeeExportMenu } from "@/components/EmployeeExportMenu";
 import { ExportByClient } from "@/components/ExportByClient";
 import { ExportCsv } from "@/components/ExportCsv";
 import { ExportGrouped } from "@/components/ExportGrouped";
@@ -20,10 +18,10 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
-import { fetchRangeOverview } from "@/lib/data/api";
+import { fetchExportRows, fetchRangeOverview, type ExportRow } from "@/lib/data/api";
 import { formatHours } from "@/lib/domain/totals";
 import { type AdminEmployeeStatus } from "@/lib/domain/types";
-import { currentWeekKey, parseDateKey, toDateKey, weekEnd } from "@/lib/domain/week";
+import { currentWeekKey, parseDateKey, shortDayLabel, toDateKey, weekEnd } from "@/lib/domain/week";
 
 export const Route = createFileRoute("/team")({
   head: () => ({
@@ -34,10 +32,7 @@ export const Route = createFileRoute("/team")({
         content: "What the people who report to you have logged, for any period.",
       },
       { property: "og:title", content: "My Team — Kijamii Timesheets" },
-      {
-        property: "og:description",
-        content: "Completion, hours and exports for your own team.",
-      },
+      { property: "og:description", content: "Your team's entries, and the files that fold them." },
     ],
   }),
   component: TeamRoute,
@@ -51,23 +46,39 @@ function TeamRoute() {
   );
 }
 
+/** The columns, in the order My Timesheet has them. */
+const COLUMNS = ["Date", "Client name", "Project type", "Work type", "Hours", "Notes"] as const;
+
+function workTypeLabel(row: ExportRow): string {
+  return row.workType === "amend" ? "Amend" : row.workType === "new_task" ? "New Task" : "—";
+}
+
 /**
- * The admin overview, narrowed to the people who report to you.
+ * Your own team's timesheet.
  *
- * Team leads asked for it, and the shape of the answer is the shape the admin
- * page already has -- so it is the same table, the same metrics and the same
- * export buttons rather than a second dialect of the same figures. Nothing
- * here decides who is in it: every call goes to the same database function
- * the admin page calls, which returns the company to an admin and the
- * reporting line to everybody else. A manager cannot widen it by editing a
- * filter, and the two pages cannot drift apart.
+ * Built to read as My Timesheet does rather than as a management console,
+ * because that is the page everybody here already knows how to read: the same
+ * columns in the same order, grouped under a heading, the hours on the right.
+ * What changes is the grouping -- a person's own sheet groups by day, and a
+ * team's groups by person, because the question a lead opens this to ask is
+ * "what is Amina working on", not "what happened on Tuesday".
  *
- * "Your people" is everybody underneath, not only the direct reports. A
- * director who asks what their department is working on means the department.
+ * Exports sit at the top rather than the bottom. Somebody who came here to
+ * take the file away should not have to scroll a team's month of work to find
+ * the button that gives it to them.
+ *
+ * Submitted rows only, which is the same cut every export makes. Anything
+ * still in draft is counted in the heading and left out of the rows: a
+ * half-typed line is not work somebody should be asked about.
+ *
+ * Nothing here decides who is in it. Every call goes to a database function
+ * that returns the caller's own reporting line and refuses anybody else, so a
+ * filter cannot widen it and this page and the admin page cannot disagree
+ * about a number.
  *
  * Deliberately read-only: no reopening a week, no editing somebody's row, no
- * sync. Those are the admin's, and a manager who needs one asks for it --
- * which is a conversation the company already knows how to have.
+ * directory sync. Those belong to an admin, and a manager who needs one asks
+ * -- which is a conversation the company already knows how to have.
  */
 function TeamOverview() {
   const { teamScope, status: authStatus } = useAuth();
@@ -79,7 +90,8 @@ function TeamOverview() {
   const from = toDateKey(range.from);
   const to = toDateKey(range.to);
 
-  const [rows, setRows] = useState<AdminEmployeeStatus[] | null>(null);
+  const [people, setPeople] = useState<AdminEmployeeStatus[] | null>(null);
+  const [entries, setEntries] = useState<ExportRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [team, setTeam] = useState("all");
@@ -87,23 +99,31 @@ function TeamOverview() {
   const manages = (teamScope?.reports ?? 0) > 0;
 
   useEffect(() => {
-    // The fetch is refused by the database for anybody who manages nobody;
-    // this only avoids making a call whose answer is already known.
+    // The fetches are refused by the database for anybody who manages nobody;
+    // this only avoids making calls whose answer is already known.
     if (authStatus !== "ready" || !manages) return;
     let cancelled = false;
 
-    setRows(null);
+    setPeople(null);
+    setEntries([]);
     setError(null);
 
-    void fetchRangeOverview(from, to, "team")
-      .then((data: AdminEmployeeStatus[]) => {
-        if (!cancelled) setRows(data);
+    /*
+     * Both at once, and neither is shown until both land. The roster carries
+     * the status and the expected hours, the entries carry the work; a page
+     * that painted one and then the other would show every person as having
+     * logged nothing for as long as the second call took.
+     */
+    void Promise.all([fetchRangeOverview(from, to, "team"), fetchExportRows(from, to, "team")])
+      .then(([roster, rows]) => {
+        if (cancelled) return;
+        setPeople(roster);
+        setEntries(rows);
       })
       .catch((cause: unknown) => {
-        if (!cancelled) {
-          setRows([]);
-          setError(cause instanceof Error ? cause.message : "Could not load your team.");
-        }
+        if (cancelled) return;
+        setPeople([]);
+        setError(cause instanceof Error ? cause.message : "Could not load your team.");
       });
 
     return () => {
@@ -118,24 +138,41 @@ function TeamOverview() {
    * about one at a time.
    */
   const teams = useMemo(
-    () => [...new Set((rows ?? []).flatMap((row) => row.teams))].sort(),
-    [rows],
+    () => [...new Set((people ?? []).flatMap((person) => person.teams))].sort(),
+    [people],
   );
 
   useEffect(() => {
-    if (team !== "all" && rows !== null && !teams.includes(team)) setTeam("all");
-  }, [teams, team, rows]);
+    if (team !== "all" && people !== null && !teams.includes(team)) setTeam("all");
+  }, [teams, team, people]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return (rows ?? []).filter(
-      (row) =>
-        (team === "all" || row.teams.includes(team)) &&
+    return (people ?? []).filter(
+      (person) =>
+        (team === "all" || person.teams.includes(team)) &&
         (needle === "" ||
-          row.name.toLowerCase().includes(needle) ||
-          row.email.toLowerCase().includes(needle)),
+          person.name.toLowerCase().includes(needle) ||
+          person.email.toLowerCase().includes(needle)),
     );
-  }, [rows, team, query]);
+  }, [people, team, query]);
+
+  /*
+   * Rows against the person who logged them, matched on the address rather
+   * than the name: two people can share a first name, and the employee list
+   * spells the same person's name more than one way.
+   */
+  const byEmail = useMemo(() => {
+    const map = new Map<string, ExportRow[]>();
+    for (const row of entries) {
+      const key = row.employeeEmail.toLowerCase();
+      const list = map.get(key);
+      if (list) list.push(row);
+      else map.set(key, [row]);
+    }
+    for (const list of map.values()) list.sort((a, b) => a.workDate.localeCompare(b.workDate));
+    return map;
+  }, [entries]);
 
   if (teamScope === null && authStatus === "ready") {
     return <Skeleton className="h-64 w-full" />;
@@ -157,13 +194,32 @@ function TeamOverview() {
     );
   }
 
-  const submitted = filtered.filter((row) => row.status === "submitted").length;
-  const draft = filtered.filter((row) => row.status === "draft").length;
-  const missing = filtered.filter((row) => row.status === "missing").length;
+  const submitted = filtered.filter((person) => person.status === "submitted").length;
+  const draft = filtered.filter((person) => person.status === "draft").length;
+  const missing = filtered.filter((person) => person.status === "missing").length;
   const completion = filtered.length ? Math.round((submitted / filtered.length) * 100) : 0;
+  const loading = people === null;
 
   return (
     <div className="space-y-4">
+      {/* First, because taking the file away is what most people open this
+          page to do, and the alternative is scrolling a team's month of work
+          to find the button. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <ExportCsv from={from} to={to} department="all" manager="all" team={team} scope="team" />
+        <ExportGrouped
+          from={from}
+          to={to}
+          department="all"
+          manager="all"
+          team={team}
+          dedication={false}
+          people={false}
+          scope="team"
+        />
+        <ExportByClient from={from} to={to} department="all" scope="team" />
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative">
           <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -190,22 +246,6 @@ function TeamOverview() {
             ))}
           </SelectContent>
         </Select>
-        <ExportCsv from={from} to={to} department="all" manager="all" team={team} scope="team" />
-      </div>
-
-      {/* The same files the admin page produces, over the same rows -- which
-          for this caller are their team's and nobody else's. */}
-      <div className="flex flex-wrap items-center gap-2">
-        <ExportGrouped
-          from={from}
-          to={to}
-          department="all"
-          manager="all"
-          team={team}
-          dedication={false}
-          scope="team"
-        />
-        <ExportByClient from={from} to={to} department="all" scope="team" />
       </div>
 
       {error && (
@@ -214,14 +254,14 @@ function TeamOverview() {
         </p>
       )}
 
-      {rows === null ? (
+      {loading ? (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             {[0, 1, 2, 3, 4].map((cell) => (
               <Skeleton key={cell} className="h-[76px] w-full" />
             ))}
           </div>
-          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-80 w-full" />
         </div>
       ) : (
         <>
@@ -248,77 +288,96 @@ function TeamOverview() {
           ) : (
             <div className="overflow-hidden rounded-lg border bg-surface shadow-card">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-[13px]">
+                <table className="w-full min-w-[980px] border-collapse text-left text-[13px]">
+                  <caption className="sr-only">
+                    Submitted entries for {rangeLabel(range.from, range.to)}, grouped by person.
+                  </caption>
                   <thead>
                     <tr className="border-b bg-surface-muted">
-                      <th scope="col" className="label-xs px-3 py-2.5">
-                        Employee
-                      </th>
-                      <th scope="col" className="label-xs px-3 py-2.5">
-                        Team
-                      </th>
-                      <th scope="col" className="label-xs px-3 py-2.5 text-right">
-                        Hours
-                      </th>
-                      <th scope="col" className="label-xs px-3 py-2.5">
-                        Status
-                      </th>
-                      <th scope="col" className="label-xs px-3 py-2.5">
-                        Submitted
-                      </th>
-                      <th scope="col" className="label-xs px-3 py-2.5 text-right">
-                        Export
-                      </th>
+                      {COLUMNS.map((column) => (
+                        <th
+                          key={column}
+                          scope="col"
+                          className={`label-xs px-2.5 py-3 ${column === "Hours" ? "text-right" : ""}`}
+                        >
+                          {column}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((row) => (
-                      <tr
-                        key={row.employeeId}
-                        className="border-b last:border-b-0 hover:bg-surface-muted/60"
-                      >
-                        <td className="px-3 py-2.5">
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">{row.name}</p>
-                            <p className="truncate text-[11px] text-muted-foreground">
-                              {row.email}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2.5 text-muted-foreground">
-                          {row.teams.length > 0 ? row.teams.join(", ") : "—"}
-                        </td>
-                        <td className="num px-3 py-2.5 text-right font-semibold">
-                          {formatHours(row.totalHours)}
-                          <span className="ml-1 text-[11px] font-normal text-muted-foreground">
-                            / {formatHours(row.expectedHours)}
-                          </span>
-                          {/* Filed hours are the headline, so this column ties
-                              to every export. Anything still in draft is said
-                              separately rather than added in. */}
-                          {row.draftHours > 0 && (
-                            <span className="block text-[11px] font-normal text-warning">
-                              +{formatHours(row.draftHours)} draft
-                            </span>
+                    {filtered.map((person) => {
+                      const rows = byEmail.get(person.email.toLowerCase()) ?? [];
+                      return (
+                        <Fragment key={person.employeeId}>
+                          <tr className="border-b bg-background/70">
+                            <th
+                              scope="colgroup"
+                              colSpan={COLUMNS.length}
+                              className="px-2.5 py-2.5 text-left font-semibold"
+                            >
+                              <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                                <span className="text-[15px] font-bold">{person.name}</span>
+                                <span className="text-[11px] font-normal text-muted-foreground">
+                                  {person.email}
+                                </span>
+                                <StatusBadge status={person.status} />
+                                <span className="num ml-auto text-[13px] font-semibold">
+                                  {formatHours(person.totalHours)}
+                                  <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+                                    / {formatHours(person.expectedHours)}
+                                  </span>
+                                </span>
+                                {/* Filed hours are the headline, so the figure
+                                    above ties to every export. Anything still
+                                    in draft is said separately rather than
+                                    added in, and its rows are not listed. */}
+                                {person.draftHours > 0 && (
+                                  <span className="text-[11px] font-medium text-warning">
+                                    +{formatHours(person.draftHours)} in draft
+                                  </span>
+                                )}
+                              </span>
+                            </th>
+                          </tr>
+
+                          {rows.length === 0 ? (
+                            <tr className="border-b last:border-b-0">
+                              <td
+                                colSpan={COLUMNS.length}
+                                className="px-2.5 py-3 text-[12px] text-muted-foreground"
+                              >
+                                Nothing submitted in this period.
+                              </td>
+                            </tr>
+                          ) : (
+                            rows.map((row) => (
+                              <tr
+                                key={row.entryId}
+                                className="border-b align-middle last:border-b-0 hover:bg-surface-muted/60"
+                              >
+                                <td className="num px-2.5 py-2 whitespace-nowrap">
+                                  {shortDayLabel(row.workDate)}
+                                </td>
+                                <td className="px-2.5 py-2">{row.clientName ?? "—"}</td>
+                                <td className="px-2.5 py-2 text-muted-foreground">
+                                  {row.projectType ?? "—"}
+                                </td>
+                                <td className="px-2.5 py-2 text-muted-foreground">
+                                  {workTypeLabel(row)}
+                                </td>
+                                <td className="num px-2.5 py-2 text-right font-semibold">
+                                  {formatHours(Number(row.hours))}
+                                </td>
+                                <td className="max-w-[280px] truncate px-2.5 py-2 text-muted-foreground">
+                                  {row.notes ?? ""}
+                                </td>
+                              </tr>
+                            ))
                           )}
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <StatusBadge status={row.status} />
-                        </td>
-                        <td className="num px-3 py-2.5 text-muted-foreground">
-                          {row.submittedAt
-                            ? format(new Date(row.submittedAt), "d MMM · HH:mm")
-                            : "—"}
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <EmployeeExportMenu
-                            employeeId={row.employeeId}
-                            name={row.name}
-                            scope="team"
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

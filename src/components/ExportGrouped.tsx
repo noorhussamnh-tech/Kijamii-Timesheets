@@ -39,6 +39,7 @@ export function ExportGrouped({
   manager,
   team,
   dedication = true,
+  people = true,
   scope = "company",
 }: {
   from: string;
@@ -59,6 +60,12 @@ export function ExportGrouped({
    * worse than an item that is not there.
    */
   dedication?: boolean;
+  /**
+   * Whether to offer the org-chart cuts -- by business unit, sub-unit,
+   * function, manager, title. Off for a single team, where every one of them
+   * returns the same one line.
+   */
+  people?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -140,6 +147,8 @@ export function ExportGrouped({
     }
   };
 
+  const groups = people ? VIEW_GROUPS : VIEW_GROUPS.filter((group) => group.id !== "people");
+
   return (
     <div className="relative">
       <DropdownMenu>
@@ -155,7 +164,7 @@ export function ExportGrouped({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
-          {VIEW_GROUPS.map((group, index) => (
+          {groups.map((group, index) => (
             <div key={group.label}>
               {index > 0 && <DropdownMenuSeparator />}
               <DropdownMenuLabel className="label-xs">{group.label}</DropdownMenuLabel>
