@@ -13,7 +13,7 @@ import { Metric } from "@/components/Metric";
 import { EmployeeExportMenu } from "@/components/EmployeeExportMenu";
 import { SyncDirectory } from "@/components/SyncDirectory";
 import { ExportTimeDedication } from "@/components/ExportTimeDedication";
-import { StatusBadge } from "@/components/StatusBadge";
+import { StatusBadge, statusTextClass } from "@/components/StatusBadge";
 import {
   Select,
   SelectContent,
@@ -27,6 +27,7 @@ import { fetchRangeOverview } from "@/lib/data/api";
 import { formatHours } from "@/lib/domain/totals";
 import { type AdminEmployeeStatus } from "@/lib/domain/types";
 import { currentWeekKey, parseDateKey, toDateKey, weekEnd } from "@/lib/domain/week";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -354,7 +355,9 @@ function AdminOverview() {
                       >
                         <td className="px-3 py-2.5">
                           <div className="min-w-0">
-                            <p className="truncate font-medium">{row.name}</p>
+                            <p className={cn("truncate font-medium", statusTextClass(row.status))}>
+                              {row.name}
+                            </p>
                             <p className="truncate text-[11px] text-muted-foreground">
                               {row.email}
                             </p>

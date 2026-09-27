@@ -8,7 +8,7 @@ import { ExportByClient } from "@/components/ExportByClient";
 import { ExportCsv } from "@/components/ExportCsv";
 import { ExportGrouped } from "@/components/ExportGrouped";
 import { Metric } from "@/components/Metric";
-import { StatusBadge } from "@/components/StatusBadge";
+import { StatusBadge, statusTextClass } from "@/components/StatusBadge";
 import {
   Select,
   SelectContent,
@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth";
 import { fetchExportRows, fetchRangeOverview, type ExportRow } from "@/lib/data/api";
 import { formatHours } from "@/lib/domain/totals";
 import { type AdminEmployeeStatus } from "@/lib/domain/types";
+import { cn } from "@/lib/utils";
 import { currentWeekKey, parseDateKey, shortDayLabel, toDateKey, weekEnd } from "@/lib/domain/week";
 
 export const Route = createFileRoute("/team")({
@@ -317,7 +318,14 @@ function TeamOverview() {
                               className="px-2.5 py-2.5 text-left font-semibold"
                             >
                               <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                                <span className="text-[15px] font-bold">{person.name}</span>
+                                <span
+                                  className={cn(
+                                    "text-[15px] font-bold",
+                                    statusTextClass(person.status),
+                                  )}
+                                >
+                                  {person.name}
+                                </span>
                                 <span className="text-[11px] font-normal text-muted-foreground">
                                   {person.email}
                                 </span>
