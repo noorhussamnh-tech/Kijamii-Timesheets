@@ -18,8 +18,8 @@ window.CIS_CONFIG = {
     // Event days, local Riyadh dates. Sessions run 17:00-22:00.
     days: ["2026-10-03", "2026-10-04", "2026-10-05"],
     sessionHours: [17, 22],
-    // Talkwalker timestamps without a timezone are read as this UTC offset.
-    // Set your Talkwalker project timezone to Riyadh (UTC+3) and leave this at 3.
+    // listening-tool timestamps without a timezone are read as this UTC offset.
+    // Set your listening-tool project timezone to Riyadh (UTC+3) and leave this at 3.
     sourceUtcOffsetHours: 3,
     // "DMY" for 03/10/2026, "MDY" for 10/03/2026.
     dateOrder: "DMY",
@@ -41,7 +41,7 @@ window.CIS_CONFIG = {
   // Publish to web → choose a tab → CSV → Publish. Paste each link here.
   // When postsCsvUrl is set, it replaces dataFiles.
   sheet: {
-    rawCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTiobvMh6smgFHiSiSHs2NFM32_KO-OGddiq3XEMyFFNJDEhXFRpJ0fMZ6ekQ02dw6zVm8lNu5FRbYm/pub?gid=995480703&single=true&output=csv", // the Raw tab: paste each Talkwalker export here
+    rawCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTiobvMh6smgFHiSiSHs2NFM32_KO-OGddiq3XEMyFFNJDEhXFRpJ0fMZ6ekQ02dw6zVm8lNu5FRbYm/pub?gid=995480703&single=true&output=csv", // the Raw tab: paste each listening-tool export here
     postsCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTiobvMh6smgFHiSiSHs2NFM32_KO-OGddiq3XEMyFFNJDEhXFRpJ0fMZ6ekQ02dw6zVm8lNu5FRbYm/pub?gid=1263254393&single=true&output=csv", // the Approved tab (fallback if Raw is empty)
     overridesCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTiobvMh6smgFHiSiSHs2NFM32_KO-OGddiq3XEMyFFNJDEhXFRpJ0fMZ6ekQ02dw6zVm8lNu5FRbYm/pub?gid=1831751401&single=true&output=csv", // the Overrides tab: URL + Y/N to keep or hide a post
     notesCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTiobvMh6smgFHiSiSHs2NFM32_KO-OGddiq3XEMyFFNJDEhXFRpJ0fMZ6ekQ02dw6zVm8lNu5FRbYm/pub?gid=1124441607&single=true&output=csv", // the Notes tab: the story, published once approved
@@ -80,19 +80,27 @@ window.CIS_CONFIG = {
   // Conversation themes for the qualitative view. A post can sit in more
   // than one theme. Latin keywords match whole words only ("ai" won't match "said").
   themes: [
-    { name: "AI & human creativity", keywords: ["ai", "artificial intelligence", "genai", "generative", "prompt", "humain", "الذكاء الاصطناعي", "ذكاء اصطناعي", "behind every intelligence", "وراء كل ذكاء"] },
-    { name: "Content creators & hosts", keywords: ["content creator", "content creators", "creator pass", "hosts", "صناع المحتوى", "صانع محتوى", "صناع محتوى"] },
-    { name: "Saudi film & talent", keywords: ["film", "films", "cinema", "actor", "director", "talent", "telfaz11", "فيلم", "سينما", "مخرج", "ممثل", "مواهب"] },
-    { name: "Esports & gaming", keywords: ["esports", "e-sports", "gaming", "gamers", "الرياضات الالكترونيه", "الالعاب", "قيمنق"] },
-    { name: "Advertising & brands", keywords: ["advertising", "campaign", "brand", "brands", "agency", "marketing", "اعلان", "تسويق", "حمله", "العلامه التجاريه"] },
-    { name: "Business of creativity", keywords: ["investment", "investors", "smart money", "budget", "growth", "economy", "startup", "استثمار", "اقتصاد", "الاقتصاد الابداعي"] },
-    { name: "Workshops & learning", keywords: ["workshop", "workshops", "masterclass", "learned", "learning", "ورشه", "ورش", "تعلمت"] },
-    { name: "Venue & experience", keywords: ["queue", "parking", "venue", "sound", "seats", "crowded", "tickets", "entrance", "organisation", "organization", "زحمه", "مواقف", "تذاكر", "التنظيم", "الصوت"] },
+    { name: "AI & human creativity", nameAr: "الذكاء الاصطناعي والإبداع الإنساني", keywords: ["ai", "artificial intelligence", "genai", "generative", "prompt", "humain", "الذكاء الاصطناعي", "ذكاء اصطناعي", "behind every intelligence", "وراء كل ذكاء"] },
+    { name: "Content creators & hosts", nameAr: "صناع المحتوى والمقدمون", keywords: ["content creator", "content creators", "creator pass", "hosts", "صناع المحتوى", "صانع محتوى", "صناع محتوى"] },
+    { name: "Saudi film & talent", nameAr: "الأفلام والمواهب السعودية", keywords: ["film", "films", "cinema", "actor", "director", "talent", "telfaz11", "فيلم", "سينما", "مخرج", "ممثل", "مواهب"] },
+    { name: "Esports & gaming", nameAr: "الرياضات الإلكترونية والألعاب", keywords: ["esports", "e-sports", "gaming", "gamers", "الرياضات الالكترونيه", "الالعاب", "قيمنق"] },
+    { name: "Advertising & brands", nameAr: "الإعلان والعلامات التجارية", keywords: ["advertising", "campaign", "brand", "brands", "agency", "marketing", "اعلان", "تسويق", "حمله", "العلامه التجاريه"] },
+    { name: "Business of creativity", nameAr: "اقتصاد الإبداع", keywords: ["investment", "investors", "smart money", "budget", "growth", "economy", "startup", "استثمار", "اقتصاد", "الاقتصاد الابداعي"] },
+    { name: "Workshops & learning", nameAr: "الورش والتعلم", keywords: ["workshop", "workshops", "masterclass", "learned", "learning", "ورشه", "ورش", "تعلمت"] },
+    { name: "Venue & experience", nameAr: "المكان والتجربة", keywords: ["queue", "parking", "venue", "sound", "seats", "crowded", "tickets", "entrance", "organisation", "organization", "زحمه", "مواقف", "تذاكر", "التنظيم", "الصوت"] },
   ],
 
   // The organiser's own accounts. Their posts are excluded above, so the
   // dashboard shows earned conversation only.
   officialAccounts: ["creativeindsa", "creativeindksa", "creativeindmena"],
+
+  // Event-related hashtags that may also appear in the hashtag charts.
+  // Only these and the official hashtags are ever shown.
+  hashtagAllowlist: [
+    "#CreativeSummit", "#CreativeSummitRiyadh", "#CreativeIndMena", "#SaudiCreativity",
+    "#JAXDistrict", "#حي_جاكس", "#قمة_الابداع_2026", "#الاقتصاد_الإبداعي", "#الاقتصاد_الابداعي",
+    "#وراء_كل_ذكاء_إنسان", "#CreativeEconomy", "#SaudiCreatives",
+  ],
 
   officialHashtags: [
     "#قمة_الإبداع",

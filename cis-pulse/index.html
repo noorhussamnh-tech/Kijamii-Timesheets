@@ -1,14 +1,14 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>KSA Festival '26 Social Pulse</title>
+<title>قمة الإبداع 2026 | نبض المحادثة</title>
 <meta name="description" content="Live social listening for Creative Industry Summit KSA Festival '26, 3-5 October 2026, JAX District, Riyadh.">
 <link rel="icon" href="assets/logo-white.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Poppins:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Poppins:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap">
 <style>
 :root {
   color-scheme: dark;
@@ -135,7 +135,7 @@ main { padding-block: 22px 60px; display: grid; gap: 18px; }
 .empty { display: grid; place-items: center; height: 100%; color: var(--muted); font-size: 13px; text-align: center; padding: 20px; }
 
 /* ---------- KPIs ---------- */
-.kpis { display: grid; gap: 12px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.kpis { display: grid; gap: 12px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
@@ -223,6 +223,33 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .bench-kpis { display: flex; gap: 10px 28px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
 .bench-kpis b { font: 800 24px/1 var(--display); font-stretch: 80%; color: var(--ink); display: block; margin-bottom: 2px; }
 
+/* ---------- Language, RTL, featured wall ---------- */
+.pill.lang { cursor: pointer; background: var(--ink); color: var(--bg); border-color: var(--ink); font-family: var(--body); }
+.pill.lang:hover { background: #fff; }
+html[lang="ar"] body { font-family: "IBM Plex Sans Arabic", var(--body); }
+html[lang="ar"] h1 { font-family: "IBM Plex Sans Arabic", var(--display); font-weight: 700; letter-spacing: 0; line-height: 1.15; font-size: clamp(34px, 6vw, 78px); }
+html[lang="ar"] .story h3 { font-family: "IBM Plex Sans Arabic", var(--display); font-weight: 700; line-height: 1.35; }
+html[lang="ar"] .card h2, html[lang="ar"] .kpi .lab, html[lang="ar"] .eyebrow, html[lang="ar"] th { letter-spacing: 0; text-transform: none; }
+html[dir="rtl"] th, html[dir="rtl"] td { text-align: right; }
+html[dir="rtl"] td.num, html[dir="rtl"] th.num { text-align: left; }
+html[dir="rtl"] .story ul { padding-left: 0; padding-right: 18px; }
+.wall .feed { max-height: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; overflow: visible; padding: 0; }
+@media (max-width: 1100px) { .wall .feed { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .wall .feed { grid-template-columns: 1fr; } }
+.wall .post { padding: 16px 16px 14px; gap: 10px; border: 1px solid var(--line); position: relative; }
+.wall .post p { font-size: 15.5px; line-height: 1.6; color: var(--ink); -webkit-line-clamp: 6; }
+.wall .post .who-row { display: flex; align-items: center; gap: 10px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 15px; color: #fff; flex: none; }
+.wall .post .who { font-weight: 600; font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wall .post .meta-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.wall .post a.open { color: var(--accent); font-weight: 600; text-decoration: none; }
+.wall .post a.open:hover { text-decoration: underline; }
+.wall .post.lead { grid-column: span 2; background: linear-gradient(135deg, rgba(239,0,110,.22), rgba(28,18,161,.35)); }
+.wall .post.lead p { font-size: 19px; -webkit-line-clamp: 5; }
+@media (max-width: 640px) { .wall .post.lead { grid-column: auto; } }
+.wall-ctl { display: flex; gap: 8px; flex-wrap: wrap; }
+.more { justify-self: center; margin-top: 4px; }
+
 /* ---------- Loader / footer ---------- */
 .drop {
   border: 1.5px dashed rgba(255,255,255,.2); border-radius: var(--radius);
@@ -243,154 +270,147 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
 <header class="mast">
   <div class="wrap">
     <div class="mast-top">
-      <img class="logo" src="assets/logo-white.png" alt="Creative Industry Summit" width="81" height="54">
+      <img class="logo" src="assets/logo-white.png" alt="Creative Summit" width="81" height="54">
       <div class="status">
-        <span id="demoPill" class="pill demo" hidden>Sample data</span>
-        <span id="rehPill" class="pill demo" hidden>Rehearsal: festival is 3–5 Oct</span>
-        <span id="stalePill" class="pill demo" hidden>Data is over 2 hours old</span>
-        <span id="phasePill" class="pill"><span class="dot"></span><span id="phaseText">Pre-event</span></span>
-        <span id="updated">Loading…</span>
+        <span id="demoPill" class="pill demo" hidden data-i18n="sample">Sample data</span>
+        <span id="rehPill" class="pill demo" hidden data-i18n="rehearsal">Rehearsal</span>
+        <span id="stalePill" class="pill demo" hidden data-i18n="stale">Data is over 2 hours old</span>
+        <span id="phasePill" class="pill"><span class="dot"></span><span id="phaseText"></span></span>
+        <span id="updated"></span>
+        <button type="button" class="pill lang" id="langBtn" aria-label="Switch language">EN</button>
       </div>
     </div>
-    <h1>KSA Festival <span class="dash">—</span>26<br>Social Pulse</h1>
+    <h1 id="title"></h1>
     <div class="sub">
-      <span><b>3–5 October 2026</b></span>
-      <span>JAX District, Riyadh</span>
-      <span>Summit Stage · Creative Stage · Workshops</span>
-      <span>Updated hourly from Talkwalker</span>
+      <span><b data-i18n="dates">3–5 October 2026</b></span>
+      <span data-i18n="venue">JAX District, Riyadh</span>
+      <span data-i18n="stages">Summit Stage · Creative Stage · Workshops</span>
+      <span data-i18n="hourly">Updated hourly</span>
     </div>
   </div>
 </header>
 
 <nav class="bar" aria-label="Filters">
   <div class="wrap">
-    <div class="seg" id="rangeSeg" role="group" aria-label="Time range">
-      <button type="button" data-range="all" aria-pressed="true">All</button>
-      <button type="button" data-range="pre">Build-up</button>
-      <button type="button" data-range="d1">Day 1</button>
-      <button type="button" data-range="d2">Day 2</button>
-      <button type="button" data-range="d3">Day 3</button>
-      <button type="button" data-range="24h">Last 24h</button>
+    <div class="seg" id="rangeSeg" role="group">
+      <button type="button" data-range="all" aria-pressed="true" data-i18n="r_all">All</button>
+      <button type="button" data-range="pre" data-i18n="r_pre">Build-up</button>
+      <button type="button" data-range="d1" data-i18n="r_d1">Day 1</button>
+      <button type="button" data-range="d2" data-i18n="r_d2">Day 2</button>
+      <button type="button" data-range="d3" data-i18n="r_d3">Day 3</button>
+      <button type="button" data-range="24h" data-i18n="r_24">Last 24h</button>
     </div>
-    <label class="meta" for="srcSel">Channel</label>
-    <select id="srcSel"><option value="">All channels</option></select>
+    <label class="meta" for="srcSel" data-i18n="channel">Channel</label>
+    <select id="srcSel"></select>
     <span class="spacer"></span>
-    <span class="meta" id="rowsMeta"></span>
+    <span class="meta" id="rowsMeta" hidden></span>
   </div>
 </nav>
 
 <main class="wrap">
   <section class="kpis" aria-label="Headline numbers">
-    <div class="kpi hero"><span class="lab">Conversations</span><span class="val" id="kTotal">–</span><span class="delta" id="kTotalD">&nbsp;</span></div>
-    <div class="kpi"><span class="lab">Last full hour</span><span class="val" id="kHour">–</span><span class="delta" id="kHourD">&nbsp;</span></div>
-    <div class="kpi"><span class="lab">Net sentiment</span><span class="val" id="kNet">–</span><span class="delta" id="kNetD">&nbsp;</span></div>
-    <div class="kpi"><span class="lab">Engagement</span><span class="val" id="kEng">–</span><span class="delta" id="kEngD">&nbsp;</span></div>
-    <div class="kpi"><span class="lab">Potential reach</span><span class="val" id="kReach">–</span><span class="delta" id="kReachD">&nbsp;</span></div>
-    <div class="kpi"><span class="lab">Unique voices</span><span class="val" id="kAuth">–</span><span class="delta" id="kAuthD">&nbsp;</span></div>
+    <div class="kpi hero"><span class="lab" data-i18n="k_total">Conversations</span><span class="val" id="kTotal">–</span><span class="delta" id="kTotalD">&nbsp;</span></div>
+    <div class="kpi"><span class="lab" data-i18n="k_pos">Positive sentiment</span><span class="val" id="kNet">–</span><span class="delta" id="kNetD">&nbsp;</span></div>
+    <div class="kpi"><span class="lab" data-i18n="k_eng">Engagement</span><span class="val" id="kEng">–</span><span class="delta" id="kEngD">&nbsp;</span></div>
+    <div class="kpi"><span class="lab" data-i18n="k_reach">Potential reach</span><span class="val" id="kReach">–</span><span class="delta" id="kReachD">&nbsp;</span></div>
+    <div class="kpi"><span class="lab" data-i18n="k_auth">Unique voices</span><span class="val" id="kAuth">–</span><span class="delta" id="kAuthD">&nbsp;</span></div>
   </section>
 
-  <section class="card" id="liveCard" hidden aria-label="Live count from Talkwalker">
+  <section class="story" id="story" aria-label="Story"></section>
+
+  <section class="card wall" id="feedCard">
     <div class="card-h">
-      <div><h2>Live count from Talkwalker</h2><p class="note" id="liveNote">Every match for the topic, before cleaning. Updates hourly.</p></div>
-      <div class="bench-kpis" id="liveKpis"></div>
-    </div>
-    <div class="chart short" id="cLive" style="height:150px" role="img" aria-label="Talkwalker matches per hour, last 48 hours"></div>
-  </section>
-
-  <section class="story" id="story" aria-label="The story so far"></section>
-
-  <section class="grid">
-    <article class="card span-12">
-      <div class="card-h">
-        <div>
-          <h2 id="volTitle">Conversation volume by hour</h2>
-          <p class="note" id="volNote">Riyadh time (AST, UTC+3). Shaded bands are session hours, 17:00–22:00. The quiet build-up shows by day.</p>
+      <div><h2 data-i18n="feed_t">What people are saying</h2><p class="note" id="feedNote"></p></div>
+      <div class="wall-ctl">
+        <div class="seg" id="feedWho" role="group">
+          <button type="button" data-who="people" aria-pressed="true" data-i18n="f_people">People</button>
+          <button type="button" data-who="media" data-i18n="f_media">Media</button>
         </div>
-        <div class="seg" id="volGrain" role="group" aria-label="Time step">
-          <button type="button" data-grain="hour">Hourly</button>
-          <button type="button" data-grain="day">Daily</button>
-        </div>
-        <div class="seg" id="volMode" role="group" aria-label="Volume view">
-          <button type="button" data-mode="total" aria-pressed="true">Total</button>
-          <button type="button" data-mode="sent">By sentiment</button>
+        <div class="seg" id="feedMode" role="group">
+          <button type="button" data-mode="latest" aria-pressed="true" data-i18n="f_latest">Latest</button>
+          <button type="button" data-mode="top" data-i18n="f_top">Most engaging</button>
         </div>
       </div>
-      <div class="chart tall" id="cVolume" role="img" aria-label="Line area chart of mentions per hour"></div>
+    </div>
+    <ul class="feed" id="feed"></ul>
+  </section>
+
+  <section class="grid">
+    <article class="card span-8">
+      <div class="card-h">
+        <div>
+          <h2 id="volTitle"></h2>
+          <p class="note" data-i18n="vol_note">Riyadh time. Shaded bands are session hours, 17:00–22:00.</p>
+        </div>
+        <div class="seg" id="volGrain" role="group">
+          <button type="button" data-grain="hour" data-i18n="g_hour">Hourly</button>
+          <button type="button" data-grain="day" data-i18n="g_day">Daily</button>
+        </div>
+        <div class="seg" id="volMode" role="group">
+          <button type="button" data-mode="total" aria-pressed="true" data-i18n="v_total">Total</button>
+          <button type="button" data-mode="sent" data-i18n="v_sent">By sentiment</button>
+        </div>
+      </div>
+      <div class="chart tall" id="cVolume" role="img"></div>
+    </article>
+    <article class="card span-4">
+      <div class="card-h"><div><h2 data-i18n="ch_t">Channel mix</h2><p class="note" data-i18n="ch_n">Where the conversation happens</p></div></div>
+      <div class="chart tall" id="cChannels" role="img"></div>
+    </article>
+
+    <article class="card span-6">
+      <div class="card-h"><div><h2 data-i18n="spk_t">Most discussed speakers</h2><p class="note" data-i18n="spk_n">Posts naming each speaker</p></div></div>
+      <div class="chart tall" id="cSpeakers" role="img"></div>
+    </article>
+    <article class="card span-6">
+      <div class="card-h"><div><h2 data-i18n="ses_t">Most discussed talks &amp; workshops</h2><p class="note" data-i18n="ses_n">Posts mentioning each session</p></div></div>
+      <div class="chart tall" id="cSessions" role="img"></div>
     </article>
 
     <article class="card span-7">
-      <div class="card-h"><div><h2>What people are talking about</h2><p class="note">Share of conversations per theme, sentiment split, and the most engaging line</p></div></div>
+      <div class="card-h"><div><h2 data-i18n="th_t">What people are talking about</h2><p class="note" data-i18n="th_n">Share of conversation per theme, and a line that captures it</p></div></div>
       <ul class="themes" id="themes"></ul>
     </article>
     <article class="card span-5">
-      <div class="card-h"><div><h2>Moments that moved the conversation</h2><p class="note">Hours well above the usual level, and what drove them</p></div></div>
+      <div class="card-h"><div><h2 data-i18n="mo_t">Moments that moved the conversation</h2><p class="note" data-i18n="mo_n">The busiest hours, and what drove them</p></div></div>
       <ul class="moments" id="moments"></ul>
     </article>
 
-    <article class="card span-12" id="voicesCard">
-      <div class="card-h"><div><h2>Voices of the festival</h2><p class="note">Picked from the posts in this range</p></div></div>
-      <div class="quotes" id="quotes"></div>
-    </article>
-
-    <article class="card span-12">
-      <div class="card-h"><div><h2 id="benchTitle">Festival lift</h2><p class="note" id="benchNote">Conversations per day against the build-up average</p></div></div>
-      <div class="bench-kpis" id="benchKpis"></div>
-      <div class="chart short" id="cBench" role="img" aria-label="Daily conversations this year against the last edition"></div>
-    </article>
-
     <article class="card span-4">
-      <div class="card-h"><div><h2>Sentiment</h2><p class="note">Share of all conversations</p></div></div>
-      <div class="chart" id="cSentDonut" role="img" aria-label="Sentiment share donut"></div>
+      <div class="card-h"><div><h2 data-i18n="se_t">Sentiment</h2><p class="note" data-i18n="se_n">Share of all conversations</p></div></div>
+      <div class="chart" id="cSentDonut" role="img"></div>
     </article>
     <article class="card span-8">
-      <div class="card-h"><div><h2>Sentiment by day</h2><p class="note">Share of each day's conversations</p></div></div>
-      <div class="chart" id="cSentDay" role="img" aria-label="Sentiment share per day"></div>
-    </article>
-
-    <article class="card span-6">
-      <div class="card-h"><div><h2>Most discussed speakers</h2><p class="note">Posts naming the speaker, split by sentiment</p></div></div>
-      <div class="chart tall" id="cSpeakers" role="img" aria-label="Top speakers by mentions"></div>
-    </article>
-    <article class="card span-6">
-      <div class="card-h"><div><h2>Most discussed talks &amp; workshops</h2><p class="note">Posts matching each session's keywords</p></div></div>
-      <div class="chart tall" id="cSessions" role="img" aria-label="Top sessions by mentions"></div>
+      <div class="card-h"><div><h2 data-i18n="sd_t">Sentiment by day</h2><p class="note" data-i18n="sd_n">Share of each day's conversations</p></div></div>
+      <div class="chart" id="cSentDay" role="img"></div>
     </article>
 
     <article class="card span-7">
-      <div class="card-h"><div><h2>Hashtag cloud</h2><p class="note">Size shows use. Magenta marks official hashtags.</p></div></div>
-      <div class="chart" id="cCloud" role="img" aria-label="Hashtag word cloud"></div>
+      <div class="card-h"><div><h2 data-i18n="hc_t">Hashtags</h2><p class="note" data-i18n="hc_n">Hashtags people use with the festival. Official hashtags in magenta.</p></div></div>
+      <div class="chart" id="cCloud" role="img"></div>
     </article>
     <article class="card span-5">
-      <div class="card-h"><div><h2>Top hashtags</h2><p class="note">Posts using each hashtag</p></div></div>
+      <div class="card-h"><div><h2 data-i18n="ht_t">Top hashtags</h2><p class="note" data-i18n="ht_n">Posts using each hashtag</p></div></div>
       <ol class="rank" id="tagList"></ol>
     </article>
 
-    <article class="card span-4">
-      <div class="card-h"><div><h2>Channel mix</h2><p class="note">Where the conversation happens</p></div></div>
-      <div class="chart" id="cChannels" role="img" aria-label="Channel share donut"></div>
+    <article class="card span-7">
+      <div class="card-h"><div><h2 data-i18n="hm_t">When people post</h2><p class="note" data-i18n="hm_n">Conversations by day and hour, Riyadh time</p></div></div>
+      <div class="chart" id="cHeat" role="img"></div>
     </article>
-    <article class="card span-8">
-      <div class="card-h"><div><h2>When people post</h2><p class="note">Mentions by day and hour of day, Riyadh time</p></div></div>
-      <div class="chart" id="cHeat" role="img" aria-label="Heatmap of mentions by day and hour"></div>
-    </article>
-
-    <article class="card span-6" id="votesCard">
-      <div class="card-h"><div><h2>Top voices</h2><p class="note">Authors ranked by total engagement</p></div></div>
-      <div class="tbl-wrap"><table id="authTbl"><thead><tr><th>Author</th><th>Channel</th><th class="num">Posts</th><th class="num">Engagement</th><th class="num">Reach</th></tr></thead><tbody></tbody></table></div>
-    </article>
-    <article class="card span-6" id="feedCard">
-      <div class="card-h">
-        <div><h2>Conversation feed</h2><p class="note" id="feedNote">Newest first</p></div>
-        <div class="seg" id="feedMode" role="group" aria-label="Feed order">
-          <button type="button" data-mode="latest" aria-pressed="true">Latest</button>
-          <button type="button" data-mode="top">Most engaging</button>
-        </div>
-      </div>
-      <ul class="feed" id="feed"></ul>
+    <article class="card span-5" id="votesCard">
+      <div class="card-h"><div><h2 data-i18n="tv_t">Top voices</h2><p class="note" data-i18n="tv_n">Accounts ranked by engagement</p></div></div>
+      <div class="tbl-wrap"><table id="authTbl"><thead><tr><th data-i18n="c_author">Account</th><th data-i18n="c_channel">Channel</th><th class="num" data-i18n="c_posts">Posts</th><th class="num" data-i18n="c_eng">Engagement</th></tr></thead><tbody></tbody></table></div>
     </article>
 
     <article class="card span-12">
-      <div class="card-h"><div><h2>Preview a Talkwalker export</h2><p class="note">Drop a CSV or XLSX here to check it before publishing. The preview stays in this browser only.</p></div></div>
+      <div class="card-h"><div><h2 id="benchTitle"></h2><p class="note" id="benchNote"></p></div></div>
+      <div class="bench-kpis" id="benchKpis"></div>
+      <div class="chart short" id="cBench" role="img"></div>
+    </article>
+
+    <article class="card span-12" id="opsCard" hidden>
+      <div class="card-h"><div><h2>Team only: preview an export</h2><p class="note">Drop a CSV or XLSX to check it before publishing. The preview stays in this browser. Only visible with ?team in the address.</p></div></div>
       <label class="drop" id="drop" for="fileIn">
         <span>Drag the export here, or <u>choose a file</u>.</span>
         <input type="file" id="fileIn" accept=".csv,.xlsx,.xls,.tsv">
@@ -402,7 +422,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
 </main>
 
 <footer class="wrap">
-  <span>Creative Industry Summit · KSA Festival '26 · Social listening data: Talkwalker</span>
+  <span data-i18n="foot">Creative Summit · KSA Festival '26</span>
   <span id="footStamp"></span>
 </footer>
 
@@ -414,6 +434,79 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
 (function () {
   "use strict";
   const CFG = window.CIS_CONFIG;
+  // Team view (?team): rehearsal days, freshness badge, export preview.
+  const OPS = /[?&]team\b/.test(location.search);
+
+  /* ================= Language ================= */
+  const I18N = {
+    ar: {
+      title: 'قمة الإبداع <span class="dash">—</span> ٢٠٢٦<br>نبض المحادثة', sample: "بيانات تجريبية", rehearsal: "تجربة: المهرجان ٣–٥ أكتوبر", stale: "البيانات أقدم من ساعتين",
+      dates: "٣–٥ أكتوبر ٢٠٢٦", venue: "حي جاكس، الرياض", stages: "المسرح الرئيسي · المسرح الإبداعي · الورش", hourly: "يُحدَّث كل ساعة",
+      r_all: "الكل", r_pre: "ما قبل المهرجان", r_d1: "اليوم الأول", r_d2: "اليوم الثاني", r_d3: "اليوم الثالث", r_24: "آخر ٢٤ ساعة",
+      channel: "المنصة", allch: "كل المنصات",
+      k_total: "المحادثات", k_pos: "المشاعر الإيجابية", k_eng: "التفاعل", k_reach: "الوصول المحتمل", k_auth: "أصوات فريدة",
+      feed_t: "ماذا يقول الناس", f_people: "الجمهور", f_media: "الإعلام", f_latest: "الأحدث", f_top: "الأكثر تفاعلاً",
+      feed_people: "منشورات الجمهور، بلغتها الأصلية", feed_media: "تغطية المواقع الإخبارية والمدونات، بلغتها الأصلية", feed_more: "عرض المزيد", feed_empty: "لا توجد منشورات في هذه الفترة بعد.", open: "فتح",
+      vol_by_hour: "حجم المحادثة بالساعة", vol_by_day: "حجم المحادثة باليوم", vol_note: "بتوقيت الرياض. المناطق المظللة هي ساعات الجلسات ١٧:٠٠–٢٢:٠٠.",
+      g_hour: "بالساعة", g_day: "باليوم", v_total: "الإجمالي", v_sent: "حسب المشاعر", mentions: "المحادثات", peak: "الذروة",
+      ch_t: "توزيع المنصات", ch_n: "أين تدور المحادثة",
+      spk_t: "المتحدثون الأكثر حضوراً", spk_n: "المنشورات التي تذكر كل متحدث", spk_empty: "ستظهر هنا أسماء المتحدثين الأكثر ذكراً مع انطلاق الجلسات.",
+      ses_t: "الجلسات والورش الأكثر تداولاً", ses_n: "المنشورات التي تذكر كل جلسة", ses_empty: "ستظهر هنا الجلسات الأكثر تداولاً مع انطلاق المهرجان.",
+      th_t: "محاور الحديث", th_n: "حصة كل محور من المحادثة، ومقتطف يعبّر عنه", th_empty: "ستظهر المحاور مع ازدياد المحادثة.",
+      mo_t: "لحظات صنعت المحادثة", mo_n: "أكثر الساعات نشاطاً، وما الذي أشعلها", mo_empty: "ستظهر هنا أبرز اللحظات مع ازدياد المحادثة.", posts: "منشور", x_usual: "× المعدل المعتاد", driven: "أبرز ما أشعلها:",
+      se_t: "المشاعر", se_n: "حصة كل نوع من إجمالي المحادثات", sd_t: "المشاعر حسب اليوم", sd_n: "حصة كل نوع من محادثات اليوم",
+      positive: "إيجابي", neutral: "محايد", negative: "سلبي", pos_share: "إيجابية",
+      hc_t: "الوسوم", hc_n: "الوسوم التي يستخدمها الجمهور مع المهرجان. الوسوم الرسمية باللون الوردي.", ht_t: "أبرز الوسوم", ht_n: "عدد المنشورات لكل وسم", official: "رسمي", tags_empty: "ستظهر الوسوم مع ازدياد المحادثة.",
+      hm_t: "أوقات النشر", hm_n: "المحادثات حسب اليوم والساعة بتوقيت الرياض",
+      tv_t: "أبرز الأصوات", tv_n: "الحسابات الأعلى تفاعلاً", c_author: "الحساب", c_channel: "المنصة", c_posts: "المنشورات", c_eng: "التفاعل",
+      lift_t: "أثر المهرجان", lift_n: "المحادثات اليومية مقارنة بمتوسط يوم في فترة ما قبل المهرجان", lift_avg: "متوسط يوم قبل المهرجان", lift_best: "أعلى يوم في المهرجان", lift_x: "ضعف المعدل", lift_soon: "يظهر الأثر ابتداءً من اليوم الأول.", day_n: "اليوم",
+      story: "القصة حتى الآن", updated: "آخر تحديث", story_none: "",
+      ph_build: "قبل المهرجان", ph_live: "مباشر", ph_done: "اختُتم المهرجان", ph_reh: "تجربة", days_to: "يوماً على الانطلاق", day_to: "يوم على الانطلاق",
+      through: "آخر البيانات:", during: "خلال أيام المهرجان", per_post: "لكل منشور", reach_sub: "مجموع جمهور المنشورات", voices_sub: "حساباً شارك في المحادثة",
+      foot: "قمة الإبداع · مهرجان ٢٠٢٦", no_data: "لا توجد بيانات بعد",
+    },
+    en: {
+      title: 'KSA Festival <span class="dash">—</span>26<br>Social Pulse', sample: "Sample data", rehearsal: "Rehearsal: festival is 3–5 Oct", stale: "Data is over 2 hours old",
+      dates: "3–5 October 2026", venue: "JAX District, Riyadh", stages: "Summit Stage · Creative Stage · Workshops", hourly: "Updated hourly",
+      r_all: "All", r_pre: "Build-up", r_d1: "Day 1", r_d2: "Day 2", r_d3: "Day 3", r_24: "Last 24h",
+      channel: "Channel", allch: "All channels",
+      k_total: "Conversations", k_pos: "Positive sentiment", k_eng: "Engagement", k_reach: "Potential reach", k_auth: "Unique voices",
+      feed_t: "What people are saying", f_people: "People", f_media: "Media", f_latest: "Latest", f_top: "Most engaging",
+      feed_people: "Posts from the public, in their original language", feed_media: "News sites and blogs, in their original language", feed_more: "Show more", feed_empty: "No posts in this range yet.", open: "Open",
+      vol_by_hour: "Conversation volume by hour", vol_by_day: "Conversation volume by day", vol_note: "Riyadh time. Shaded bands are session hours, 17:00–22:00.",
+      g_hour: "Hourly", g_day: "Daily", v_total: "Total", v_sent: "By sentiment", mentions: "Conversations", peak: "Peak",
+      ch_t: "Channel mix", ch_n: "Where the conversation happens",
+      spk_t: "Most discussed speakers", spk_n: "Posts naming each speaker", spk_empty: "The most mentioned speakers appear here once sessions begin.",
+      ses_t: "Most discussed talks & workshops", ses_n: "Posts mentioning each session", ses_empty: "The most discussed sessions appear here once the festival begins.",
+      th_t: "What people are talking about", th_n: "Share of conversation per theme, and a line that captures it", th_empty: "Themes appear as the conversation grows.",
+      mo_t: "Moments that moved the conversation", mo_n: "The busiest hours, and what drove them", mo_empty: "Highlights appear here as the conversation grows.", posts: "posts", x_usual: "× the usual hour", driven: "Driven by",
+      se_t: "Sentiment", se_n: "Share of all conversations", sd_t: "Sentiment by day", sd_n: "Share of each day's conversations",
+      positive: "Positive", neutral: "Neutral", negative: "Negative", pos_share: "positive",
+      hc_t: "Hashtags", hc_n: "Hashtags people use with the festival. Official hashtags in magenta.", ht_t: "Top hashtags", ht_n: "Posts using each hashtag", official: "Official", tags_empty: "Hashtags appear as the conversation grows.",
+      hm_t: "When people post", hm_n: "Conversations by day and hour, Riyadh time",
+      tv_t: "Top voices", tv_n: "Accounts ranked by engagement", c_author: "Account", c_channel: "Channel", c_posts: "Posts", c_eng: "Engagement",
+      lift_t: "Festival lift", lift_n: "Daily conversations against an average build-up day", lift_avg: "average build-up day", lift_best: "best festival day so far", lift_x: "the build-up average", lift_soon: "The lift appears from Day 1.", day_n: "Day",
+      story: "The story so far", updated: "Updated", story_none: "",
+      ph_build: "Build-up", ph_live: "Live", ph_done: "Festival wrapped", ph_reh: "Rehearsal", days_to: "days to go", day_to: "day to go",
+      through: "Data through", during: "during the festival days", per_post: "per post", reach_sub: "combined audience of the posts", voices_sub: "accounts in the conversation",
+      foot: "Creative Summit · KSA Festival '26", no_data: "No data yet",
+    },
+  };
+  let LANG = "ar";
+  try { const l = localStorage.getItem("cis-lang"); if (l === "en" || l === "ar") LANG = l; } catch (e) { /* default Arabic */ }
+  const t = (k) => (I18N[LANG][k] ?? I18N.en[k] ?? k);
+  const CH_AR = { "X": "إكس", "Instagram": "إنستغرام", "TikTok": "تيك توك", "LinkedIn": "لينكدإن", "News & web": "الأخبار والمواقع", "YouTube": "يوتيوب", "Blogs": "المدونات", "Forums": "المنتديات", "Facebook": "فيسبوك", "Snapchat": "سناب شات", "Other": "أخرى" };
+  const chLabel = (c) => (LANG === "ar" ? CH_AR[c] || c : c);
+  const AR_SCRIPT = /[\u0600-\u06FF]/;
+  const nameOf = (it) => (LANG === "ar" ? ((it.nameAr) || (it.aliases || []).find((a) => AR_SCRIPT.test(a) && !a.startsWith("@")) || it.name) : it.name);
+  function applyLang() {
+    document.documentElement.lang = LANG;
+    document.documentElement.dir = LANG === "ar" ? "rtl" : "ltr";
+    document.title = LANG === "ar" ? "قمة الإبداع ٢٠٢٦ | نبض المحادثة" : "KSA Festival '26 Social Pulse";
+    document.getElementById("title").innerHTML = t("title");
+    document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+    document.getElementById("langBtn").textContent = LANG === "ar" ? "EN" : "عربي";
+  }
   const TZ = 3; // display timezone: Riyadh, UTC+3
   const HOUR = 3600e3, DAY = 24 * HOUR;
   const css = getComputedStyle(document.documentElement);
@@ -425,11 +518,11 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   };
   const SENTS = ["positive", "neutral", "negative"];
   const SENT_COLOR = { positive: C.pos, neutral: C.neu, negative: C.neg };
-  const SENT_LABEL = { positive: "Positive", neutral: "Neutral", negative: "Negative" };
+  const SENT_LABEL = { get positive() { return t("positive"); }, get neutral() { return t("neutral"); }, get negative() { return t("negative"); } };
 
-  /* ================= Parsing a Talkwalker export ================= */
+  /* ================= Parsing a listening-tool export ================= */
 
-  // Talkwalker names columns differently in CSV, Excel and API exports.
+  // Exports name columns differently in CSV, Excel and API formats.
   // Each field lists the headers it accepts, most specific first.
   const FIELDS = {
     date: ["published", "published_date", "date published", "publication date", "date", "time", "created", "indexed"],
@@ -623,7 +716,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
 
   function parseCSVText(txt) {
     const res = Papa.parse(txt.replace(/^﻿/, ""), { header: true, skipEmptyLines: true, dynamicTyping: false });
-    // Talkwalker sometimes prepends a title line above the header
+    // The export sometimes prepends a title line above the header
     if (res.meta.fields && res.meta.fields.length < 3) {
       const lines = txt.split(/\r?\n/);
       const hi = lines.findIndex((l) => /url|published|date|content/i.test(l) && l.split(/[,;\t]/).length > 3);
@@ -663,7 +756,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
 
   /* ================= Loading ================= */
 
-  const state = { all: [], source: "", demo: false, preview: false, range: "all", channel: "", volMode: "total", grain: "auto", feedMode: "latest", loadedAt: 0, map: {}, rowsIn: 0, dropped: 0, insights: null, bench: null };
+  const state = { all: [], source: "", demo: false, preview: false, range: "all", channel: "", volMode: "total", grain: "auto", feedWho: "people", feedMode: "latest", loadedAt: 0, map: {}, rowsIn: 0, dropped: 0, insights: null, bench: null };
 
   async function fetchOne(path) {
     const res = await fetch(path + (path.includes("?") ? "&" : "?") + "v=" + Date.now(), { cache: "no-store" });
@@ -731,11 +824,14 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   // Notes tab rows: [field, text, status]. Published only once "approved" says yes.
   function notesFromRows(rows) {
     const f = {};
-    rows.forEach((r) => { if (r[0]) f[String(r[0]).trim().toLowerCase()] = [String(r[1] || "").trim(), String(r[2] || "").trim()]; });
+    rows.forEach((r) => { if (r[0]) f[String(r[0]).trim().toLowerCase()] = [String(r[1] || "").trim(), String(r[2] || "").trim(), String(r[3] || "").trim()]; });
     const approved = /^(yes|y|approved|نعم)$/i.test((f.approved || [""])[0]) || /^(yes|y|approved|نعم)$/i.test((f.approved || ["", ""])[1]);
     if (!approved && !CFG.showDraftNotes) return null;
     const val = (k) => (f[k] ? f[k][0] : "");
+    const valEn = (k) => (f[k] ? f[k][2] : "");
+    const PTS = ["point 1", "point 2", "point 3", "point 4"];
     return {
+      en: { headline: valEn("headline"), points: PTS.map(valEn).filter(Boolean) },
       updated: val("updated"), by: CFG.insightsBy || "", headline: val("headline"), draft: !approved,
       points: ["point 1", "point 2", "point 3", "point 4"].map(val).filter(Boolean),
       watch: [val("watch")].filter(Boolean),
@@ -839,7 +935,6 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       const all = demoData();
       Object.assign(state, { all, demo: true, source: "Sample data", map: {}, rowsIn: 0, dropped: 0, insights: DEMO_INSIGHTS, bench: null });
     }
-    await loadLive();
     state.loadedAt = Date.now();
     render();
   }
@@ -856,7 +951,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const past = wins.filter((w) => now >= w[0]);
     return past.length ? past[past.length - 1] : null;
   }
-  const REHEARSAL = rehearsalWindow(Date.now());
+  const REHEARSAL = OPS ? rehearsalWindow(Date.now()) : null;
   const DAYS = REHEARSAL || CFG.event.days.map(dayStart);
 
   function rangeBounds() {
@@ -888,8 +983,12 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   const fmtFull = (n) => Math.round(n).toLocaleString("en-US");
   const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
   const local = (t) => new Date(t + TZ * HOUR);
-  const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const CAL = {
+    en: { wd: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], mo: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] },
+    ar: { wd: ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"], mo: ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"] },
+  };
+  const WD = { get length() { return 7; } }, MO = {};
+  for (let i = 0; i < 12; i++) { Object.defineProperty(MO, i, { get: () => CAL[LANG].mo[i] }); if (i < 7) Object.defineProperty(WD, i, { get: () => CAL[LANG].wd[i] }); }
   const hh = (d) => String(d.getUTCHours()).padStart(2, "0") + ":00";
   const dayLabel = (t) => { const d = local(t); return WD[d.getUTCDay()] + " " + d.getUTCDate() + " " + MO[d.getUTCMonth()]; };
   const timeLabel = (t) => { const d = local(t); return dayLabel(t) + ", " + String(d.getUTCHours()).padStart(2, "0") + ":" + String(d.getUTCMinutes()).padStart(2, "0"); };
@@ -935,13 +1034,13 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
 
   function renderVolume(rows) {
     const id = "cVolume";
-    if (!rows.length) return setEmpty(id, "No conversations in this range yet.");
+    if (!rows.length) return setEmpty(id, t("feed_empty"));
     ensureCanvas(id);
     const [a, b] = rangeBounds();
     const grain = effectiveGrain(rows);
     const STEP = grain === "day" ? DAY : HOUR;
     const floorT = grain === "day" ? (t) => Math.floor((t + TZ * HOUR) / DAY) * DAY - TZ * HOUR : floorHour;
-    document.getElementById("volTitle").textContent = "Conversation volume by " + grain;
+    document.getElementById("volTitle").textContent = t(grain === "day" ? "vol_by_day" : "vol_by_hour");
     document.querySelectorAll("#volGrain button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.grain === grain)));
     const minT = floorT(Math.max(a, Math.min(...rows.map((r) => r.t))));
     const maxT = floorT(Math.min(b - 1, Math.max(...rows.map((r) => r.t))));
@@ -958,7 +1057,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     let series;
     if (state.volMode === "total") {
       series = [{
-        name: "Mentions", type: "line", smooth: 0.25, showSymbol: false, symbolSize: 8,
+        name: t("mentions"), type: "line", smooth: 0.25, showSymbol: false, symbolSize: 8,
         data: xs.map((t) => [t + S, buckets.get(t).total]),
         lineStyle: { width: 2, color: C.accent },
         itemStyle: { color: C.accent, borderColor: C.surface, borderWidth: 2 },
@@ -966,7 +1065,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
         markArea,
         markPoint: {
           symbol: "circle", symbolSize: 10, itemStyle: { color: C.ink, borderColor: C.accent, borderWidth: 3 },
-          label: { show: true, position: (() => { const f = xs.indexOf(peak) / Math.max(1, xs.length - 1); return f > 0.65 ? "left" : f < 0.2 ? "right" : "top"; })(), distance: 10, color: C.ink, fontWeight: 600, fontSize: 12, formatter: () => "Peak " + buckets.get(peak).total + (document.getElementById(id).clientWidth < 600 ? "" : " · " + (grain === "day" ? dayLabel(peak) : dayLabel(peak) + " " + hh(local(peak)))) },
+          label: { show: true, position: (() => { const f = xs.indexOf(peak) / Math.max(1, xs.length - 1); return f > 0.65 ? "left" : f < 0.2 ? "right" : "top"; })(), distance: 10, color: C.ink, fontWeight: 600, fontSize: 12, formatter: () => t("peak") + " " + buckets.get(peak).total + (document.getElementById(id).clientWidth < 600 ? "" : " · " + (grain === "day" ? dayLabel(peak) : dayLabel(peak) + " " + hh(local(peak)))) },
           data: [{ coord: [peak + S, buckets.get(peak).total] }],
         },
       }];
@@ -991,7 +1090,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
           const t = ps[0].value[0] - S;
           const b = buckets.get(t);
           return "<b>" + when(t) + "</b><br>" +
-            "Mentions: <b>" + b.total + "</b><br>" +
+            t("mentions") + ": <b>" + b.total + "</b><br>" +
             SENTS.map((s) => '<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + SENT_COLOR[s] + ';margin-right:6px"></span>' + SENT_LABEL[s] + ": " + b[s]).join("<br>");
         },
       },
@@ -1007,16 +1106,16 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
 
   function renderSentDonut(rows) {
     const id = "cSentDonut";
-    if (!rows.length) return setEmpty(id, "No data");
+    if (!rows.length) return setEmpty(id, t("no_data"));
     ensureCanvas(id);
     const cnt = { positive: 0, neutral: 0, negative: 0 };
     rows.forEach((r) => cnt[r.sent]++);
-    const net = pct(cnt.positive - cnt.negative, rows.length);
+    const keyOf = (label) => SENTS.find((s) => SENT_LABEL[s] === label);
     chart(id).setOption({
       textStyle: baseText,
-      tooltip: { ...tooltipBase, trigger: "item", formatter: (p) => "<b>" + p.name + "</b><br>" + fmtFull(p.value) + " posts · " + p.percent + "%" },
-      legend: { ...legendBase, bottom: 0, formatter: (n) => { const k = n.toLowerCase(); return n + "  " + pct(cnt[k], rows.length) + "%"; } },
-      title: { text: (net > 0 ? "+" : "") + net, subtext: "net sentiment", left: "center", top: "35%", textStyle: { color: C.ink, fontFamily: "Archivo, sans-serif", fontSize: 34, fontWeight: 800 }, subtextStyle: { color: C.muted, fontSize: 11 } },
+      tooltip: { ...tooltipBase, trigger: "item", formatter: (p) => "<b>" + p.name + "</b><br>" + fmtFull(p.value) + " · " + p.percent + "%" },
+      legend: { ...legendBase, bottom: 0, formatter: (n) => n + "  " + pct(cnt[keyOf(n)], rows.length) + "%" },
+      title: { text: pct(cnt.positive, rows.length) + "%", subtext: t("pos_share"), left: "center", top: "35%", textStyle: { color: C.ink, fontFamily: "Archivo, sans-serif", fontSize: 34, fontWeight: 800 }, subtextStyle: { color: C.muted, fontSize: 12 } },
       series: [{
         type: "pie", radius: ["58%", "80%"], center: ["50%", "45%"], padAngle: 1.5,
         itemStyle: { borderRadius: 4, borderColor: C.surface, borderWidth: 2 },
@@ -1026,9 +1125,10 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     }, true);
   }
 
+
   function renderSentDay(rows) {
     const id = "cSentDay";
-    if (!rows.length) return setEmpty(id, "No data");
+    if (!rows.length) return setEmpty(id, t("no_data"));
     ensureCanvas(id);
     const byDay = new Map();
     for (const r of rows) {
@@ -1037,13 +1137,13 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       const b = byDay.get(key); b[r.sent]++; b.n++;
     }
     const keys = [...byDay.keys()].sort((a, b) => a - b).slice(-10);
-    const cats = keys.map((k) => { const i = DAYS.indexOf(k); return dayLabel(k) + (i >= 0 ? "\n{ev|DAY " + (i + 1) + "}" : ""); });
+    const cats = keys.map((k) => { const i = DAYS.indexOf(k); return dayLabel(k) + (i >= 0 ? "\n{ev|" + t("r_d" + (i + 1)) + "}" : ""); });
     chart(id).setOption({
       textStyle: baseText,
       grid: { left: 40, right: 12, top: 36, bottom: 44 },
       legend: { ...legendBase, top: 0, left: 0 },
       tooltip: { ...tooltipBase, trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(255,255,255,.04)" } },
-        formatter: (ps) => { const b = byDay.get(keys[ps[0].dataIndex]); return "<b>" + dayLabel(keys[ps[0].dataIndex]) + "</b> · " + b.n + " posts<br>" + SENTS.map((s) => SENT_LABEL[s] + ": " + b[s] + " (" + pct(b[s], b.n) + "%)").join("<br>"); } },
+        formatter: (ps) => { const b = byDay.get(keys[ps[0].dataIndex]); return "<b>" + dayLabel(keys[ps[0].dataIndex]) + "</b> · " + b.n + " " + t("posts") + "<br>" + SENTS.map((s) => SENT_LABEL[s] + ": " + b[s] + " (" + pct(b[s], b.n) + "%)").join("<br>"); } },
       xAxis: { type: "category", data: cats, ...axisBase, axisLabel: { color: C.muted, fontSize: 11, hideOverlap: true, rich: { ev: { color: C.accent, fontWeight: 700, fontSize: 10, padding: [3, 0, 0, 0] } } } },
       yAxis: { type: "value", max: 100, interval: 25, ...axisBase, axisLabel: { color: C.muted, formatter: "{value}%" } },
       series: SENTS.map((s, i) => ({
@@ -1062,58 +1162,62 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     ensureCanvas(id);
     chart(id).setOption({
       textStyle: baseText,
-      grid: { left: 176, right: 44, top: 30, bottom: 24 },
-      legend: { ...legendBase, top: 0, left: 0 },
+      grid: { left: 176, right: 44, top: 12, bottom: 24 },
       tooltip: { ...tooltipBase, trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(255,255,255,.04)" } },
-        formatter: (ps) => { const c = top[ps[0].dataIndex]; const it = list[c.i]; return "<b>" + esc(it.name) + "</b><br>" + esc(labelFor(it)) + "<br>" + c.n + " posts<br>" + SENTS.map((s) => SENT_LABEL[s] + ": " + c[s]).join(" · "); } },
+        formatter: (ps) => { const c = top[ps[0].dataIndex]; const it = list[c.i]; return "<b>" + esc(nameOf(it)) + "</b><br>" + esc(labelFor(it)) + "<br>" + c.n + " " + t("posts"); } },
       xAxis: { type: "value", ...axisBase, minInterval: 1, splitNumber: 3 },
-      yAxis: { type: "category", data: top.map((c) => list[c.i].name), ...axisBase, axisLine: { show: false }, axisLabel: { color: C.ink, fontSize: 12, width: 164, overflow: "truncate" } },
-      series: SENTS.map((s, i) => ({
-        name: SENT_LABEL[s], type: "bar", stack: "x", barMaxWidth: 18,
-        data: top.map((c) => c[s]),
-        itemStyle: { color: SENT_COLOR[s], borderColor: C.surface, borderWidth: 1, borderRadius: i === 2 ? [0, 4, 4, 0] : 0 },
-        label: i === 2 ? { show: true, position: "right", color: C.ink2, fontSize: 11, fontWeight: 600, formatter: (p) => top[p.dataIndex].n } : undefined,
-      })),
+      yAxis: { type: "category", data: top.map((c) => nameOf(list[c.i])), ...axisBase, axisLine: { show: false }, axisLabel: { color: C.ink, fontSize: 12, width: 164, overflow: "truncate" } },
+      series: [{
+        name: t("posts"), type: "bar", barMaxWidth: 18,
+        data: top.map((c) => c.n),
+        itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: C.cat[0] }, { offset: 1, color: C.accent }]), borderRadius: [0, 4, 4, 0] },
+        label: { show: true, position: "right", color: C.ink2, fontSize: 11, fontWeight: 600 },
+      }],
     }, true);
   }
 
+  const isMedia = (r) => r.src === "News & web" || r.src === "Blogs";
+  // Only approved hashtags are shown: the official ones plus the event-related
+  // ones listed in config.js (hashtagAllowlist). Nothing else can appear.
+  const TAG_ALLOW = new Set([...CFG.officialHashtags, ...(CFG.hashtagAllowlist || [])].map((x) => x.toLowerCase()));
   function tagCounts(rows) {
     const m = new Map();
     for (const r of rows) for (const [k, disp] of r.tags) {
+      if (!TAG_ALLOW.has(k)) continue;
       if (!m.has(k)) m.set(k, { k, disp, n: 0 });
       m.get(k).n++;
     }
-    return [...m.values()].sort((a, b) => b.n - a.n);
+    return [...m.values()].sort((a, b) => (OFFICIAL.has(b.k) - OFFICIAL.has(a.k)) || b.n - a.n);
   }
 
   function renderTags(rows) {
     const tags = tagCounts(rows);
     const list = document.getElementById("tagList");
     const top = tags.slice(0, 10);
-    const max = top[0] ? top[0].n : 1;
-    list.innerHTML = top.length ? top.map((t, i) =>
-      '<li class="' + (OFFICIAL.has(t.k) ? "official" : "") + '"><span class="n">' + (i + 1) + '</span><span class="t"><bdi>' + esc(t.disp) + "</bdi>" + (OFFICIAL.has(t.k) ? '<span class="tag-off">Official</span>' : "") + '</span><span class="c">' + fmtFull(t.n) + '</span><span class="bar-bg"><span class="bar-fg" style="display:block;width:' + (t.n / max * 100).toFixed(1) + '%"></span></span></li>'
-    ).join("") : '<li class="empty">No hashtags in this range.</li>';
+    const max = Math.max(1, ...top.map((x) => x.n));
+    list.innerHTML = top.length ? top.map((x, i) =>
+      '<li class="' + (OFFICIAL.has(x.k) ? "official" : "") + '"><span class="n">' + (i + 1) + '</span><span class="t"><bdi>' + esc(x.disp) + "</bdi>" + (OFFICIAL.has(x.k) ? '<span class="tag-off">' + t("official") + "</span>" : "") + '</span><span class="c">' + fmtFull(x.n) + '</span><span class="bar-bg"><span class="bar-fg" style="display:block;width:' + (x.n / max * 100).toFixed(1) + '%"></span></span></li>'
+    ).join("") : '<li class="empty">' + t("tags_empty") + "</li>";
 
     const id = "cCloud";
-    if (!tags.length) return setEmpty(id, "No hashtags in this range.");
+    if (!tags.length) return setEmpty(id, t("tags_empty"));
     ensureCanvas(id);
     const palette = [C.cat[0], C.cat[3], C.cat[4], C.cat[1], C.cat[5]];
     chart(id).setOption({
-      tooltip: { ...tooltipBase, formatter: (p) => "<b>" + esc(p.name) + "</b><br>" + fmtFull(p.value) + " posts" },
+      tooltip: { ...tooltipBase, formatter: (p) => "<b>" + esc(p.name) + "</b><br>" + fmtFull(p.value) + " " + t("posts") },
       series: [{
         type: "wordCloud", shape: "circle", left: "center", top: "center", width: "96%", height: "92%",
-        sizeRange: [14, 44], rotationRange: [0, 0], gridSize: 8, drawOutOfBound: false, shrinkToFit: true, layoutAnimation: false,
+        sizeRange: [16, 46], rotationRange: [0, 0], gridSize: 8, drawOutOfBound: false, shrinkToFit: true, layoutAnimation: false,
         textStyle: { fontFamily: "Archivo, 'IBM Plex Sans Arabic', sans-serif", fontWeight: 800 },
         emphasis: { textStyle: { color: C.ink } },
-        data: tags.slice(0, 60).map((t, i) => ({ name: t.disp, value: t.n, textStyle: { color: OFFICIAL.has(t.k) ? C.accent : palette[i % palette.length] } })),
+        data: tags.slice(0, 40).map((x, i) => ({ name: x.disp, value: x.n, textStyle: { color: OFFICIAL.has(x.k) ? C.accent : palette[i % palette.length] } })),
       }],
     }, true);
   }
 
   function renderChannels(rows) {
     const id = "cChannels";
-    if (!rows.length) return setEmpty(id, "No data");
+    if (!rows.length) return setEmpty(id, t("no_data"));
     ensureCanvas(id);
     const m = new Map();
     rows.forEach((r) => m.set(r.src, (m.get(r.src) || 0) + 1));
@@ -1124,20 +1228,20 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const colorFor = (name) => { const i = ORDER.indexOf(name); return i >= 0 ? C.cat[i] : C.neu; };
     chart(id).setOption({
       textStyle: baseText,
-      tooltip: { ...tooltipBase, trigger: "item", formatter: (p) => "<b>" + esc(p.name) + "</b><br>" + fmtFull(p.value) + " posts · " + p.percent + "%" },
+      tooltip: { ...tooltipBase, trigger: "item", formatter: (p) => "<b>" + esc(p.name) + "</b><br>" + fmtFull(p.value) + " " + t("posts") + " · " + p.percent + "%" },
       legend: { ...legendBase, bottom: 0, itemGap: 10 },
       series: [{
         type: "pie", radius: ["40%", "72%"], center: ["50%", "42%"], roseType: false, padAngle: 1.5,
         itemStyle: { borderRadius: 4, borderColor: C.surface, borderWidth: 2 },
         label: { show: true, color: C.ink, fontSize: 11, fontWeight: 600, formatter: (p) => (p.percent >= 6 ? Math.round(p.percent) + "%" : ""), position: "inside" },
-        data: arr.map(([name, v]) => ({ name, value: v, itemStyle: { color: colorFor(name) } })),
+        data: arr.map(([name, v]) => ({ name: chLabel(name), value: v, itemStyle: { color: colorFor(name) } })),
       }],
     }, true);
   }
 
   function renderHeat(rows) {
     const id = "cHeat";
-    if (!rows.length) return setEmpty(id, "No data");
+    if (!rows.length) return setEmpty(id, t("no_data"));
     ensureCanvas(id);
     const byDay = new Map();
     for (const r of rows) {
@@ -1151,7 +1255,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     chart(id).setOption({
       textStyle: baseText,
       grid: { left: 8, right: 12, top: 8, bottom: 50, containLabel: true },
-      tooltip: { ...tooltipBase, formatter: (p) => "<b>" + dayLabel(keys[p.value[1]]) + ", " + String(p.value[0]).padStart(2, "0") + ":00</b><br>" + p.value[2] + " mentions" },
+      tooltip: { ...tooltipBase, formatter: (p) => "<b>" + dayLabel(keys[p.value[1]]) + ", " + String(p.value[0]).padStart(2, "0") + ":00</b><br>" + p.value[2] + " " + t("posts") },
       xAxis: { type: "category", data: [...Array(24).keys()].map((h) => String(h).padStart(2, "0")), ...axisBase, splitArea: { show: false }, axisLabel: { color: C.muted, fontSize: 10, interval: 1 } },
       yAxis: { type: "category", data: keys.map((k) => dayLabel(k) + (DAYS.includes(k) ? "  ●" : "")), ...axisBase, axisLine: { show: false }, axisLabel: { color: C.ink2, fontSize: 11 } },
       visualMap: { min: 0, max, calculable: false, orient: "horizontal", left: "center", bottom: 0, itemWidth: 10, itemHeight: 140, text: [String(max), "0"], textStyle: { color: C.muted, fontSize: 11 },
@@ -1163,25 +1267,43 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   function renderAuthors(rows) {
     const m = new Map();
     for (const r of rows) {
-      if (!m.has(r.author)) m.set(r.author, { a: r.author, src: new Map(), n: 0, eng: 0, reach: 0 });
-      const o = m.get(r.author); o.n++; o.eng += r.eng; o.reach = Math.max(o.reach, r.reach); o.src.set(r.src, (o.src.get(r.src) || 0) + 1);
+      if (!m.has(r.author)) m.set(r.author, { a: r.author, src: new Map(), n: 0, eng: 0 });
+      const o = m.get(r.author); o.n++; o.eng += r.eng; o.src.set(r.src, (o.src.get(r.src) || 0) + 1);
     }
     const top = [...m.values()].filter((o) => o.a !== "Unknown").sort((a, b) => b.eng - a.eng || b.n - a.n).slice(0, 10);
     document.querySelector("#authTbl tbody").innerHTML = top.length ? top.map((o) => {
       const src = [...o.src.entries()].sort((a, b) => b[1] - a[1])[0][0];
-      return '<tr><td><bdi>' + esc(o.a) + "</bdi>" + ownedChip(o.a) + '</td><td><span class="chip src">' + esc(src) + '</span></td><td class="num">' + fmtFull(o.n) + '</td><td class="num">' + fmt(o.eng) + '</td><td class="num">' + (o.reach ? fmt(o.reach) : "–") + "</td></tr>";
-    }).join("") : '<tr><td colspan="5" class="empty">No authors in this range.</td></tr>';
+      return '<tr><td><bdi>' + esc(o.a) + '</bdi></td><td><span class="chip src">' + esc(chLabel(src)) + '</span></td><td class="num">' + fmtFull(o.n) + '</td><td class="num">' + fmt(o.eng) + "</td></tr>";
+    }).join("") : '<tr><td colspan="4" class="empty">' + t("no_data") + "</td></tr>";
   }
 
+  // The featured wall: people first, media on its own tab. Posts are shown
+  // in their original language; negative posts are left out of the wall.
+  let feedShown = 9;
+  const AV_COL = ["#8C7CFF", "#C08400", "#FF2E88", "#1496B5", "#4E9E18", "#B85CE0"];
   function renderFeed(rows) {
-    const list = state.feedMode === "top" ? [...rows].sort((a, b) => b.eng - a.eng) : [...rows].sort((a, b) => b.t - a.t);
-    document.getElementById("feedNote").textContent = state.feedMode === "top" ? "Highest engagement first" : "Newest first";
-    document.getElementById("feed").innerHTML = list.slice(0, 40).map((r) => {
-      const who = esc(r.author);
-      const text = esc(r.text.length > 400 ? r.text.slice(0, 400) + "…" : r.text).replace(/(#[\p{L}\p{N}_]+)/gu, '<b style="color:var(--ink)">$1</b>');
-      const link = /^https?:\/\//.test(r.url) ? ' · <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Open</a>' : "";
-      return '<li class="post"><div class="post-h"><span class="who"><bdi>' + who + "</bdi>" + ownedChip(r.author) + '</span><span class="chip src">' + esc(r.src) + '</span><span class="chip ' + r.sent + '">' + SENT_LABEL[r.sent] + "</span><span>" + timeLabel(r.t) + (r.eng ? " · " + fmt(r.eng) + " eng." : "") + link + '</span></div><p dir="' + (r.rtl ? "rtl" : "auto") + '">' + text + "</p></li>";
-    }).join("") || '<li class="empty">No conversations in this range yet.</li>';
+    const who = state.feedWho || "people";
+    const pool = rows.filter((r) => r.sent !== "negative" && r.text && (who === "media" ? isMedia(r) : !isMedia(r)));
+    const list = state.feedMode === "top" ? [...pool].sort((a, b) => b.eng - a.eng || b.t - a.t) : [...pool].sort((a, b) => b.t - a.t);
+    document.getElementById("feedNote").textContent = t(who === "media" ? "feed_media" : "feed_people");
+    const items = list.slice(0, feedShown).map((r, i) => {
+      const name = r.author && r.author !== "Unknown" ? r.author : (r.handle || chLabel(r.src));
+      const initial = (name.replace(/^[@\W_]+/u, "")[0] || "•").toUpperCase();
+      const col = AV_COL[[...name].reduce((a, ch) => a + ch.charCodeAt(0), 0) % AV_COL.length];
+      const text = esc(r.text.length > 420 ? r.text.slice(0, 420) + "…" : r.text).replace(/(#[\p{L}\p{N}_]+)/gu, '<b style="color:var(--accent)">$1</b>');
+      const link = /^https?:\/\//.test(r.url) ? '<a class="open" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + t("open") + " ↗</a>" : "";
+      return '<li class="post' + (i === 0 ? " lead" : "") + '"><div class="who-row"><span class="avatar" style="background:' + col + '">' + esc(initial) + '</span><div style="min-width:0"><div class="who"><bdi>' + esc(name) + '</bdi></div><div class="meta-row"><span class="chip src">' + esc(chLabel(r.src)) + "</span><span>" + timeLabel(r.t) + "</span>" + (r.eng ? "<span>♥ " + fmt(r.eng) + "</span>" : "") + "</div></div></div>" +
+        '<p dir="' + (r.rtl ? "rtl" : "ltr") + '">' + text + "</p>" + link + "</li>";
+    });
+    document.getElementById("feed").innerHTML = items.join("") || '<li class="empty">' + t("feed_empty") + "</li>";
+    let more = document.getElementById("feedMore");
+    if (!more) {
+      more = document.createElement("button"); more.id = "feedMore"; more.type = "button"; more.className = "btn more";
+      more.addEventListener("click", () => { feedShown += 9; renderFeed(filtered()); });
+      document.getElementById("feed").after(more);
+    }
+    more.textContent = t("feed_more");
+    more.hidden = list.length <= feedShown;
   }
 
   /* ================= Qualitative insights ================= */
@@ -1189,35 +1311,38 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   function renderStory() {
     const I = state.insights;
     const el = document.getElementById("story");
-    if (!I || !I.headline) {
-      el.innerHTML = '<div class="eyebrow"><span>The story so far</span></div><p class="none">The editor\'s note appears here after each insight review. Publish it as <code>data/insights.json</code>.</p>';
-      return;
-    }
-    const when = !I.updated ? "" : !isNaN(Date.parse(I.updated)) && /T|Z|\+/.test(I.updated) ? timeLabel(Date.parse(I.updated)) + " AST" : I.updated;
+    el.hidden = !I || !I.headline;
+    if (el.hidden) return;
+    // English text comes from the Notes tab's optional English column
+    const L = LANG === "en" && I.en && I.en.headline ? I.en : I;
+    const when = !I.updated ? "" : !isNaN(Date.parse(I.updated)) && /T|Z|\+/.test(I.updated) ? timeLabel(Date.parse(I.updated)) : I.updated.replace(/\s*AST$/, "");
     el.innerHTML =
-      '<div class="eyebrow"><span>The story so far</span>' + (when ? "<span>Updated " + esc(when) + "</span>" : "") + (I.by ? "<span>" + esc(I.by) + "</span>" : "") + (state.demo ? "<span>Sample copy</span>" : "") + (I.draft ? '<span style="color:#FFB020">Draft, awaiting approval</span>' : "") + "</div>" +
-      '<h3 dir="auto">' + esc(I.headline) + "</h3>" +
+      '<div class="eyebrow"><span>' + t("story") + "</span>" + (when ? "<span>" + t("updated") + " " + esc(when) + "</span>" : "") + (OPS && I.draft ? '<span style="color:#FFB020">Draft, awaiting approval</span>' : "") + "</div>" +
+      '<h3 dir="auto">' + esc(L.headline) + "</h3>" +
       '<div class="story-cols">' +
-        ((I.points || []).length ? "<ul>" + I.points.map((p) => '<li dir="auto">' + esc(p) + "</li>").join("") + "</ul>" : "<div></div>") +
-        ((I.watch || []).length ? '<div class="watch"><b>Watch</b>' + I.watch.map((w) => '<span dir="auto">' + esc(w) + "</span>").join("") + "</div>" : "") +
+        ((L.points || []).length ? "<ul>" + L.points.map((p) => '<li dir="auto">' + esc(p) + "</li>").join("") + "</ul>" : "<div></div>") +
+        // "Watch" items are for the team, never the client
+        (OPS && (I.watch || []).length ? '<div class="watch"><b>Team only</b>' + I.watch.map((w) => '<span dir="auto">' + esc(w) + "</span>").join("") + "</div>" : "") +
       "</div>";
   }
 
   const sentSplit = (list) => { const c = { positive: 0, neutral: 0, negative: 0 }; list.forEach((r) => c[r.sent]++); return c; };
   const topBy = (list, f) => list.reduce((best, r) => (!best || f(r) > f(best) ? r : best), null);
-  const clip = (t, n) => { t = t.replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1) + "…" : t; };
+  const clip = (x, n) => { x = x.replace(/\s+/g, " ").trim(); return x.length > n ? x.slice(0, n - 1) + "…" : x; };
 
   function renderThemes(rows) {
     const el = document.getElementById("themes");
     const groups = THEMES.map((th, i) => ({ th, list: rows.filter((r) => r.th.includes(i)) })).filter((g) => g.list.length).sort((a, b) => b.list.length - a.list.length);
-    if (!groups.length) { el.innerHTML = '<li class="empty">No themed conversations in this range. Add keywords to themes in config.js.</li>'; return; }
+    if (!groups.length) { el.innerHTML = '<li class="empty">' + t("th_empty") + "</li>"; return; }
     const max = groups[0].list.length;
     el.innerHTML = groups.map((g) => {
-      const n = g.list.length, c = sentSplit(g.list), net = pct(c.positive - c.negative, n);
-      const q = topBy(g.list, (r) => r.eng + r.reach / 1e6);
-      const seg = (k) => (c[k] ? '<span style="flex:' + c[k] + ";background:" + SENT_COLOR[k] + '" title="' + SENT_LABEL[k] + ": " + c[k] + '"></span>' : "");
-      return '<li class="theme"><div class="theme-h"><span class="nm">' + esc(g.th.name) + '</span><span class="fig"><b>' + pct(n, rows.length) + "%</b> · " + fmtFull(n) + " posts · net " + (net > 0 ? "+" : "") + net + "</span></div>" +
-        '<div class="tri" style="width:' + Math.max(6, (n / max) * 100).toFixed(1) + '%">' + seg("positive") + seg("neutral") + seg("negative") + "</div>" +
+      const n = g.list.length, c = sentSplit(g.list);
+      // the quote is the most engaging line that isn't negative, from people first
+      const pool = g.list.filter((r) => r.sent !== "negative");
+      const q = topBy(pool.filter((r) => !isMedia(r)), (r) => r.eng) || topBy(pool, (r) => r.eng + r.reach / 1e6);
+      const nm = LANG === "ar" && g.th.nameAr ? g.th.nameAr : g.th.name;
+      return '<li class="theme"><div class="theme-h"><span class="nm">' + esc(nm) + '</span><span class="fig"><b>' + pct(n, rows.length) + "%</b> · " + fmtFull(n) + " " + t("posts") + (c.positive ? " · " + pct(c.positive, n) + "% " + t("pos_share") : "") + "</span></div>" +
+        '<div class="tri" style="width:' + Math.max(6, (n / max) * 100).toFixed(1) + '%"><span style="flex:1;background:linear-gradient(90deg,' + C.cat[0] + "," + C.accent + ')"></span></div>' +
         (q ? '<q dir="auto">' + esc(clip(q.text.replace(TAG_RE, "").trim() || q.text, 140)) + "</q>" : "") + "</li>";
     }).join("");
   }
@@ -1227,15 +1352,17 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       const m = new Map();
       list.forEach((r) => r[key].forEach((i) => m.set(i, (m.get(i) || 0) + 1)));
       const best = [...m.entries()].sort((a, b) => b[1] - a[1])[0];
-      return best && best[1] >= 2 ? names[best[0]].name : null;
+      if (!best || best[1] < 2) return null;
+      const it = names[best[0]];
+      return key === "th" ? (LANG === "ar" && it.nameAr ? it.nameAr : it.name) : nameOf(it);
     };
-    const tags = tagCounts(list).filter((t) => !OFFICIAL.has(t.k));
+    const tags = tagCounts(list).filter((x) => !OFFICIAL.has(x.k));
     return [top("ses", CFG.sessions), top("spk", CFG.speakers), top("th", THEMES), tags[0] && tags[0].n >= 2 ? tags[0].disp : null].filter(Boolean);
   }
 
   function renderMoments(rows) {
     const el = document.getElementById("moments");
-    if (rows.length < 20) { el.innerHTML = '<li class="empty">Moments appear once there is enough conversation to compare hours.</li>'; return; }
+    if (rows.length < 20) { el.innerHTML = '<li class="empty">' + t("mo_empty") + "</li>"; return; }
     const byHour = new Map();
     rows.forEach((r) => { const h = floorHour(r.t); if (!byHour.has(h)) byHour.set(h, []); byHour.get(h).push(r); });
     const hs = [...byHour.keys()].sort((a, b) => a - b);
@@ -1246,44 +1373,21 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const bar = Math.max(median * 2, median + 5, 5);
     const n = (h) => (byHour.get(h) || []).length;
     const peaks = hs.filter((h) => n(h) >= bar && n(h) >= n(h - HOUR) && n(h) >= n(h + HOUR)).sort((a, b) => n(b) - n(a)).slice(0, 4);
-    if (!peaks.length) { el.innerHTML = '<li class="empty">No spikes in this range. Every hour is close to the usual level of ' + median + " posts.</li>"; return; }
+    if (!peaks.length) { el.innerHTML = '<li class="empty">' + t("mo_empty") + "</li>"; return; }
     el.innerHTML = peaks.map((h) => {
       const list = byHour.get(h), c = sentSplit(list), d = drivers(list);
-      const x = median ? (list.length / median).toFixed(1).replace(/\.0$/, "") + "× the usual hour" : "well above the usual hour";
-      return '<li class="moment"><div class="big">' + list.length + "<small>posts</small></div><div><div class=\"when\">" + dayLabel(h) + " · " + hh(local(h)) + "–" + hh(local(h + HOUR)) + ' <span class="chip ' + (c.negative > c.positive ? "negative" : c.positive >= c.neutral ? "positive" : "neutral") + '">' + pct(Math.max(c.positive, c.negative, c.neutral), list.length) + "% " + (c.negative > c.positive ? "negative" : c.positive >= c.neutral ? "positive" : "neutral") + '</span></div><div class="why">' + x + (d.length ? ". Driven by " + d.map(esc).join(" · ") : "") + "</div></div></li>";
+      const x = median ? (list.length / median).toFixed(1).replace(/\.0$/, "") + t("x_usual") : "";
+      const chip = c.positive ? ' <span class="chip positive">' + pct(c.positive, list.length) + "% " + t("pos_share") + "</span>" : "";
+      return '<li class="moment"><div class="big">' + list.length + "<small>" + t("posts") + '</small></div><div><div class="when">' + dayLabel(h) + " · " + hh(local(h)) + "–" + hh(local(h + HOUR)) + chip + '</div><div class="why">' + x + (d.length ? (x ? " · " : "") + t("driven") + " " + d.map(esc).join(" · ") : "") + "</div></div></li>";
     }).join("");
-  }
-
-  function renderQuotes(rows) {
-    const el = document.getElementById("quotes");
-    const used = new Set();
-    const pick = (list) => { const r = topBy(list.filter((x) => !used.has(x)), (x) => x.eng + x.reach / 1e6); if (r) used.add(r); return r; };
-    let cards;
-    const curated = state.insights && Array.isArray(state.insights.quotes) && state.insights.quotes.length ? state.insights.quotes : null;
-    if (curated) {
-      cards = curated.map((q) => ({ kind: q.kind || "Voice", color: "#C3BAFF", r: { text: q.text || "", author: q.author || "", src: q.channel || "", eng: 0, t: NaN, url: q.url || "", rtl: AR_RE.test(q.text || "") } }));
-    } else {
-      cards = [
-        { kind: "Most engaging", color: "#C3BAFF", r: pick(rows) },
-        { kind: "Loudest praise", color: "#8FE05A", r: pick(rows.filter((r) => r.sent === "positive")) },
-        { kind: "Critical voice", color: "#FF7AB3", r: pick(rows.filter((r) => r.sent === "negative")) },
-        (() => { const ar = pick(rows.filter((r) => r.rtl)); return ar ? { kind: "In Arabic", color: "#FFB020", r: ar } : { kind: "From the press", color: "#FFB020", r: pick(rows.filter((r) => r.src === "News & web")) }; })(),
-      ];
-    }
-    cards = cards.filter((c) => c.r && c.r.text);
-    el.innerHTML = cards.length ? cards.map((c) => {
-      const r = c.r;
-      const link = /^https?:\/\//.test(r.url) ? ' · <a href="' + esc(r.url) + '" target="_blank" rel="noopener">Open</a>' : "";
-      return '<figure class="quote" style="margin:0"><span class="kind" style="color:' + c.color + '">' + esc(c.kind) + '</span><blockquote dir="' + (r.rtl ? "rtl" : "auto") + '">' + esc(clip(r.text, 320)) + '</blockquote><figcaption class="by"><bdi>' + esc(r.author) + "</bdi>" + (r.src ? " · " + esc(r.src) : "") + (r.eng ? " · " + fmt(r.eng) + " eng." : "") + (isNaN(r.t) ? "" : " · " + timeLabel(r.t)) + link + "</figcaption></figure>";
-    }).join("") : '<div class="empty">No posts in this range yet.</div>';
   }
 
   function renderBench() {
     const id = "cBench";
     const B = state.bench;
     const kp = document.getElementById("benchKpis");
-    document.getElementById("benchTitle").textContent = B ? "Against " + B.label : "Festival lift";
-    document.getElementById("benchNote").textContent = B ? "Conversations per day, lined up by festival day" : "Conversations per day against the build-up average";
+    document.getElementById("benchTitle").textContent = t("lift_t");
+    document.getElementById("benchNote").textContent = t("lift_n");
     if (!B) return renderLift(id, kp);
     ensureCanvas(id);
     const ch = (r) => !state.channel || r.src === state.channel;
@@ -1322,7 +1426,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   function renderLift(id, kp) {
     const ch = (r) => !state.channel || r.src === state.channel;
     const cur = state.all.filter(ch);
-    if (!cur.length) { kp.innerHTML = ""; return setEmpty(id, "No data yet"); }
+    if (!cur.length) { kp.innerHTML = ""; return setEmpty(id, t("no_data")); }
     const first = Math.min(...cur.map((r) => r.t)), latest = Math.max(...cur.map((r) => r.t));
     const d0 = Math.max(Math.floor((first - DAYS[0]) / DAY), -14);
     const d1 = Math.min(Math.floor((latest - DAYS[0]) / DAY), 2);
@@ -1335,136 +1439,86 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const fest = [0, 1, 2].filter((i) => i <= d1);
     const best = fest.length ? fest.reduce((a, i) => (m.get(i) > m.get(a) ? i : a), fest[0]) : null;
     kp.innerHTML =
-      "<div><b>" + (base ? fmtFull(Math.round(base)) : "–") + "</b>average build-up day" + (pre.length ? " (" + pre.length + " days)" : "") + "</div>" +
-      (best != null && base ? "<div><b>" + fmtFull(m.get(best)) + "</b>best festival day so far (Day " + (best + 1) + ")</div>" +
-        '<div><b style="color:' + C.accent + '">' + (m.get(best) / base).toFixed(1).replace(/\.0$/, "") + "×</b>lift on the build-up</div>" : "<div>Lift appears from Day 1.</div>");
+      "<div><b>" + (base ? fmtFull(Math.round(base)) : "–") + "</b>" + t("lift_avg") + "</div>" +
+      (best != null && base ? "<div><b>" + fmtFull(m.get(best)) + "</b>" + t("lift_best") + " (" + t("r_d" + (best + 1)) + ")</div>" +
+        '<div><b style="color:' + C.accent + '">' + (m.get(best) / base).toFixed(1).replace(/\.0$/, "") + "×</b>" + t("lift_x") + "</div>" : "<div>" + t("lift_soon") + "</div>");
+    const dayCat = (i) => (i < 0 ? dayLabel(DAYS[0] + i * DAY).replace(/^\S+\s/, "") : t("r_d" + (i + 1)));
     ensureCanvas(id);
     chart(id).setOption({
       textStyle: baseText,
       grid: { left: 40, right: 12, top: 24, bottom: 26 },
       tooltip: { ...tooltipBase, trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(255,255,255,.04)" } },
-        formatter: (ps) => { const i = idx[ps[0].dataIndex], v = m.get(i); return "<b>" + dayLabel(DAYS[0] + i * DAY) + (i >= 0 ? " · Day " + (i + 1) : "") + "</b><br>" + fmtFull(v) + " posts" + (base ? "<br>" + (v / base).toFixed(1) + "× the build-up average" : ""); } },
-      xAxis: { type: "category", data: idx.map((i) => (i < 0 ? "D" + i : "Day " + (i + 1))), ...axisBase, axisLabel: { color: C.muted, fontSize: 11, hideOverlap: true } },
+        formatter: (ps) => { const i = idx[ps[0].dataIndex], v = m.get(i); return "<b>" + dayLabel(DAYS[0] + i * DAY) + (i >= 0 ? " · " + t("r_d" + (i + 1)) : "") + "</b><br>" + fmtFull(v) + " " + t("posts"); } },
+      xAxis: { type: "category", data: idx.map(dayCat), ...axisBase, axisLabel: { color: C.muted, fontSize: 11, hideOverlap: true } },
       yAxis: { type: "value", ...axisBase, minInterval: 1, splitNumber: 3 },
       series: [{
         type: "bar", barMaxWidth: 26,
         data: idx.map((i) => ({ value: i <= d1 ? m.get(i) : null, itemStyle: { color: i >= 0 ? C.accent : C.cat[0], borderRadius: [4, 4, 0, 0] } })),
-        markLine: base ? { symbol: "none", silent: true, lineStyle: { color: C.ink2, type: "dashed", width: 1.5 }, label: { color: C.ink2, fontSize: 11, formatter: "Build-up avg " + Math.round(base), position: "insideStartTop" }, data: [{ yAxis: base }] } : undefined,
+        markLine: base ? { symbol: "none", silent: true, lineStyle: { color: C.ink2, type: "dashed", width: 1.5 }, label: { color: C.ink2, fontSize: 11, formatter: t("lift_avg") + " " + Math.round(base), position: "insideStartTop" }, data: [{ yAxis: base }] } : undefined,
       }],
     }, true);
   }
 
-  // Hourly counts written by the scheduled Talkwalker job (data/live.json).
-  let LIVE = null;
-  async function loadLive() {
-    try {
-      const r = await fetch("data/live.json?v=" + Date.now(), { cache: "no-store" });
-      LIVE = r.ok ? await r.json() : null;
-    } catch (e) { LIVE = null; }
-  }
-  function renderLive() {
-    const card = document.getElementById("liveCard");
-    const d = LIVE && LIVE.sentiment && LIVE.sentiment.data;
-    if (!d || !d.length || state.preview) { card.hidden = true; return; }
-    card.hidden = false;
-    // header gives the order of values (POSITIVE, NEUTRAL, NEGATIVE); fall back to that order
-    // Talkwalker sends the labels as a list, or as { v: [...] }
-    const rawHdr = LIVE.sentiment.header;
-    const hdr = (Array.isArray(rawHdr) ? rawHdr : (rawHdr && rawHdr.v) || []).map((h) => String(h && (h.name || h.label || h.id || h)).toLowerCase());
-    const idx = (k) => { const i = hdr.findIndex((h) => h.startsWith(k)); return i >= 0 ? i : { pos: 0, neu: 1, neg: 2 }[k]; };
-    const hours = d.map((x) => {
-      const v = Array.isArray(x.v) ? x.v : [Number(x.v || 0), 0, 0];
-      return { t: Number(x.t), pos: v[idx("pos")] || 0, neu: v[idx("neu")] || 0, neg: v[idx("neg")] || 0 };
-    }).sort((a, b) => a.t - b.t);
-    const tot = (h) => h.pos + h.neu + h.neg;
-    const now = Date.now();
-    // Talkwalker leaves out empty hours at the end, so line the counts up
-    // against the clock and treat missing hours as zero.
-    const byT = new Map(hours.map((h) => [h.t, h]));
-    const clock = [];
-    for (let t = floorHour(now) - 47 * HOUR; t <= floorHour(now); t += HOUR) clock.push(byT.get(t) || { t, pos: 0, neu: 0, neg: 0 });
-    const lastFull = clock[clock.length - 2];
-    const day = hours.filter((h) => h.t >= now - DAY).reduce((a, h) => a + tot(h), 0);
-    const upd = Date.parse(LIVE.updated);
-    document.getElementById("liveKpis").innerHTML =
-      "<div><b>" + (lastFull ? fmtFull(tot(lastFull)) : "–") + "</b>last full hour" + (lastFull ? " (" + hh(local(lastFull.t)) + ")" : "") + "</div>" +
-      "<div><b>" + fmtFull(day) + "</b>last 24 hours</div>" +
-      "<div><b>" + (isNaN(upd) ? "–" : hh(local(floorHour(upd))).slice(0, 2) + ":" + String(local(upd).getUTCMinutes()).padStart(2, "0")) + "</b>last checked (AST)</div>";
-    const last = clock;
-    const id = "cLive"; ensureCanvas(id);
-    chart(id).setOption({
-      textStyle: baseText,
-      grid: { left: 36, right: 8, top: 8, bottom: 22 },
-      tooltip: { ...tooltipBase, trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(255,255,255,.04)" } },
-        formatter: (ps) => { const h = last[ps[0].dataIndex]; return "<b>" + dayLabel(h.t) + " · " + hh(local(h.t)) + "</b><br>" + tot(h) + " matches<br>" + SENTS.map((s, i) => SENT_LABEL[s] + ": " + [h.pos, h.neu, h.neg][i]).join(" · "); } },
-      xAxis: { type: "category", data: last.map((h) => (local(h.t).getUTCHours() === 0 ? dayLabel(h.t) : hh(local(h.t)))), ...axisBase, axisLabel: { color: C.muted, fontSize: 10, hideOverlap: true } },
-      yAxis: { type: "value", ...axisBase, minInterval: 1, splitNumber: 2 },
-      series: SENTS.map((s, i) => ({ name: SENT_LABEL[s], type: "bar", stack: "l", barMaxWidth: 10, data: last.map((h) => [h.pos, h.neu, h.neg][i]),
-        itemStyle: { color: SENT_COLOR[s], borderRadius: i === 2 ? [3, 3, 0, 0] : 0 } })),
-    }, true);
-  }
-
   function renderKPIs(rows) {
-    const all = state.all.filter((r) => !state.channel || r.src === state.channel);
     const set = (id, v) => { document.getElementById(id).innerHTML = v; };
     const n = rows.length;
     set("kTotal", fmtFull(n));
-    set("kTotalD", n ? pct(rows.filter((r) => DAYS.some((d) => r.t >= d && r.t < d + DAY)).length, n) + "% during the festival days" : "&nbsp;");
-
-    // last full hour in the data vs the hour before
-    const latest = all.length ? floorHour(Math.max(...all.map((r) => r.t))) : 0;
-    const lastFull = latest - HOUR;
-    const cur = all.filter((r) => r.t >= lastFull && r.t < latest).length;
-    const prev = all.filter((r) => r.t >= lastFull - HOUR && r.t < lastFull).length;
-    set("kHour", fmtFull(cur));
-    const diff = prev ? Math.round(((cur - prev) / prev) * 100) : 0;
-    set("kHourD", all.length ? hh(local(lastFull)) + "–" + hh(local(latest)) + " · " + (prev ? '<span class="' + (diff >= 0 ? "up" : "down") + '">' + (diff >= 0 ? "▲ " : "▼ ") + Math.abs(diff) + "%</span> vs hour before" : "first hour") : "&nbsp;");
-
-    const pos = rows.filter((r) => r.sent === "positive").length, neg = rows.filter((r) => r.sent === "negative").length;
-    const net = pct(pos - neg, n);
-    set("kNet", n ? (net > 0 ? "+" : "") + net : "–");
-    set("kNetD", n ? '<span class="up">' + pct(pos, n) + "% positive</span> · " + '<span class="down">' + pct(neg, n) + "% negative</span>" : "&nbsp;");
-
+    const inFest = rows.filter((r) => DAYS.some((d) => r.t >= d && r.t < d + DAY)).length;
+    set("kTotalD", inFest ? pct(inFest, n) + "% " + t("during") : "&nbsp;");
+    const pos = rows.filter((r) => r.sent === "positive").length, neu = rows.filter((r) => r.sent === "neutral").length;
+    set("kNet", n ? pct(pos, n) + "%" : "–");
+    set("kNetD", n ? pct(pos + neu, n) + "% " + (LANG === "ar" ? "إيجابي أو محايد" : "positive or neutral") : "&nbsp;");
     const eng = rows.reduce((a, r) => a + r.eng, 0);
     set("kEng", fmt(eng));
-    set("kEngD", n ? fmt(eng / n) + " per post" : "&nbsp;");
+    set("kEngD", n ? fmt(eng / n) + " " + t("per_post") : "&nbsp;");
     const reach = rows.reduce((a, r) => a + r.reach, 0);
     set("kReach", reach ? fmt(reach) : "–");
-    set("kReachD", reach ? "sum of audience per post" : "no reach column in export");
+    set("kReachD", reach ? t("reach_sub") : "&nbsp;");
     const authors = new Set(rows.map((r) => r.author).filter((a) => a !== "Unknown"));
     set("kAuth", fmtFull(authors.size));
-    set("kAuthD", authors.size ? (n / authors.size).toFixed(1) + " posts per voice" : "&nbsp;");
+    set("kAuthD", authors.size ? t("voices_sub") : "&nbsp;");
+  }
+
+
+  function countdown(days) {
+    if (LANG === "en") return days + " " + (days === 1 ? t("day_to") : t("days_to"));
+    if (days === 1) return "باقي يوم واحد على الانطلاق";
+    if (days === 2) return "باقي يومان على الانطلاق";
+    return "باقي " + days + (days <= 10 ? " أيام" : " يوماً") + " على الانطلاق";
   }
 
   function renderStatus() {
     const all = state.all;
     const maxT = all.length ? Math.max(...all.map((r) => r.t)) : 0;
     const now = Date.now();
-    let phase = "Build-up", live = false;
-    if (REHEARSAL && now < REHEARSAL[2] + DAY) { phase = "Rehearsal · " + eventDayName(now); live = true; }
-    else if (REHEARSAL) phase = "Rehearsal";
-    else if (now >= DAYS[0] && now < DAYS[2] + DAY) { phase = "Live · " + eventDayName(now); live = true; }
-    else if (now >= DAYS[2] + DAY) phase = "Festival wrapped";
-    // during the festival an export older than two hours means an upload was missed
-    const inWindow = now >= DAYS[0] - DAY && now < DAYS[2] + DAY + 6 * HOUR;
-    document.getElementById("stalePill").hidden = state.demo || state.preview || !maxT || !inWindow || now - maxT < 2 * HOUR;
+    let phase = t("ph_build"), live = false;
+    if (REHEARSAL && now < REHEARSAL[2] + DAY) { phase = t("ph_reh") + " · " + t("r_d" + (Math.floor((now - DAYS[0]) / DAY) + 1)); live = true; }
+    else if (REHEARSAL) phase = t("ph_reh");
+    else if (now < DAYS[0]) phase = countdown(Math.ceil((DAYS[0] - now) / DAY));
+    else if (now < DAYS[2] + DAY) { phase = t("ph_live") + " · " + t("r_d" + (Math.floor((now - DAYS[0]) / DAY) + 1)); live = true; }
+    else phase = t("ph_done");
     document.getElementById("phaseText").textContent = phase;
-    document.getElementById("rehPill").hidden = !REHEARSAL;
     document.getElementById("phasePill").classList.toggle("live", live);
+    // team-only signals
+    const inWindow = now >= DAYS[0] - DAY && now < DAYS[2] + DAY + 6 * HOUR;
+    document.getElementById("stalePill").hidden = !OPS || state.demo || state.preview || !maxT || !inWindow || now - maxT < 2 * HOUR;
+    document.getElementById("rehPill").hidden = !REHEARSAL;
     document.getElementById("demoPill").hidden = !state.demo && !state.preview;
-    document.getElementById("demoPill").textContent = state.preview ? "Preview, not published" : "Sample data";
-    document.getElementById("updated").textContent = maxT ? "Data through " + timeLabel(maxT) + " AST" : "No data yet";
-    document.getElementById("rowsMeta").textContent = fmtFull(filtered().length) + " of " + fmtFull(all.length) + " posts";
-    document.getElementById("footStamp").textContent = "Checked for new data " + new Date(state.loadedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) + " · refreshes every " + CFG.refreshMinutes + " min";
-
+    document.getElementById("demoPill").textContent = state.preview ? "Preview, not published" : t("sample");
+    document.getElementById("updated").textContent = OPS && maxT ? t("through") + " " + timeLabel(maxT) : "";
+    document.getElementById("opsCard").hidden = !OPS;
+    document.getElementById("rowsMeta").hidden = !OPS;
+    document.getElementById("rowsMeta").textContent = fmtFull(filtered().length) + " / " + fmtFull(all.length);
+    document.getElementById("footStamp").textContent = "";
+    if (!OPS) return;
     const colMap = document.getElementById("colMap");
     if (state.demo) {
-      colMap.innerHTML = "Showing <b>sample data</b> so you can see the layout. It disappears as soon as <code>data/mentions.csv</code> is published.";
+      colMap.innerHTML = "Showing <b>sample data</b>.";
     } else {
       const miss = ["date", "text", "sentiment", "author", "source", "engagement", "reach", "url"].filter((f) => !state.map[f]);
       colMap.innerHTML = "Source: <code>" + esc(state.source) + "</code> · " + fmtFull(state.rowsIn) + " rows read, " + fmtFull(state.dropped || 0) + " removed as not relevant, " + fmtFull(all.length) + " unique posts kept.<br>Columns used: " +
         Object.entries(state.map).map(([k, v]) => k + " ← <code>" + esc(v) + "</code>").join(", ") +
-        (miss.length ? '<br><span style="color:var(--neg)">Missing: ' + miss.join(", ") + ". Add these columns to the Talkwalker export template.</span>" : "");
+        (miss.length ? '<br><span style="color:var(--neg)">Missing: ' + miss.join(", ") + ". Add these columns to the export template.</span>" : "");
     }
   }
 
@@ -1472,37 +1526,32 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const sel = document.getElementById("srcSel");
     const cur = state.channel;
     const srcs = [...new Set(state.all.map((r) => r.src))].sort();
-    sel.innerHTML = '<option value="">All channels</option>' + srcs.map((s) => '<option value="' + esc(s) + '"' + (s === cur ? " selected" : "") + ">" + esc(s) + "</option>").join("");
+    sel.innerHTML = '<option value="">' + t("allch") + "</option>" + srcs.map((x) => '<option value="' + esc(x) + '"' + (x === cur ? " selected" : "") + ">" + esc(chLabel(x)) + "</option>").join("");
     if (cur && !srcs.includes(cur)) state.channel = "";
   }
 
   function render() {
     const show = CFG.show || {};
-    const hideFeed = show.feed === false, hideVoices = show.topVoices === false;
-    document.getElementById("feedCard").hidden = hideFeed;
-    document.getElementById("votesCard").hidden = hideVoices;
-    document.getElementById(hideFeed ? "votesCard" : "feedCard").style.gridColumn = hideFeed !== hideVoices ? "span 12" : "";
-    document.getElementById("voicesCard").hidden = hideFeed;
+    document.getElementById("feedCard").hidden = show.feed === false;
+    document.getElementById("votesCard").hidden = show.topVoices === false;
     fillChannels();
     const rows = filtered();
     renderStory();
-    renderLive();
     renderStatus();
     renderKPIs(rows);
+    renderFeed(rows);
     renderVolume(rows);
+    renderChannels(rows);
+    renderRankedBars("cSpeakers", rows, "spk", CFG.speakers, t("spk_empty"), (x) => x.org || "");
+    renderRankedBars("cSessions", rows, "ses", CFG.sessions, t("ses_empty"), (x) => t("r_d" + x.day) + " · " + x.stage);
     renderThemes(rows);
     renderMoments(rows);
-    renderQuotes(rows);
-    renderBench();
     renderSentDonut(rows);
     renderSentDay(rows);
-    renderRankedBars("cSpeakers", rows, "spk", CFG.speakers, "No speaker mentions yet. Add aliases in config.js if names are spelled differently.", (s) => s.org || "");
-    renderRankedBars("cSessions", rows, "ses", CFG.sessions, "No session mentions yet. Add keywords in config.js.", (s) => s.type + " · Day " + s.day + " · " + s.stage);
     renderTags(rows);
-    renderChannels(rows);
     renderHeat(rows);
     renderAuthors(rows);
-    renderFeed(rows);
+    renderBench();
   }
 
   /* ================= Controls ================= */
@@ -1529,6 +1578,16 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     state.grain = b.dataset.grain; render();
   });
   segment("feedMode", "feedMode", "mode");
+  segment("feedWho", "feedWho", "who");
+  document.getElementById("langBtn").addEventListener("click", () => {
+    LANG = LANG === "ar" ? "en" : "ar";
+    try { localStorage.setItem("cis-lang", LANG); } catch (e) { /* not saved */ }
+    applyLang();
+    Object.values(charts).forEach((c) => c.dispose());
+    for (const k in charts) delete charts[k];
+    render();
+  });
+  applyLang();
   document.getElementById("srcSel").addEventListener("change", (e) => { state.channel = e.target.value; render(); });
 
   function toast(msg) {
@@ -1559,7 +1618,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   load(true);
   setInterval(() => {
     // a screen left open rolls over into the next rehearsal, or the real festival
-    const w = rehearsalWindow(Date.now());
+    const w = OPS ? rehearsalWindow(Date.now()) : null;
     if (String(w) !== String(REHEARSAL)) { location.reload(); return; }
     load(false);
   }, Math.max(1, CFG.refreshMinutes) * 60e3);
