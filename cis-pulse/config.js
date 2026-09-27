@@ -29,12 +29,21 @@ window.CIS_CONFIG = {
   // Either a single export, or data/index.json listing several files to merge.
   dataFiles: ["data/mentions.csv", "data/mentions.xlsx"],
 
+  // Rehearsal festival days, so everything is tested on live data before
+  // 3 October. The dashboard uses the latest window that has started and
+  // switches to the real days on 3 October by itself.
+  rehearsals: [
+    ["2026-09-27", "2026-09-28", "2026-09-29"],
+    ["2026-09-30", "2026-10-01", "2026-10-02"],
+  ],
+
   // Google Sheet as the source (recommended). In the sheet: File → Share →
   // Publish to web → choose a tab → CSV → Publish. Paste each link here.
   // When postsCsvUrl is set, it replaces dataFiles.
   sheet: {
-    postsCsvUrl: "", // the Approved tab
-    notesCsvUrl: "", // the Notes tab
+    rawCsvUrl: "", // the Raw tab: paste each Talkwalker export here
+    overridesCsvUrl: "", // the Overrides tab: URL + Y/N to keep or hide a post
+    notesCsvUrl: "", // the Notes tab: the story, published once approved
   },
   insightsBy: "Kijamii insights team",
   // Leave false on the live site: the story only appears once approved.

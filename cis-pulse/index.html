@@ -246,6 +246,7 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       <img class="logo" src="assets/logo-white.png" alt="Creative Industry Summit" width="81" height="54">
       <div class="status">
         <span id="demoPill" class="pill demo" hidden>Sample data</span>
+        <span id="rehPill" class="pill demo" hidden>Rehearsal: festival is 3–5 Oct</span>
         <span id="stalePill" class="pill demo" hidden>Data is over 2 hours old</span>
         <span id="phasePill" class="pill"><span class="dot"></span><span id="phaseText">Pre-event</span></span>
         <span id="updated">Loading…</span>
@@ -555,6 +556,9 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   const THM = matcher(THEMES.map((t) => ({ ...t, skipName: true })), "keywords", 2);
   const REL = CFG.relevance || {};
   const EXCL = (REL.excludeTerms || []).map(normText).map((t) => t.trim()).filter(Boolean).map(termTest);
+  // Manual decisions from the sheet's Overrides tab: URL → "Y" (keep) or "N" (hide).
+  const OVR = new Map();
+  const normUrl = (u) => String(u || "").trim().replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "").toLowerCase();
   const EXCL_AUTH = new Set((REL.excludeAuthors || []).map((a) => String(a).toLowerCase().replace(/^@/, "")));
   const OFFICIAL = new Set(CFG.officialHashtags.map((t) => t.toLowerCase()));
   const OWNED = new Set((CFG.officialAccounts || []).map((a) => String(a).toLowerCase().replace(/^@/, "")));
@@ -587,9 +591,11 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
       }
       const n = " " + normText(all) + " ";
       const author = String((map.author && r[map.author]) || "Unknown").replace(/^@/, "");
-      if (map.relevant && /^(n|no|0|false|x|irrelevant|exclude)$/i.test(String(r[map.relevant] ?? "").trim())) { dropped++; continue; }
+      const ovr = OVR.get(normUrl(url));
+      if (ovr === "N") { dropped++; continue; }
+      if (ovr !== "Y" && map.relevant && /^(n|no|0|false|x|irrelevant|exclude)$/i.test(String(r[map.relevant] ?? "").trim())) { dropped++; continue; }
       const handle = String((map.handle && r[map.handle]) || "").replace(/^@/, "");
-      if (EXCL.some((f) => f(n)) || EXCL_AUTH.has(author.toLowerCase()) || EXCL_AUTH.has(handle.toLowerCase())) { dropped++; continue; }
+      if (ovr !== "Y" && (EXCL.some((f) => f(n)) || EXCL_AUTH.has(author.toLowerCase()) || EXCL_AUTH.has(handle.toLowerCase()))) { dropped++; continue; }
       out.push({
         t, text, url,
         sent: parseSentiment(r[map.sentiment]),
@@ -661,7 +667,9 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   async function loadPublished() {
     let files = CFG.dataFiles;
     const SHEET = CFG.sheet || {};
-    if (SHEET.postsCsvUrl) files = [SHEET.postsCsvUrl];
+    const postsUrl = SHEET.rawCsvUrl || SHEET.postsCsvUrl;
+    if (postsUrl) files = [postsUrl];
+    await loadOverrides(SHEET.overridesCsvUrl);
     try {
       const r = await fetch("data/index.json?v=" + Date.now(), { cache: "no-store" });
       if (r.ok) { const j = await r.json(); if (Array.isArray(j.files) && j.files.length) files = j.files.map((f) => "data/" + f.replace(/^data\//, "")); }
@@ -678,10 +686,24 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const headers = [...new Set(parts.flatMap((p) => p.headers))];
     const { records, map, rowsIn, dropped } = toRecords(parts.flatMap((p) => p.rows), headers);
     if (!records.length) return false;
-    Object.assign(state, { all: records, map, rowsIn, dropped, demo: false, preview: false, source: SHEET.postsCsvUrl ? "Google Sheet (Approved tab)" : used.join(", ") });
+    Object.assign(state, { all: records, map, rowsIn, dropped, demo: false, preview: false, source: postsUrl ? "Google Sheet" + (OVR.size ? " + " + OVR.size + " overrides" : "") : used.join(", ") });
     state.insights = await loadInsights();
     state.bench = await loadBenchmark();
     return true;
+  }
+
+  async function loadOverrides(url) {
+    if (!url) return;
+    try {
+      const r = await fetch(url + (url.includes("?") ? "&" : "?") + "v=" + Date.now(), { cache: "no-store" });
+      if (!r.ok) return;
+      const rows = Papa.parse(await r.text(), { skipEmptyLines: true }).data;
+      OVR.clear();
+      rows.forEach((row) => {
+        const u = normUrl(row[0]), v = String(row[1] || "").trim().toUpperCase();
+        if (/^https?:|\./i.test(String(row[0] || "")) && (v === "Y" || v === "N")) OVR.set(u, v);
+      });
+    } catch (e) { /* keep the previous overrides */ }
   }
 
   // The editor's note: written at each insight review, approved, then published.
@@ -816,7 +838,17 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   /* ================= Filtering & aggregation ================= */
 
   const dayStart = (d) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) - TZ * HOUR;
-  const DAYS = CFG.event.days.map(dayStart);
+  // Before the festival, the dashboard runs on rehearsal days so every view
+  // (live pill, hourly volume, lift, moments) can be tested for real.
+  function rehearsalWindow(now) {
+    const real = dayStart(CFG.event.days[0]);
+    if (now >= real) return null;
+    const wins = (CFG.rehearsals || []).map((w) => w.map(dayStart));
+    const past = wins.filter((w) => now >= w[0]);
+    return past.length ? past[past.length - 1] : null;
+  }
+  const REHEARSAL = rehearsalWindow(Date.now());
+  const DAYS = REHEARSAL || CFG.event.days.map(dayStart);
 
   function rangeBounds() {
     const all = state.all;
@@ -1350,12 +1382,15 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     const maxT = all.length ? Math.max(...all.map((r) => r.t)) : 0;
     const now = Date.now();
     let phase = "Build-up", live = false;
-    if (now >= DAYS[0] && now < DAYS[2] + DAY) { phase = "Live · " + eventDayName(now); live = true; }
+    if (REHEARSAL && now < REHEARSAL[2] + DAY) { phase = "Rehearsal · " + eventDayName(now); live = true; }
+    else if (REHEARSAL) phase = "Rehearsal";
+    else if (now >= DAYS[0] && now < DAYS[2] + DAY) { phase = "Live · " + eventDayName(now); live = true; }
     else if (now >= DAYS[2] + DAY) phase = "Festival wrapped";
     // during the festival an export older than two hours means an upload was missed
     const inWindow = now >= DAYS[0] - DAY && now < DAYS[2] + DAY + 6 * HOUR;
     document.getElementById("stalePill").hidden = state.demo || state.preview || !maxT || !inWindow || now - maxT < 2 * HOUR;
     document.getElementById("phaseText").textContent = phase;
+    document.getElementById("rehPill").hidden = !REHEARSAL;
     document.getElementById("phasePill").classList.toggle("live", live);
     document.getElementById("demoPill").hidden = !state.demo && !state.preview;
     document.getElementById("demoPill").textContent = state.preview ? "Preview, not published" : "Sample data";
@@ -1462,7 +1497,12 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
   document.getElementById("resetBtn").addEventListener("click", (e) => { e.preventDefault(); state.preview = false; load(true); });
 
   load(true);
-  setInterval(() => load(false), Math.max(1, CFG.refreshMinutes) * 60e3);
+  setInterval(() => {
+    // a screen left open rolls over into the next rehearsal, or the real festival
+    const w = rehearsalWindow(Date.now());
+    if (String(w) !== String(REHEARSAL)) { location.reload(); return; }
+    load(false);
+  }, Math.max(1, CFG.refreshMinutes) * 60e3);
   setInterval(renderStatus, 60e3);
 })();
 </script>
