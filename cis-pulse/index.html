@@ -1368,7 +1368,9 @@ footer { color: var(--muted); font-size: 12px; padding-block: 0 40px; display: f
     if (!d || !d.length || state.preview) { card.hidden = true; return; }
     card.hidden = false;
     // header gives the order of values (POSITIVE, NEUTRAL, NEGATIVE); fall back to that order
-    const hdr = (LIVE.sentiment.header || []).map((h) => String(h && (h.name || h.label || h.id || h)).toLowerCase());
+    // Talkwalker sends the labels as a list, or as { v: [...] }
+    const rawHdr = LIVE.sentiment.header;
+    const hdr = (Array.isArray(rawHdr) ? rawHdr : (rawHdr && rawHdr.v) || []).map((h) => String(h && (h.name || h.label || h.id || h)).toLowerCase());
     const idx = (k) => { const i = hdr.findIndex((h) => h.startsWith(k)); return i >= 0 ? i : { pos: 0, neu: 1, neg: 2 }[k]; };
     const hours = d.map((x) => {
       const v = Array.isArray(x.v) ? x.v : [Number(x.v || 0), 0, 0];
