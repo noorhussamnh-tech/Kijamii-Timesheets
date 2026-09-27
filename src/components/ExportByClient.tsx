@@ -123,11 +123,24 @@ export function ExportByClient({
           </p>
         </div>
 
+        {/*
+         * The picker is not offered when there is nothing to pick.
+         *
+         * It used to be, and searching an empty list answered "No account by
+         * that name" -- which reads as "your spelling is wrong" and sends
+         * somebody looking for a data problem, when the truth is that
+         * nobody submitted anything in these dates. The reason is said
+         * instead, and the control that cannot help is not shown.
+         */}
         <div className="flex items-center gap-2">
           <span className="label-xs-muted w-12 shrink-0">Client</span>
           {loading ? (
             <span className="flex h-8 flex-1 items-center gap-2 text-[13px] text-muted-foreground">
               <Loader2 className="size-3.5 animate-spin" /> Loading accounts…
+            </span>
+          ) : clients.length === 0 ? (
+            <span className="flex h-8 flex-1 items-center text-[13px] text-muted-foreground">
+              Nothing to pick from
             </span>
           ) : (
             <SearchSelect
@@ -141,12 +154,10 @@ export function ExportByClient({
           )}
         </div>
 
-        {/* Said plainly rather than left as an empty dropdown somebody pokes
-            at wondering whether it is broken. */}
         {!loading && clients.length === 0 && (
           <p className="text-[12px] text-muted-foreground">
-            No client has submitted hours in this period. Widen the dates, or clear the department
-            filter.
+            Nobody submitted hours in this period, so there is no account to cut by. Widen the
+            dates, or clear the filters above.
           </p>
         )}
 
