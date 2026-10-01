@@ -8,9 +8,9 @@ import { ExportByClient } from "@/components/ExportByClient";
 import { ExportCsv } from "@/components/ExportCsv";
 import { ExportGrouped } from "@/components/ExportGrouped";
 import { Metric } from "@/components/Metric";
+import { TeamGrid } from "@/components/TeamGrid";
 import { FillMark } from "@/components/FillMark";
 import { FILL_LEVELS, fillLabel, fillNote, fillTextClass } from "@/components/fill-marks";
-import { StatusBadge } from "@/components/StatusBadge";
 import {
   Select,
   SelectContent,
@@ -308,124 +308,12 @@ function TeamOverview() {
             <div className="rounded-lg border border-dashed bg-surface px-6 py-12 text-center">
               <h2 className="text-sm font-bold">Nobody on your team matches this filter</h2>
               <p className="mt-1 text-[13px] text-muted-foreground">
-                Everybody under you who is asked for a timesheet appears here, whether or not they
-                have logged anything.
+                You and everybody under you who is asked for a timesheet appear here, whether or not
+                anything has been logged.
               </p>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-lg border bg-surface shadow-card">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[980px] border-collapse text-left text-[13px]">
-                  <caption className="sr-only">
-                    Submitted entries for {rangeLabel(range.from, range.to)}, grouped by person.
-                  </caption>
-                  <thead>
-                    <tr className="border-b bg-surface-muted">
-                      {COLUMNS.map((column) => (
-                        <th
-                          key={column}
-                          scope="col"
-                          className={`label-xs px-2.5 py-3 ${column === "Hours" ? "text-right" : ""}`}
-                        >
-                          {column}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((person) => {
-                      const rows = byEmail.get(person.email.toLowerCase()) ?? [];
-                      const level = fillLevel(person.totalHours, person.expectedHours);
-                      return (
-                        <Fragment key={person.employeeId}>
-                          <tr className="border-b bg-background/70">
-                            <th
-                              scope="colgroup"
-                              colSpan={COLUMNS.length}
-                              className="px-2.5 py-2.5 text-left font-semibold"
-                            >
-                              <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                                {/* The mark and the colour say the same thing
-                                    twice, on purpose: one of them survives
-                                    colour blindness and the other survives a
-                                    glance. */}
-                                <span className="flex items-center gap-1.5">
-                                  <FillMark level={level} className="size-4" />
-                                  <span
-                                    className={cn("text-[15px] font-bold", fillTextClass(level))}
-                                  >
-                                    {person.name}
-                                  </span>
-                                </span>
-                                <span className="text-[11px] font-normal text-muted-foreground">
-                                  {person.email}
-                                </span>
-                                <StatusBadge status={person.status} />
-                                <span
-                                  className={cn("text-[11px] font-semibold", fillTextClass(level))}
-                                >
-                                  {fillPercent(person.totalHours, person.expectedHours)}% filled
-                                </span>
-                                <span className="num ml-auto text-[13px] font-semibold">
-                                  {formatHours(person.totalHours)}
-                                  <span className="ml-1 text-[11px] font-normal text-muted-foreground">
-                                    / {formatHours(person.expectedHours)}
-                                  </span>
-                                </span>
-                                {/* Filed hours are the headline, so the figure
-                                    above ties to every export. Anything still
-                                    in draft is said separately rather than
-                                    added in, and its rows are not listed. */}
-                                {person.draftHours > 0 && (
-                                  <span className="text-[11px] font-medium text-warning">
-                                    +{formatHours(person.draftHours)} in draft
-                                  </span>
-                                )}
-                              </span>
-                            </th>
-                          </tr>
-
-                          {rows.length === 0 ? (
-                            <tr className="border-b last:border-b-0">
-                              <td
-                                colSpan={COLUMNS.length}
-                                className="px-2.5 py-3 text-[12px] text-muted-foreground"
-                              >
-                                Nothing submitted in this period.
-                              </td>
-                            </tr>
-                          ) : (
-                            rows.map((row) => (
-                              <tr
-                                key={row.entryId}
-                                className="border-b align-middle last:border-b-0 hover:bg-surface-muted/60"
-                              >
-                                <td className="num px-2.5 py-2 whitespace-nowrap">
-                                  {shortDayLabel(row.workDate)}
-                                </td>
-                                <td className="px-2.5 py-2">{row.clientName ?? "—"}</td>
-                                <td className="px-2.5 py-2 text-muted-foreground">
-                                  {row.projectType ?? "—"}
-                                </td>
-                                <td className="px-2.5 py-2 text-muted-foreground">
-                                  {workTypeLabel(row)}
-                                </td>
-                                <td className="num px-2.5 py-2 text-right font-semibold">
-                                  {formatHours(Number(row.hours))}
-                                </td>
-                                <td className="max-w-[280px] truncate px-2.5 py-2 text-muted-foreground">
-                                  {row.notes ?? ""}
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <TeamGrid people={filtered} entries={entries} from={from} to={to} />
           )}
         </>
       )}

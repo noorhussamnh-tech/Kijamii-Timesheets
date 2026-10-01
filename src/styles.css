@@ -108,6 +108,22 @@
   --info: oklch(0.5 0.12 250);
   --info-soft: oklch(0.955 0.025 250);
 
+  /*
+   * Five steps for a heat grid, palest to deepest.
+   *
+   * Blue rather than the brand accent on purpose. Brand red is the colour
+   * this app uses to say "something is wrong", and a grid of hours is not a
+   * grid of problems -- a whole table of it would read as an alarm and mean
+   * nothing. This is the first hue of the categorical palette, taken down to
+   * a sequential ramp, so the busiest cell is unmistakable and the body text
+   * stays legible on every step.
+   */
+  --heat-1: oklch(0.962 0.016 250);
+  --heat-2: oklch(0.906 0.042 250);
+  --heat-3: oklch(0.836 0.072 250);
+  --heat-4: oklch(0.762 0.102 250);
+  --heat-5: oklch(0.688 0.126 250);
+
   --border: oklch(0.917 0.005 255);
   --border-strong: oklch(0.86 0.008 255);
   --input: oklch(0.9 0.006 255);
@@ -163,6 +179,13 @@
   --info: oklch(0.72 0.12 250);
   --info-soft: oklch(0.28 0.045 250);
 
+  /* The same five steps, built for the dark surface rather than flipped. */
+  --heat-1: oklch(0.242 0.026 250);
+  --heat-2: oklch(0.292 0.048 250);
+  --heat-3: oklch(0.346 0.068 250);
+  --heat-4: oklch(0.404 0.086 250);
+  --heat-5: oklch(0.468 0.104 250);
+
   --border: oklch(0.27 0.01 265);
   --border-strong: oklch(0.34 0.012 265);
   --input: oklch(0.3 0.011 265);
@@ -217,6 +240,42 @@
    lets one asset serve the dark sidebar, the light page and dark mode: the
    colour comes from `currentColor`, so the logo is always exactly the colour
    the surrounding text would have been. */
+/*
+ * One cell of the hours grid.
+ *
+ * `heat-0` is the hatch: nothing was submitted, which is a different fact
+ * from zero hours and has to look different from it rather than just paler.
+ * Diagonal lines in the border colour, so it reads as "no answer here" at a
+ * glance and never competes with the filled cells for attention.
+ */
+@utility heat-0 {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--color-border) 0 1px,
+    transparent 1px 7px
+  );
+}
+
+@utility heat-1 {
+  background-color: var(--heat-1);
+}
+
+@utility heat-2 {
+  background-color: var(--heat-2);
+}
+
+@utility heat-3 {
+  background-color: var(--heat-3);
+}
+
+@utility heat-4 {
+  background-color: var(--heat-4);
+}
+
+@utility heat-5 {
+  background-color: var(--heat-5);
+}
+
 @utility kijamii-wordmark {
   display: block;
   aspect-ratio: 519 / 160;
