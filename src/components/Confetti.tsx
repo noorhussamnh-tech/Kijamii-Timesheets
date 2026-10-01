@@ -19,6 +19,14 @@ import { useEffect, useRef } from "react";
  * half means the screen keeps filling while the first pieces are still
  * falling, which is what "overwhelming" actually looks like.
  *
+ * A third of what falls is glitter rather than paper: specks a few pixels
+ * across that twinkle on the way down. Twinkle is the whole point -- a static
+ * bright dot is just a small piece of paper. Each one runs its opacity up and
+ * down four or five times during its fall, out of step with its neighbours,
+ * which is what the eye reads as sparkle. They carry a glow the size of
+ * themselves, so a two-pixel speck still registers, and they fall slower than
+ * the paper, because glitter does.
+ *
  * Three other details are load-bearing rather than incidental.
  *
  * It appends its layer straight to document.body. `position: fixed` is
@@ -40,6 +48,15 @@ import { useEffect, useRef } from "react";
  */
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
+
+/*
+ * What glitter is made of.
+ *
+ * Metal rather than colour: gold, silver and a cold white. Tinting glitter in
+ * the brand palette would make it read as more confetti, smaller -- the point
+ * of it is that it catches light differently from the paper around it.
+ */
+const GLITTER = ["#fff3c4", "#ffd978", "#ffffff", "#e6f0ff", "#ffeaa0"] as const;
 
 /** Pieces per burst, from the viewport's area. */
 function pieceCount(width: number, height: number, multiplier: number): number {
@@ -83,7 +100,13 @@ export function Confetti({
 
     for (let i = 0; i < total; i += 1) {
       const piece = document.createElement("span");
-      const color = colors.current[i % colors.current.length] ?? "#2a78d6";
+      // Every third piece is a speck rather than paper. Chosen by position
+      // rather than at random so the two are evenly mixed through the waves
+      // instead of clumping.
+      const glitter = i % 3 === 2;
+      const color = glitter
+        ? (GLITTER[i % GLITTER.length] ?? "#ffffff")
+        : (colors.current[i % colors.current.length] ?? "#2a78d6");
 
       /*
        * Four shapes. A field of identical squares reads as a loading state,
@@ -96,13 +119,27 @@ export function Confetti({
       const streamer = shape === 5;
       const big = shape === 6;
 
-      const width = round ? rand(6, 13) : streamer ? rand(3, 5) : rand(5, big ? 14 : 9);
-      const height = round ? width : streamer ? rand(18, 30) : rand(9, big ? 22 : 15);
+      const width = glitter
+        ? rand(2.5, 5.5)
+        : round
+          ? rand(6, 13)
+          : streamer
+            ? rand(3, 5)
+            : rand(5, big ? 14 : 9);
+      const height = glitter
+        ? width
+        : round
+          ? width
+          : streamer
+            ? rand(18, 30)
+            : rand(9, big ? 22 : 15);
 
       // A fifth of the pieces are fired up from the bottom corners; the rest
       // rain from above the top edge. The cannons are what make it feel like
       // it is coming from everywhere rather than simply falling.
-      const cannon = i % 5 === 0;
+      // Glitter never goes in a cannon. A speck fired upwards reads as a
+      // spark, which is a different and less pleasant idea.
+      const cannon = !glitter && i % 5 === 0;
       const fromLeft = i % 10 === 0;
 
       piece.style.cssText = [
@@ -116,9 +153,14 @@ export function Confetti({
         `width:${width.toFixed(1)}px`,
         `height:${height.toFixed(1)}px`,
         `background:${color}`,
-        round ? "border-radius:50%" : "border-radius:1px",
+        glitter || round ? "border-radius:50%" : "border-radius:1px",
+        // The glow is what makes a speck visible at three pixels. Without it
+        // the glitter is there and nobody sees it.
+        glitter ? `box-shadow:0 0 ${width.toFixed(1)}px ${color}` : "",
         "will-change:transform,opacity",
-      ].join(";");
+      ]
+        .filter(Boolean)
+        .join(";");
       fragment.appendChild(piece);
 
       const spin = 540 + Math.random() * 1440;
@@ -136,47 +178,77 @@ export function Confetti({
        * seconds into the applause is not one.
        */
       const delay = cannon ? Math.random() * 900 : Math.random() * 3200;
-      const duration = cannon ? rand(3000, 5200) : rand(3400, 7000);
+      // Glitter falls slower than paper, because it does.
+      const duration = cannon ? rand(3000, 5200) : glitter ? rand(4800, 9000) : rand(3400, 7000);
       lastEnd = Math.max(lastEnd, delay + duration);
 
-      const keyframes: Keyframe[] = cannon
+      const keyframes: Keyframe[] = glitter
         ? (() => {
-            const dx = (fromLeft ? 1 : -1) * rand(120, 620);
-            const apex = rand(50, 95);
+            const drift = (Math.random() - 0.5) * 360;
+            /*
+             * Four or five twinkles on the way down, each one a different
+             * length, and the first dark so a speck arrives by lighting up
+             * rather than simply being there. Out of step with its
+             * neighbours because they all start at a different moment --
+             * which is the whole trick. Glitter that pulses in time is a
+             * string of fairy lights.
+             */
+            const at = (f: number) => ({
+              transform: `translate3d(${(drift * f).toFixed(0)}px, ${(f * 115).toFixed(0)}vh, 0) scale(${(0.6 + Math.random() * 0.8).toFixed(2)})`,
+            });
             return [
-              { transform: "translate3d(0,0,0) rotate3d(1,1,0,0deg)", opacity: 1 },
-              {
-                transform: `translate3d(${(dx * 0.65).toFixed(0)}px, -${apex.toFixed(0)}vh, 0) rotate3d(1,1,0,${(spin * 0.45).toFixed(0)}deg)`,
-                opacity: 1,
-                offset: 0.42,
-              },
-              {
-                transform: `translate3d(${dx.toFixed(0)}px, 25vh, 0) rotate3d(1,1,0,${spin.toFixed(0)}deg)`,
-                opacity: 0,
-              },
+              { ...at(0), opacity: 0.15 },
+              { ...at(0.12), opacity: 1, offset: 0.12 },
+              { ...at(0.3), opacity: 0.2, offset: 0.3 },
+              { ...at(0.48), opacity: 1, offset: 0.48 },
+              { ...at(0.66), opacity: 0.25, offset: 0.66 },
+              { ...at(0.84), opacity: 0.95, offset: 0.84 },
+              { ...at(1), opacity: 0 },
             ];
           })()
-        : (() => {
-            const drift = (Math.random() - 0.5) * 520;
-            return [
-              { transform: "translate3d(0,0,0) rotate3d(1,1,0,0deg)", opacity: 1 },
-              {
-                transform: `translate3d(${(drift * 0.55).toFixed(0)}px, 45vh, 0) rotate3d(1,1,0,${(flip * 0.5).toFixed(0)}deg)`,
-                opacity: 1,
-                offset: 0.65,
-              },
-              {
-                transform: `translate3d(${drift.toFixed(0)}px, 115vh, 0) rotate3d(1,1,0,${(spin + flip).toFixed(0)}deg)`,
-                opacity: 0,
-              },
-            ];
-          })();
+        : cannon
+          ? (() => {
+              const dx = (fromLeft ? 1 : -1) * rand(120, 620);
+              const apex = rand(50, 95);
+              return [
+                { transform: "translate3d(0,0,0) rotate3d(1,1,0,0deg)", opacity: 1 },
+                {
+                  transform: `translate3d(${(dx * 0.65).toFixed(0)}px, -${apex.toFixed(0)}vh, 0) rotate3d(1,1,0,${(spin * 0.45).toFixed(0)}deg)`,
+                  opacity: 1,
+                  offset: 0.42,
+                },
+                {
+                  transform: `translate3d(${dx.toFixed(0)}px, 25vh, 0) rotate3d(1,1,0,${spin.toFixed(0)}deg)`,
+                  opacity: 0,
+                },
+              ];
+            })()
+          : (() => {
+              const drift = (Math.random() - 0.5) * 520;
+              return [
+                { transform: "translate3d(0,0,0) rotate3d(1,1,0,0deg)", opacity: 1 },
+                {
+                  transform: `translate3d(${(drift * 0.55).toFixed(0)}px, 45vh, 0) rotate3d(1,1,0,${(flip * 0.5).toFixed(0)}deg)`,
+                  opacity: 1,
+                  offset: 0.65,
+                },
+                {
+                  transform: `translate3d(${drift.toFixed(0)}px, 115vh, 0) rotate3d(1,1,0,${(spin + flip).toFixed(0)}deg)`,
+                  opacity: 0,
+                },
+              ];
+            })();
 
       animations.push(
         piece.animate(keyframes, {
           duration,
           delay,
-          easing: cannon ? "cubic-bezier(0.2, 0.75, 0.5, 1)" : "cubic-bezier(0.25, 0.6, 0.35, 1)",
+          // Glitter drifts at a steadier rate than paper accelerates.
+          easing: glitter
+            ? "linear"
+            : cannon
+              ? "cubic-bezier(0.2, 0.75, 0.5, 1)"
+              : "cubic-bezier(0.25, 0.6, 0.35, 1)",
           fill: "forwards",
         }),
       );

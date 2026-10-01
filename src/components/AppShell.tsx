@@ -3,6 +3,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { CalendarClock, History, LogOut, Menu, ShieldCheck, Sparkles, Users } from "lucide-react";
 
 import { AuthGate } from "@/components/AuthGate";
+import { Avatar } from "@/components/Avatar";
 import { KijamiiMark } from "@/components/KijamiiMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -25,15 +26,6 @@ const NAV = [
   { to: "/team", label: "My Team", icon: Users, only: "team" },
   { to: "/admin", label: "Admin Overview", icon: ShieldCheck, only: "admin" },
 ] as const;
-
-function initialsOf(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -86,7 +78,17 @@ function ShellChrome({
   actions?: ReactNode | undefined;
   children: ReactNode;
 }) {
-  const { employee, signOut } = useAuth();
+  const { employee, session, signOut } = useAuth();
+
+  /*
+   * The picture on their Google account, which the sign-in already carries --
+   * so a face costs no upload, no bucket and no settings page. Absent for
+   * anybody whose Google account has none, and the initials take over.
+   */
+  const photo =
+    typeof session?.user.user_metadata?.["avatar_url"] === "string"
+      ? (session.user.user_metadata["avatar_url"] as string)
+      : null;
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -117,9 +119,12 @@ function ShellChrome({
           </div>
         </div>
         <div className="rounded-lg bg-sidebar-accent/60 p-3">
-          <p className="truncate text-[13px] font-semibold text-sidebar-accent-foreground">
-            {employee?.fullName}
-          </p>
+          <div className="flex items-center gap-2.5">
+            <Avatar name={employee?.fullName ?? ""} src={photo} className="size-9" />
+            <p className="min-w-0 truncate text-[13px] font-semibold text-sidebar-accent-foreground">
+              {employee?.fullName}
+            </p>
+          </div>
           <p className="truncate text-[11px] text-sidebar-foreground/60">{employee?.email}</p>
           {employee?.title && (
             <p className="mt-1 truncate text-[11px] text-sidebar-foreground/60">{employee.title}</p>
@@ -180,9 +185,7 @@ function ShellChrome({
               {actions}
               <ThemeToggle />
               <div className="hidden items-center gap-2 border-l pl-3 sm:flex">
-                <span className="grid size-8 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
-                  {initialsOf(employee?.fullName ?? "")}
-                </span>
+                <Avatar name={employee?.fullName ?? ""} src={photo} className="size-8" />
                 <div className="hidden leading-tight lg:block">
                   <p className="text-[13px] font-semibold">{employee?.fullName}</p>
                 </div>
