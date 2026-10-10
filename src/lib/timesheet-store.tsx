@@ -102,9 +102,8 @@ interface TimesheetContextValue {
    */
   visibleDates: string[];
   /**
-   * The seven days of the week on screen: everything the Date field offers,
-   * and everything "Add day" can reveal. Days still to come are included --
-   * a week ahead of today can be filled in.
+   * The seven days of the week on screen: what the Date field offers. Days
+   * still to come are included -- a week ahead of today can be filled in.
    */
   selectableDates: string[];
   /** The day being looked at. Everything on screen belongs to it. */
@@ -113,12 +112,8 @@ interface TimesheetContextValue {
   setDay: (date: string) => void;
   /** Where a new row lands, or null when this week has no open day. */
   defaultEntryDate: string | null;
-  /** Reveals a day. Without an argument, the earliest one still hidden. */
-  addDay: (date?: string) => void;
-  /** Days that have happened but are not currently on screen. */
-  hiddenDates: string[];
-  /** Rows per day, so a hidden day can show it already holds work. */
-  rowCountByDate: Map<string, number>;
+  /** Brings a day onto the screen, which now means going to it. */
+  addDay: (date: string) => void;
 
   saveState: SaveState;
   lastSavedAt: string | null;
@@ -484,37 +479,12 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   );
 
   /**
-   * Which days the grid shows.
+   * Which day the grid shows: one.
    *
-   * In the current week only today appears, plus anything explicitly revealed
-   * with Add day: the screen is for logging today, and six other days of
-   * scaffolding is noise. Days that already hold entries are still one click
-   * away in the Add day list, which says how many rows are waiting there.
-   *
-   * A past week is different -- you are reviewing it, not filling it in -- so
-   * every day that has entries is shown.
-   */
-  /*
-   * One day. The rest of the week stays loaded and stays saved -- it is simply
-   * not drawn, which is the whole of the change.
+   * The rest of the week stays loaded and stays saved -- it is simply not
+   * drawn, which is the whole of the change.
    */
   const visibleDates = useMemo(() => [focusDate], [focusDate]);
-
-  /**
-   * Days that have happened but are not on screen. Someone catching up on
-   * Thursday needs to reach Monday directly, not by revealing each day in turn.
-   */
-  const hiddenDates = useMemo(
-    () => selectableDates.filter((date) => !visibleDates.includes(date)),
-    [selectableDates, visibleDates],
-  );
-
-  /** How many rows sit on each day, so a hidden day can say it is not empty. */
-  const rowCountByDate = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const row of entries) counts.set(row.workDate, (counts.get(row.workDate) ?? 0) + 1);
-    return counts;
-  }, [entries]);
 
   /**
    * Open a day. Loads whichever week it belongs to if that is not the one
@@ -532,12 +502,11 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
    * With one day shown, revealing a day means going to it.
    */
   const addDay = useCallback(
-    (date?: string) => {
-      const target = date ?? hiddenDates[0];
-      if (!target || visibleDates.includes(target)) return;
-      setDay(target);
+    (date: string) => {
+      if (visibleDates.includes(date)) return;
+      setDay(date);
     },
-    [hiddenDates, visibleDates, setDay],
+    [visibleDates, setDay],
   );
 
   // ---------------------------------------------------------- validation
@@ -639,8 +608,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       focusDate,
       defaultEntryDate,
       addDay,
-      hiddenDates,
-      rowCountByDate,
       saveState,
       lastSavedAt,
       saveError,
@@ -678,8 +645,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
       selectableDates,
       focusDate,
       addDay,
-      hiddenDates,
-      rowCountByDate,
       saveState,
       lastSavedAt,
       saveError,

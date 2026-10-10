@@ -1,17 +1,12 @@
 import { Fragment } from "react";
+import { addDays } from "date-fns";
 import { AlertCircle, ChevronLeft, Copy, Lock, Plus, Trash2 } from "lucide-react";
 
 import { EntryField } from "@/components/EntryField";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatHours } from "@/lib/domain/totals";
-import { dayLabel, shortDayLabel, toDateKey } from "@/lib/domain/week";
+import { dayLabel, parseDateKey, shortDayLabel, toDateKey } from "@/lib/domain/week";
 import type { TimesheetEntry } from "@/lib/domain/types";
 import { useTimesheet } from "@/lib/timesheet-store";
 import { cn } from "@/lib/utils";
@@ -94,66 +89,25 @@ function DayHeading({ date }: { date: string }) {
 }
 
 /**
- * Reveals a past day of this week. A list rather than a single button, so
- * catching up on Thursday reaches Monday in one click instead of three.
- */
-function AddDayMenu({ className }: { className?: string | undefined }) {
-  const { hiddenDates, addDay, rowCountByDate } = useTimesheet();
-  if (hiddenDates.length === 0) return null;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {/* Ink rather than the green of "Row": the two sit side by side and
-            do different things, so they must not be the same colour. Ink is
-            the palette's own answer for a solid action -- the brand red is a
-            shade off the destructive red, and a red "Add day" would read as
-            a button that takes a day away. */}
-        <Button
-          size="sm"
-          className={cn("h-9 gap-1.5 px-3.5 text-[14px] font-bold shadow-card", className)}
-        >
-          <Plus className="size-4" /> Add day
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-52">
-        {hiddenDates.map((date) => {
-          // A hidden day may already hold work; say so rather than letting it
-          // look empty just because it is off screen.
-          const rows = rowCountByDate.get(date) ?? 0;
-          return (
-            <DropdownMenuItem key={date} onClick={() => addDay(date)} className="text-[13px]">
-              {dayLabel(date)}
-              {rows > 0 && (
-                <span className="num ml-auto text-[11px] text-muted-foreground">
-                  {rows} row{rows === 1 ? "" : "s"}
-                </span>
-              )}
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-/**
- * Shown when every day of this week that has happened is already submitted.
+ * Shown when the day on screen is already submitted.
  *
- * That is a real state, not an error -- on the Sunday a week begins, one
- * submitted day is the whole week. Saying so and offering the way back beats
- * an "Add row" button that produces a row nobody can edit.
+ * That is a real state, not an error. Saying so and offering the day before
+ * beats an "Add row" button that produces a row nobody can edit.
  */
 function NothingToAdd() {
-  const { goWeek } = useTimesheet();
+  const { focusDate, setDay } = useTimesheet();
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Lock className="size-3.5 shrink-0 text-muted-foreground" />
       <span className="text-[12px] text-muted-foreground">
-        Everything logged so far this week has been submitted.
+        Everything on {shortDayLabel(focusDate)} has been submitted.
       </span>
-      <Button variant="outline" size="sm" onClick={() => goWeek(-1)}>
-        <ChevronLeft className="size-3.5" /> Go to last week
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setDay(toDateKey(addDays(parseDateKey(focusDate), -1)))}
+      >
+        <ChevronLeft className="size-3.5" /> Go to the day before
       </Button>
     </div>
   );
@@ -203,13 +157,11 @@ export function TimesheetGrid() {
     const startsToday = focusDate === toDateKey(new Date());
     return (
       <div className="rounded-lg border border-dashed bg-surface px-6 py-14 text-center">
-        <h2 className="text-sm font-bold">
-          {startsToday
-            ? `Nothing logged for ${shortDayLabel(focusDate)} yet`
-            : "No entries for this week yet"}
-        </h2>
+        <h2 className="text-sm font-bold">Nothing logged for {shortDayLabel(focusDate)} yet</h2>
         <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">
-          Start with a row for today, or reach back to a day earlier in the week.
+          {startsToday
+            ? "Start with a row for today."
+            : "Add a row for this day, or pick another from the strip above."}
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           {defaultEntryDate && (
@@ -221,8 +173,6 @@ export function TimesheetGrid() {
               <Plus className="size-4" /> {startsToday ? "Log today's hours" : "Add first row"}
             </Button>
           )}
-          {/* Catching up on the whole week starts from an earlier day. */}
-          <AddDayMenu />
         </div>
       </div>
     );
@@ -307,12 +257,9 @@ export function TimesheetGrid() {
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t bg-surface-muted px-2.5 py-2">
           {defaultEntryDate ? (
-            <>
-              <AddDayMenu />
-              <span className="text-[11px] text-muted-foreground">
-                Tip: press Tab to move across fields, Shift+Tab to go back.
-              </span>
-            </>
+            <span className="text-[11px] text-muted-foreground">
+              Tip: press Tab to move across fields, Shift+Tab to go back.
+            </span>
           ) : (
             <NothingToAdd />
           )}
@@ -373,7 +320,7 @@ export function TimesheetGrid() {
             </section>
           );
         })}
-        {defaultEntryDate ? <AddDayMenu className="w-full" /> : <NothingToAdd />}
+        {!defaultEntryDate && <NothingToAdd />}
       </div>
     </div>
   );
