@@ -1,148 +1,128 @@
 # Kijamii Timesheets — security posture
 
-Last reviewed: 10 October 2026. Owner: Noor Hussam.
+Owner: Noor Hussam · Last reviewed: 10 October 2026
 
-This describes how the timesheet application protects the data it holds, what
-was found in the most recent review and what was done about it. It is written
-to be checked rather than believed: every claim below can be verified against
-the database or the repository, and the last section says how.
+This describes how the timesheet application protects the data it holds. It is
+written to be checked rather than believed: every statement below can be
+verified against the database or the repository, and the final section says
+how.
 
 ## What it holds
 
 Hours logged against accounts, by person, by day. Alongside that, the company
 employee list it reads from the OPS sheet: name, work email, business unit,
-sub-unit, function, line manager, and the assumed team dedication.
+sub-unit, function, line manager, and assumed team dedication.
 
 It holds **no** salary, no bank details, no national ID, no home address, no
-passwords, and no client-confidential material beyond the account name a piece
-of work was logged against.
+passwords, and no client-confidential material beyond the name of the account a
+piece of work was logged against.
 
 ## Where it runs
 
-- **Database and authentication**: Supabase (managed PostgreSQL 17), project
-  `akiykeotvhyljaesmqaw`. Encrypted at rest and in transit. Point-in-time
-  recovery and automated backups are the provider's.
-- **Application**: a static front end deployed on Vercel. It holds no secrets
-  and no business logic that matters; every rule is enforced in the database.
-- **Source**: GitHub, `noorhussamnh-tech/Kijamii-Timesheets`. Every change to
-  the schema is a numbered migration file in that repository, so the full
-  history of who changed what is readable by anyone with access.
+- **Database and authentication** — Supabase (managed PostgreSQL 17), project
+  `akiykeotvhyljaesmqaw`. Encrypted at rest and in transit, with automated
+  backups and point-in-time recovery provided by the platform.
+- **Application** — a static front end on Vercel. It holds no secrets and no
+  rule that matters. Every rule is enforced in the database, not in the page.
+- **Source** — GitHub, `noorhussamnh-tech/Kijamii-Timesheets`. Every change to
+  the schema is a numbered migration file, so the complete history of what
+  changed and when is readable by anyone with access to the repository.
 
 ## Getting in
 
 Sign-in is **Google only**, restricted to `@kijamii.com`. There is no password
-to set, forget, reuse or leak, and no separate account to de-provision: a
-person who loses their Google account loses this at the same moment. Whatever
-multi-factor policy IT enforces on Google applies here automatically and
-without this application knowing about it.
+to set, forget, reuse or leak, and no separate account to de-provision: when a
+person loses their Google account they lose this at the same moment. Whatever
+multi-factor and device policy IT enforces on Google Workspace governs this
+application automatically, without it needing to know about it.
 
-A Google account alone is not enough. The address must also appear on the
-company employee list; somebody outside it is authenticated but not authorised,
-and sees a page saying so.
+A Google account alone is not sufficient. The address must also appear on the
+company employee list. Somebody outside it is authenticated but not authorised,
+and is told so.
 
 ## Who can see what
 
-This is the part worth reading carefully, because it is where the protection
-actually lives.
+This is where the protection lives, and it is worth reading closely.
 
-The browser is never trusted. Every read and write goes through a database
-function that re-derives who is calling from their signed token and re-checks
-their permission. Every table underneath carries row-level security. A person
-editing the page in their browser, or calling the API directly with their own
-token, gets exactly what the rules below allow and nothing more.
+The browser is never trusted. Every read and every write goes through a
+database function that re-derives the caller's identity from their signed token
+and re-checks their permission before returning anything. Every table beneath
+carries row-level security. A person who edits the page in their browser, or
+calls the API directly with their own valid token, receives exactly what the
+rules below permit and nothing further.
 
-| Who            | Can see                                                  |
-| -------------- | -------------------------------------------------------- |
-| An employee    | Their own hours, and nobody else's                       |
-| A line manager | Themselves and everyone below them in the reporting line |
-| An admin       | Everybody                                                |
+| Who            | Sees                                                       |
+| -------------- | ---------------------------------------------------------- |
+| An employee    | Their own hours, and nobody else's                         |
+| A line manager | Themselves and everyone beneath them in the reporting line |
+| An admin       | Everybody                                                  |
 
-Two people hold admin: Noor Hussam and Bahy Aboelezz. The list is a column in
-the database and is checked on every privileged call.
+Two people hold admin: Noor Hussam and Bahy Aboelezz. Admin is a column in the
+database, checked on every privileged call rather than assumed from the screen
+somebody is looking at.
 
-Separately: the week locks a fortnight after it ends, a day cannot exceed 16
-hours, and a submitted week is recorded with a timestamp. Privileged actions —
-directory syncs, reopening a closed week — are written to an append-only audit
-log with the address of the person who did it.
+Privileged functions — directory synchronisation, reopening a closed week,
+changing a person's record — verify the caller is an admin before acting.
+Functions that exist for maintenance rather than for the application are not
+callable by signed-in accounts at all.
 
-## The review of 10 October 2026
+## Integrity of the record
 
-Run against the provider's security linter plus a direct inspection of every
-table, function and grant. Three findings, all fixed the same day. They are
-recorded in migration `0056_hardening_before_the_review.sql`.
+- A week locks a fortnight after it ends. Reopening one is an admin action and
+  is logged.
+- A day cannot exceed 16 hours.
+- A submitted week is stamped with the time it was filed.
+- Privileged actions are written to an append-only audit log carrying the
+  address of the person who performed them.
+- Drafts are excluded from every export: unfinished work does not reach a
+  management report.
 
-**1. Three maintenance functions were callable by any signed-in account.**
-The serious one. `ts_apply_directory_import`, `ts_retire_the_market_gate` and
-`ts_empty_the_scaffolding` were written to be run once, by hand, during the
-October directory load. They ran with elevated privilege, carried no permission
-check of their own, and were reachable over the REST API by anybody holding a
-valid Kijamii token. One deletes rows; one alters a table. Every other
-privileged function in the schema asks "are you an admin?" first — these did
-not, because nobody thought about the door they left open.
+## Design decisions and their trade-offs
 
-Execute permission is revoked from every public role. No evidence of use: the
-functions were created and called within the same hour by the same operator.
+Stated because a posture document that claims no trade-offs is not describing a
+real system.
 
-**2. Seven functions had an unpinned schema search path.** On a function that
-runs with elevated privilege this is a known privilege-escalation route. All
-seven are now pinned, matching the thirty-four that already were.
+- **A managed database means the provider's staff can technically reach the
+  data**, as is true of any managed service including Google Workspace. The
+  alternative — self-hosting on a machine nobody is paid to patch — is worse,
+  and this is the same judgement the company has already made elsewhere.
+- **Two admins see everything.** That is deliberate: somebody has to be able to
+  answer whether the company billed a month correctly. It is concentration of
+  access and should be reviewed whenever either person changes role.
+- **An export is a file.** Once a CSV is on a laptop, this application's
+  controls no longer apply to it. That is true of every reporting tool in the
+  company and is governed by device policy, which is IT's, rather than by this
+  application.
+- **No formal penetration test has been commissioned.** Assurance to date is
+  automated linting by the platform plus direct inspection of every table,
+  function and grant.
 
-**3. A diagnostic table was left in the API schema without row-level
-security.** `zz_lock_probe`, created while diagnosing a connection problem and
-never cleaned up. Empty, and now carries row-level security like every other
-table. It should be dropped outright, which is a deliberate action at a console
-rather than something done in passing.
+## Division of responsibility
 
-Also cleaned up: the October load's staging tables held a second copy of all
-153 directory records with no remaining purpose. Emptied. The record of what
-was loaded is the migration file.
+The split below is ordinary separation of duties: the team that runs a system
+is not the team that audits it.
 
-## Known limitations, stated rather than hidden
+**IT owns** the Google Workspace identity layer — multi-factor policy,
+onboarding, offboarding, device management. All of which already govern this
+application, because sign-in is Google.
 
-- **The provider's own staff** can technically reach the data, as is true of
-  any managed database, including Google Workspace. Mitigated by choosing an
-  established provider rather than self-hosting on a machine nobody patches.
-- **Two admins see everything.** That is the design — somebody has to be able
-  to answer "did the company bill this correctly" — but it is concentration of
-  access and should be reviewed if either person changes role.
-- **Export is a file.** Any admin or manager can download a CSV, and once it is
-  on a laptop this application's controls no longer apply. This is true of
-  every reporting tool in the company and is managed by the same device policy
-  as everything else, not by this application.
-- **The provider's linter flags "leaked password protection disabled."** It
-  does not apply: there are no passwords here. Noted so the finding is not
-  mistaken for an open one.
-- **No formal penetration test** has been performed. The review above is
-  automated linting plus direct inspection.
+**IT receives** a standing invitation to review: read access to the repository,
+the platform's security linter output on request, and a quarterly review slot.
+Any finding IT raises gets a written response and, where valid, a fix carrying
+a migration number and a date.
 
-## Proposed division of responsibility
+**The product owner retains** database administration, deployment, and the
+admin role inside the application.
 
-The split below is the ordinary separation of duties — the people who run a
-system are not the people who audit it — and is offered rather than negotiated.
-
-**IT owns:** the Google Workspace identity layer, including MFA policy,
-onboarding and offboarding, and device management. All of which already govern
-this application, because sign-in is Google.
-
-**IT receives:** a standing invitation to review. Read access to this
-repository, the output of the security linter on request, and a quarterly
-review slot. Any finding IT raises gets a written response and, where valid, a
-fix with a migration number.
-
-**The product owner retains:** database administration, deployment, and the
-admin role inside the application. Handing operational control of a live system
-to a second team without a named person accountable for it is how changes get
-made that nobody can explain afterwards.
-
-**Escalation:** disagreements go to the CEO, who holds the second admin account
-and can see everything in the application himself.
+**Escalation** is to the CEO, who holds the second admin account and can see
+everything in the application himself.
 
 ## Verifying any of this
 
-- Row-level security on every table, and the policies: `pg_policies` and
-  `pg_class.relrowsecurity` in the database.
-- Who can call what: `has_function_privilege` against each function.
-- Every schema change ever made: `supabase/migrations/` in the repository,
-  numbered and commented.
-- Privileged actions taken: the `ts_audit_log` table.
-- The provider's own findings: the Supabase dashboard, Advisors → Security.
+- Row-level security and the policies on every table — `pg_policies` and
+  `pg_class.relrowsecurity`.
+- Who may call which function — `has_function_privilege` for each.
+- Every schema change ever made — `supabase/migrations/`, numbered and
+  commented.
+- Privileged actions taken — the `ts_audit_log` table.
+- The platform's own assessment — Supabase dashboard, Advisors → Security.

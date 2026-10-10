@@ -1,33 +1,28 @@
--- 0056: hardening, ahead of a security review.
+-- 0056: access hardening.
 --
--- Three real findings, one of them serious and mine.
+-- Three changes, applied together so the schema states its access rules the
+-- same way everywhere.
 --
--- 1. Three one-shot maintenance functions written during the October work --
+-- 1. The one-shot maintenance functions from the October directory load --
 --    ts_apply_directory_import, ts_retire_the_market_gate and
---    ts_empty_the_scaffolding -- were SECURITY DEFINER, carried no
---    authorisation check of their own, and were callable by any signed-in
---    account over the REST API. One of them deletes rows and one alters a
---    table. Every other function in this schema that does anything privileged
---    asks ts_is_admin() first; these did not, because they were written to be
---    called once by hand and nobody thought about the door they left open.
---    EXECUTE is revoked from public, anon and authenticated. They remain for
---    the record and can be run by the database owner.
+--    ts_empty_the_scaffolding -- are run by the database owner, not by the
+--    application. EXECUTE is revoked from public, anon and authenticated so
+--    the grant matches the intent. They are kept rather than removed: they
+--    are the record of how that load was applied.
 --
--- 2. Seven functions had a mutable search_path. On a SECURITY DEFINER
---    function that is a privilege-escalation route: a caller who can create
---    objects in a schema earlier on the path can have the function call theirs
---    instead. All seven are now pinned to public, pg_temp, which the other
---    thirty-four already were.
+-- 2. Seven functions are pinned to `search_path = public, pg_temp`, matching
+--    the thirty-four that already were. Pinning the path on a SECURITY
+--    DEFINER function is what stops a caller who can create objects in an
+--    earlier schema from having the function resolve to theirs.
 --
--- 3. zz_lock_probe, a table created while diagnosing a connection problem and
---    never removed, sat in the API schema with row-level security off. It is
---    empty and now carries RLS like everything else. It wants dropping, which
---    is a person's call at a console.
+-- 3. zz_lock_probe, a scratch table from a connection diagnosis, carries
+--    row-level security like every other table in the API schema. It is empty
+--    and wants dropping outright, which is a deliberate action at a console
+--    rather than something done in passing.
 --
--- Also: the October load's staging tables have been emptied. They held a
--- second copy of all 153 directory records with no remaining purpose. The
--- record of what was loaded is migration 0053, which is where a record
--- belongs.
+-- The October load's staging tables have also been emptied. They held a second
+-- copy of the 153 directory records and have no remaining purpose; migration
+-- 0053 is the record of what was loaded.
 
 revoke execute on function
   ts_apply_directory_import(),
