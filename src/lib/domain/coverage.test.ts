@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { describeMissing, monthCoverage } from "./coverage";
+import { describeMissing, monthCoverage, recentDays } from "./coverage";
 import { parseDateKey } from "./week";
 
 /** Sunday to Thursday, the working week in Egypt and Saudi Arabia. */
@@ -130,5 +130,40 @@ describe("describing the gaps", () => {
 
   it("says nothing when nothing is missing", () => {
     expect(describeMissing([])).toBe("");
+  });
+});
+
+describe("recentDays", () => {
+  const monday = new Date(2026, 9, 5); // 5 October 2026, a Monday
+  const egypt = [0, 1, 2, 3, 4]; // Sunday to Thursday
+
+  it("returns a fixed window ending today, oldest first", () => {
+    const days = recentDays([], egypt, monday, 30);
+    expect(days).toHaveLength(30);
+    expect(days[0]!.date).toBe("2026-09-06");
+    expect(days[29]!.date).toBe("2026-10-05");
+    expect(days[29]!.isToday).toBe(true);
+  });
+
+  it("carries the hours logged against each day", () => {
+    const days = recentDays([{ date: "2026-10-05", hours: 7.5 }], egypt, monday, 3);
+    expect(days.map((day) => day.hours)).toEqual([0, 0, 7.5]);
+  });
+
+  it("marks the weekend as non-working so an empty Friday is not a gap", () => {
+    // 2 October 2026 is a Friday, 3 October a Saturday.
+    const days = recentDays([], egypt, monday, 4);
+    const byDate = new Map(days.map((day) => [day.date, day.isWorkingDay]));
+    expect(byDate.get("2026-10-02")).toBe(false);
+    expect(byDate.get("2026-10-03")).toBe(false);
+    expect(byDate.get("2026-10-04")).toBe(true);
+  });
+
+  it("keeps a weekend that was actually worked", () => {
+    // Dropping it would hide real hours. It is simply not counted as owed.
+    const days = recentDays([{ date: "2026-10-02", hours: 4 }], egypt, monday, 4);
+    const friday = days.find((day) => day.date === "2026-10-02")!;
+    expect(friday.hours).toBe(4);
+    expect(friday.isWorkingDay).toBe(false);
   });
 });

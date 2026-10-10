@@ -91,6 +91,15 @@ interface TimesheetContextValue {
   duplicateRow: (id: string) => void;
   deleteRow: (id: string) => void;
 
+  /**
+   * The day on screen. One, always.
+   *
+   * A week was the unit here because a week is the unit of submission. It is
+   * not the unit anybody works in: somebody filling Tuesday in on Wednesday
+   * does not want Sunday, Monday, Thursday, Friday and Saturday underneath
+   * it. The week is still what loads, and still what submits -- it just no
+   * longer decides what the page shows.
+   */
   visibleDates: string[];
   /**
    * The seven days of the week on screen: everything the Date field offers,
@@ -98,8 +107,10 @@ interface TimesheetContextValue {
    * a week ahead of today can be filled in.
    */
   selectableDates: string[];
-  /** The day the UI should foreground: today, or the week start. */
+  /** The day being looked at. Everything on screen belongs to it. */
   focusDate: string;
+  /** Open a day, whichever week it falls in. */
+  setDay: (date: string) => void;
   /** Where a new row lands, or null when this week has no open day. */
   defaultEntryDate: string | null;
   /** Reveals a day. Without an argument, the earliest one still hidden. */
@@ -164,10 +175,11 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   const ready = authStatus === "ready" && employee !== null;
 
   const [weekKey, setWeekKeyState] = useState<WeekKey>(() => currentWeekKey());
+  // The day on screen. The week it belongs to is what gets loaded and saved.
+  const [dayKey, setDayKey] = useState<string>(() => toDateKey(new Date()));
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [status, setStatus] = useState<SubmissionStatus>("draft");
   const [lockedDays, setLockedDays] = useState<string[]>([]);
-  const [extraDates, setExtraDates] = useState<string[]>([]);
 
   const [reference, setReference] = useState<ReferenceData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -252,7 +264,6 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
         setSaveState("idle");
         setSaveError(null);
         setShowErrors(false);
-        setExtraDates([]);
       } catch (cause) {
         if (!cancelled) {
           setLoadError(cause instanceof Error ? cause.message : "Could not load this week.");
@@ -358,11 +369,19 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
   // day can be filled in whenever suits them.
   const selectableDates = useMemo(() => weekDates(weekKey), [weekKey]);
 
+  /*
+   * The day on screen, kept inside the week that is loaded.
+   *
+   * The clamp matters: a week can change without a day being chosen -- the
+   * error reveal does it, and so does anything that jumps -- and a focus day
+   * outside the loaded week would show an empty page with no way back.
+   */
   const focusDate = useMemo(() => {
     const all = weekDates(weekKey);
+    if (all.includes(dayKey)) return dayKey;
     const today = toDateKey(new Date());
     return all.includes(today) ? today : all[0]!;
-  }, [weekKey]);
+  }, [weekKey, dayKey]);
 
   const mutate = useCallback((fn: (rows: TimesheetEntry[]) => TimesheetEntry[]) => {
     setEntries((rows) => fn(rows));
@@ -475,13 +494,11 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
    * A past week is different -- you are reviewing it, not filling it in -- so
    * every day that has entries is shown.
    */
-  const visibleDates = useMemo(() => {
-    const all = weekDates(weekKey);
-    const reviewing = weekKey !== currentWeekKey();
-    const used = new Set(extraDates);
-    if (reviewing) for (const row of entries) used.add(row.workDate);
-    return all.filter((date) => date === focusDate || used.has(date));
-  }, [weekKey, entries, extraDates, focusDate]);
+  /*
+   * One day. The rest of the week stays loaded and stays saved -- it is simply
+   * not drawn, which is the whole of the change.
+   */
+  const visibleDates = useMemo(() => [focusDate], [focusDate]);
 
   /**
    * Days that have happened but are not on screen. Someone catching up on
@@ -499,13 +516,28 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     return counts;
   }, [entries]);
 
+  /**
+   * Open a day. Loads whichever week it belongs to if that is not the one
+   * already in hand, so a day from three weeks ago is one click, not a week
+   * of clicking backwards.
+   */
+  const setDay = useCallback((date: string) => {
+    setDayKey(date);
+    const target = weekKeyOf(parseDateKey(date));
+    setWeekKeyState((current) => (current === target ? current : target));
+  }, []);
+
+  /**
+   * Kept because the validator uses it to bring a flagged row onto the screen.
+   * With one day shown, revealing a day means going to it.
+   */
   const addDay = useCallback(
     (date?: string) => {
       const target = date ?? hiddenDates[0];
       if (!target || visibleDates.includes(target)) return;
-      setExtraDates((dates) => (dates.includes(target) ? dates : [...dates, target]));
+      setDay(target);
     },
-    [hiddenDates, visibleDates],
+    [hiddenDates, visibleDates, setDay],
   );
 
   // ---------------------------------------------------------- validation
@@ -583,6 +615,7 @@ export function TimesheetProvider({ children }: { children: ReactNode }) {
     () => ({
       weekKey,
       setWeekKey,
+      setDay,
       goWeek: (delta) => setWeekKeyState((key) => shiftWeek(key, delta)),
       goCurrentWeek: () => setWeekKeyState(currentWeekKey()),
       isFuture,

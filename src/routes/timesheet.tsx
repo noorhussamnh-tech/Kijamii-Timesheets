@@ -1,22 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { endOfMonth, startOfMonth } from "date-fns";
+import { subDays } from "date-fns";
 import { AlertCircle } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Confetti } from "@/components/Confetti";
 import { DailyNote } from "@/components/DailyNote";
-import { MonthCoverage } from "@/components/MonthCoverage";
+import { DayNav } from "@/components/DayNav";
+import { DayStrip } from "@/components/DayStrip";
 import { SaveIndicator } from "@/components/SaveIndicator";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SubmitDialog } from "@/components/SubmitDialog";
 import { SummaryBar } from "@/components/SummaryBar";
 import { TimesheetGrid } from "@/components/TimesheetGrid";
-import { WeekNav } from "@/components/WeekNav";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { fetchMyLoggedDays } from "@/lib/data/api";
-import { monthCoverage, type DayCoverage } from "@/lib/domain/coverage";
+import { monthCoverage, recentDays, type DayCoverage } from "@/lib/domain/coverage";
 import { missingFields } from "@/lib/domain/validation";
 import { CATEGORICAL } from "@/lib/viz/palette";
 import { dayLabel, toDateKey } from "@/lib/domain/week";
@@ -28,12 +28,13 @@ export const Route = createFileRoute("/timesheet")({
       { title: "My Week — Kijamii Timesheets" },
       {
         name: "description",
-        content: "Log weekly hours per client and service, then submit the week for review.",
+        content: "Log hours a day at a time, against the client and the work they went to.",
       },
       { property: "og:title", content: "My Week — Kijamii Timesheets" },
       {
         property: "og:description",
-        content: "Weekly time entry for Kijamii teams with saved drafts and locked submissions.",
+        content:
+          "Day-by-day time entry for Kijamii teams, with saved drafts and the last 30 days to hand.",
       },
     ],
   }),
@@ -107,7 +108,8 @@ function TimesheetPage() {
     if (authStatus !== "ready") return;
     let cancelled = false;
 
-    void fetchMyLoggedDays(toDateKey(startOfMonth(month)), toDateKey(endOfMonth(month)))
+    // Thirty days back, which is what the strip shows and what the note reads.
+    void fetchMyLoggedDays(toDateKey(subDays(month, 29)), toDateKey(month))
       .then((rows) => {
         if (!cancelled) setLoggedDays(rows);
       })
@@ -124,6 +126,11 @@ function TimesheetPage() {
 
   const coverage = useMemo(
     () => (loggedDays ? monthCoverage(month, loggedDays, config.workDays) : null),
+    [loggedDays, config.workDays],
+  );
+
+  const strip = useMemo(
+    () => (loggedDays ? recentDays(loggedDays, config.workDays) : null),
     [loggedDays, config.workDays],
   );
 
@@ -160,8 +167,8 @@ function TimesheetPage() {
       )}
       <div className="space-y-4 pb-2">
         <DailyNote coverage={coverage} />
-        <WeekNav />
-        <MonthCoverage coverage={coverage} />
+        <DayNav />
+        <DayStrip days={strip} />
 
         {saveError && (
           <p className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-[12px] font-medium text-destructive">

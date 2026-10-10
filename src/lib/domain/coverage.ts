@@ -81,3 +81,47 @@ export function describeMissing(missing: string[], limit = 4): string {
   const last = shown.pop();
   return `${shown.join(", ")} and ${last} ${monthName}`;
 }
+
+/** One day in the strip: what is on it, and whether it was a working day. */
+export interface RecentDay {
+  date: string;
+  hours: number;
+  /** Friday and Saturday in both Egypt and Saudi Arabia. */
+  isWorkingDay: boolean;
+  isToday: boolean;
+}
+
+/**
+ * The last thirty days, oldest first.
+ *
+ * Thirty rather than a calendar month because the question is "what have I
+ * missed", and on the second of the month a calendar month answers it with two
+ * days. A rolling window always looks the same distance back.
+ *
+ * Every day is returned, including the ones with nothing on them and the
+ * weekends -- the gaps are the entire point of looking, and a weekend that was
+ * worked should be visible rather than quietly dropped.
+ */
+export function recentDays(
+  days: DayCoverage[],
+  workDays: number[],
+  today: Date = new Date(),
+  span = 30,
+): RecentDay[] {
+  const hoursByDate = new Map(days.map((day) => [day.date, day.hours]));
+  const todayKey = toDateKey(today);
+  const out: RecentDay[] = [];
+
+  for (let back = span - 1; back >= 0; back -= 1) {
+    const day = addDays(today, -back);
+    const key = toDateKey(day);
+    out.push({
+      date: key,
+      hours: hoursByDate.get(key) ?? 0,
+      isWorkingDay: workDays.includes(day.getDay()),
+      isToday: key === todayKey,
+    });
+  }
+
+  return out;
+}
