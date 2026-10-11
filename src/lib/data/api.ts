@@ -19,9 +19,9 @@ import type {
   WorkType,
   ClientOption,
   Employee,
+  MyDaySummary,
   ReferenceData,
   ReferenceOption,
-  SubmissionSummary,
   TimesheetEntry,
   WeekData,
 } from "@/lib/domain/types";
@@ -321,13 +321,21 @@ export async function submitWeek(weekStart: string): Promise<SubmitResult> {
   };
 }
 
-export async function fetchMySubmissions(): Promise<SubmissionSummary[]> {
-  const rows = await rpc<SubmissionSummary[]>("ts_list_my_submissions");
+/**
+ * Every day with something on it, newest first.
+ *
+ * The history page asks "which days", not "which weeks", so this is its own
+ * query rather than a fold of the weekly one -- a week carries a single status
+ * and a single submitted_at for five days of work, and neither survives being
+ * split back apart.
+ */
+export async function fetchMyDays(): Promise<MyDaySummary[]> {
+  const rows = await rpc<MyDaySummary[]>("ts_list_my_days");
   return (rows ?? []).map((row) => ({
     ...row,
     totalHours: Number(row.totalHours),
     billableHours: Number(row.billableHours),
-    expectedHours: Number(row.expectedHours),
+    rowCount: Number(row.rowCount),
   }));
 }
 

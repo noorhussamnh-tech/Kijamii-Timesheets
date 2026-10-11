@@ -115,14 +115,21 @@ export interface WeekData {
   lockedDays: string[];
 }
 
-export interface SubmissionSummary {
-  weekStart: string;
-  weekEnd: string;
+/**
+ * One day that has something logged against it.
+ *
+ * The status is the day's own, not its week's: submitting files every finished
+ * row and leaves the rest, so a week can be half sent while a day inside it is
+ * wholly sent or wholly waiting.
+ */
+export interface MyDaySummary {
+  date: string;
   status: SubmissionStatus;
+  /** The last moment anything on this day was sent. */
   submittedAt: string | null;
   totalHours: number;
   billableHours: number;
-  expectedHours: number;
+  rowCount: number;
 }
 
 export interface AdminEmployeeStatus {
