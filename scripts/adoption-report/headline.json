@@ -1,0 +1,33 @@
+{
+ "cohort": 21,
+ "signed": 19,
+ "logged": 18,
+ "active": 15,
+ "util": 52,
+ "hours": 1117.75,
+ "draft_hours": 74.0,
+ "week": "18 Oct \u2013 21 Oct",
+ "snapshot": "2026-10-22 16:29 Cairo",
+ "teams": {
+  "Ramy Kamel": {
+   "active": 8,
+   "of": 8,
+   "util": 70
+  },
+  "Emad Mutter": {
+   "active": 4,
+   "of": 7,
+   "util": 46
+  },
+  "Marina": {
+   "active": 3,
+   "of": 3,
+   "util": 72
+  },
+  "Nadia": {
+   "active": 0,
+   "of": 3,
+   "util": 0
+  }
+ }
+}
