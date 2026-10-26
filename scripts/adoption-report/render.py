@@ -196,6 +196,32 @@ def build(payload, template):
                    day_label(p["last"]) if p["last"] else "—",
                    utone, u, cls, status))
 
+    today = daily[-1]
+    days = int(week["days"])
+    # A one-day window should read "25 Oct", not "25 Oct - 25 Oct".
+    if week["start"] == week["end"]:
+        week["label"] = day_label(week["start"])
+    over = any(p["util"] > 100 for p in people)
+
+    # Early in the week the window is one or two days long, so a low utilisation
+    # figure is mostly reporting lag: Sunday's hours are typed in on Monday. Say
+    # so on the page, rather than leaving a management reader to work it out.
+    caveat = ""
+    if days <= 2:
+        caveat = (
+            '\n  <section><div class="callout"><h3>Utilisation here covers %s only</h3>'
+            '<p>The week has %d finished working day%s so far, so the denominator is %d hours '
+            'per person instead of a full 40, and anyone who has not yet typed up %s reads as '
+            'zero. Early-week utilisation tracks how fast people write time up, not how much '
+            'they worked \u2014 the figure is worth reading from Tuesday on.</p></div></section>'
+            % (week["label"], days, "" if days == 1 else "s", cap,
+               day_label(week["end"]) if days == 1 else "those days"))
+
+    todaynote = (
+        '<p><b>Today is still running.</b> %s is a %s, so its point on the curve will keep '
+        'climbing.</p>' % (day_label(today["date"]),
+                           "working day in progress" if today["work"] else "weekend day"))
+
     swap = {
         "{{SNAP}}": payload["snapshot"],
         "{{COHORT}}": str(cohort),
@@ -210,6 +236,12 @@ def build(payload, template):
         "{{UTIL}}": str(pct(sum(p["wk_hours"] for p in people), cap * cohort)),
         "{{WEEKLABEL}}": week["label"],
         "{{CAP}}": str(cap),
+        "{{WDAYS}}": str(days),
+        "{{WDAYSS}}": "" if days == 1 else "s",
+        "{{CAVEAT}}": caveat,
+        "{{TODAYNOTE}}": todaynote,
+        "{{OVERNOTE}}": (" Anyone over 100% logged more than eight hours on some of them."
+                         if over else ""),
         "{{NEVER}}": str(cohort - signed),
         "{{CHART}}": chart(daily, fixed_on="2026-10-14"),
         "{{CARDS}}": "\n".join(cards),
@@ -224,7 +256,8 @@ def build(payload, template):
     headline = dict(cohort=cohort, signed=signed, logged=logged, active=active,
                     util=pct(sum(p["wk_hours"] for p in people), cap * cohort),
                     hours=round(hours, 2), draft_hours=round(draft_h, 2),
-                    week=week["label"], snapshot=payload["snapshot"],
+                    week=week["label"], week_days=days, cap=cap,
+                    snapshot=payload["snapshot"],
                     teams={k: dict(active=teams[k]["wk"], of=teams[k]["n"],
                                    util=pct(teams[k]["wkh"], cap * teams[k]["n"]))
                            for k in order})

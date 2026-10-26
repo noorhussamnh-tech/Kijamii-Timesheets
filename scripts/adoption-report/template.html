@@ -181,7 +181,7 @@
     <p class="eyebrow">Kijamii · Pilot review</p>
     <h1>Timesheet adoption across the four pilot teams</h1>
     <p class="lede">The timesheet went out to Nadia's, Marina's, Emad Mutter's and Ramy Kamel's
-      teams only — 21 people including the four leads. Everyone else at Kijamii is still outside
+      teams only — {{COHORT}} people including the four leads. Everyone else at Kijamii is still outside
       it, so nothing here is a company-wide figure.</p>
     <p class="meta">Snapshot {{SNAP}} · working week Sunday–Thursday</p>
   </header>
@@ -190,7 +190,7 @@
     <div class="tile hero">
       <div class="k">Logging this week</div>
       <div class="v">{{ACTIVE}}<small> / {{COHORT}}</small></div>
-      <div class="n">{{ACTIVEPCT}}% of the pilot, Sun 18 – Thu 22 Oct</div>
+      <div class="n">{{ACTIVEPCT}}% of the pilot, {{WEEKLABEL}}</div>
     </div>
     <div class="tile">
       <div class="k">Have ever logged</div>
@@ -213,7 +213,7 @@
       <div class="n">Of {{CAP}} h available per person</div>
     </div>
   </div>
-
+{{CAVEAT}}
   <section>
     <div class="sechead">
       <h2>People logging each day</h2>
@@ -279,18 +279,17 @@
     <p><b>Where the numbers come from.</b> Read directly from the timesheet database at the snapshot
       time above, not from an export. A "day logged" is a date with at least one entry carrying hours.</p>
     <p><b>Who counts as the pilot.</b> The four leads plus everyone the staff directory lists as
-      reporting to them: 21 people. Two Ramys appear in the directory; this is Ramy Kamel's team.</p>
+      reporting to them: {{COHORT}} people. Two Ramys appear in the directory; this is Ramy Kamel's team.</p>
     <p><b>The dip in mid-October was a defect, not drop-off.</b> Four people in Ramy Kamel's team
       could not save at all for part of the month. After it was fixed on 14 October they went back
       and filled the missed days in themselves, which is why their day counts jump rather than
       restart.</p>
     <p><b>How utilisation is worked out.</b> Hours logged in the current week divided by the hours
-      available in it: 8 hours times the <b>{{WEEKLABEL}}</b> working days that have finished, so
-      {{CAP}} hours per person. Thursday the 22nd is still in progress and is left out of both
-      sides, which is why a few people read just over 100% — they logged more than eight hours on
-      some of those four days. It measures hours captured against capacity, not hours worked.</p>
-    <p><b>Today is still running.</b> 22 October is a working day in progress, so its point on the
-      curve will keep climbing.</p>
+      available in it: 8 hours times the {{WDAYS}} working day{{WDAYSS}} of
+      <b>{{WEEKLABEL}}</b> that have finished, so {{CAP}} hours per person. Today is left out of
+      both sides, since a day still being worked would drag every figure down.{{OVERNOTE}} It
+      measures hours captured against capacity, not hours worked.</p>
+    {{TODAYNOTE}}
   </div>
 </div>
 

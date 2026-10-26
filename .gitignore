@@ -44,3 +44,4 @@ gcp-*.json
 coverage
 .vercel
 supabase/.temp/
+scripts/adoption-report/headline.json
