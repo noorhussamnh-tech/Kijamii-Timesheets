@@ -32,7 +32,7 @@ wdays as (
    where extract(dow from g) not in (5,6)
 ),
 mgrs(label, mgr_name, mgr_email) as (values
-  ('Nadia',       'Nadia Mohamed Hesham Aly El Sayed Hasaan',       'nadia.hesham@kijamii.com'),
+  ('Nadia',       'Nadia Mohamed Hesham Aly Elsayed Hassan',       'nadia.hesham@kijamii.com'),
   ('Marina',      'Marina Youssef Youhana Melika',                  'marina.youssef@kijamii.com'),
   ('Emad Mutter', 'Emad El-din Mohamed Mutter Abdel Khalek Mutter', 'emad.mutter@kijamii.com'),
   ('Ramy Kamel',  'Ramy Kamel Mohamed Taher Omar',                  'ramy.kamel@kijamii.com')
