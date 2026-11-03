@@ -55,10 +55,21 @@ const FRIENDLY_ERRORS: Record<string, string> = {
   day_over_limit: "That day would go over 16 hours. Check the hours on its rows.",
 };
 
-function toApiError(error: { message?: string; code?: string } | null): ApiError {
+/* Refusals whose server-side detail is more accurate than the string above. */
+const DETAILED_ERRORS = new Set(["week_closed"]);
+
+function toApiError(
+  error: { message?: string; code?: string; details?: string | null } | null,
+): ApiError {
   const raw = error?.message ?? "";
   for (const [code, message] of Object.entries(FRIENDLY_ERRORS)) {
-    if (raw.includes(code)) return new ApiError(code, message);
+    if (!raw.includes(code)) continue;
+    // A closed day has more than one reason to be closed, and only the
+    // database knows which applies: the fortnight rule, or a catch-up window
+    // that reaches back to a date set by an admin. Prefer what it said, so the
+    // message stays true when that date moves without the app being rebuilt.
+    const detail = DETAILED_ERRORS.has(code) ? error?.details?.trim() : "";
+    return new ApiError(code, detail ? detail : message);
   }
   // Anything unrecognised is reported generically; details stay in the logs.
   return new ApiError("unknown", "Something went wrong. Please try again.");
