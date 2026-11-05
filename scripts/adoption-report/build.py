@@ -278,97 +278,115 @@ def build(pp, al):
 
 
 CSS = """
+/* Kijamii Brand Guide 2024, section 2c. Colours and 1b. Typography.
+   Primary colours are white and black; the accents are used one at a time.
+   The guide's own web substitutes for Futura Now and Playfair are Lexend and
+   Playfair Display (p81), which is why those are the faces here. */
 :root{
-  /* Brand. Swap these four and the whole report re-skins; everything else
-     below is derived. Taken from the timesheet app's own tokens, which is the
-     only Kijamii palette available in code today. */
-  --brand:        oklch(0.588 0.196 26.5);
-  --brand-ink:    oklch(0.985 0 0);
-  --brand-fill:   oklch(0.588 0.196 26.5 / 0.10);
-  --brand-quiet:  oklch(0.588 0.196 26.5 / 0.16);
+  --white:#ffffff;        /* White                      */
+  --black:#1d1d1f;        /* Black, PMS Process Black   */
+  --torch:#cc4221;        /* Torch Red     PMS 1449 TCX */
+  --kgreen:#579e94;       /* Kijamii Green PMS 7535 U   */
+  --lime:#d4ff66;         /* Our Lime      PMS 3945 U   */
+  --purple:#ccb0fa;       /* Mild Purple   PMS 2717 U   */
+  --peach:#ffd4cf;        /* Soft Peach    PMS 939 U    */
+  --blu:#4051f4;          /* Eclectic Blu  PMS 2727 C   */
 
-  --bg:oklch(0.973 0.003 250); --surface:oklch(1 0 0); --sunk:oklch(0.966 0.004 250);
-  --ink:oklch(0.219 0.014 260); --ink-soft:oklch(0.545 0.014 258); --ink-faint:oklch(0.68 0.012 258);
-  --rule:oklch(0.917 0.005 255); --rule-firm:oklch(0.86 0.008 255);
+  /* One accent at a time, against black and white. Torch Red carries the data. */
+  --brand:var(--torch);
+  --brand-ink:var(--white);
+  --brand-fill:color-mix(in oklab, var(--torch) 10%, transparent);
+  --brand-quiet:color-mix(in oklab, var(--torch) 17%, transparent);
+
+  --bg:#faf9f8; --surface:var(--white); --sunk:#f2f0ee;
+  --ink:var(--black); --ink-soft:#6a6a6e; --ink-faint:#9a9a9e;
+  --rule:#e6e3e0; --rule-firm:#d5d1cd;
   --accent:var(--brand); --accent-fill:var(--brand-fill);
-  --good:oklch(0.52 0.12 155); --good-bg:oklch(0.955 0.04 158);
-  --warn:oklch(0.62 0.135 72); --warn-bg:oklch(0.968 0.04 85);
-  --bad:oklch(0.556 0.207 25);  --bad-bg:oklch(0.962 0.03 25);
-  --grid:oklch(0.917 0.005 255); --weekend:oklch(0.952 0.004 250); --marker:oklch(0.62 0.135 72);
-  --sans:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --good:#3f7a72; --good-bg:#e8f1ef;
+  --warn:#8a6a00; --warn-bg:#f6ffe0;
+  --bad:#a8351a;  --bad-bg:#fdecea;
+  --over:var(--kgreen);
+  --grid:#e6e3e0; --weekend:#f4f2f0; --marker:var(--blu);
+  --sans:"Lexend",ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;
+  --serif:"Playfair Display",Georgia,serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;
-  --brand:oklch(0.66 0.18 28); --brand-fill:oklch(0.66 0.18 28 / 0.16); --brand-quiet:oklch(0.66 0.18 28 / 0.22);
-  --bg:oklch(0.155 0.008 265); --surface:oklch(0.19 0.009 265); --sunk:oklch(0.175 0.009 265);
-  --ink:oklch(0.93 0.006 255); --ink-soft:oklch(0.62 0.014 260); --ink-faint:oklch(0.5 0.012 260);
-  --rule:oklch(0.27 0.01 265); --rule-firm:oklch(0.34 0.012 265);
-  --good:oklch(0.72 0.13 158); --good-bg:oklch(0.28 0.045 158);
-  --warn:oklch(0.78 0.14 80);  --warn-bg:oklch(0.3 0.05 80);
-  --bad:oklch(0.65 0.18 27);   --bad-bg:oklch(0.3 0.05 27);
-  --grid:oklch(0.27 0.01 265); --weekend:oklch(0.175 0.009 265); --marker:oklch(0.78 0.14 80);
+  /* Lifted for contrast on black, which the guide asks for before anything else. */
+  --brand:#e3643f; --brand-ink:var(--black);
+  --brand-fill:color-mix(in oklab, #e3643f 16%, transparent);
+  --brand-quiet:color-mix(in oklab, #e3643f 24%, transparent);
+  --bg:var(--black); --surface:#262628; --sunk:#201f21;
+  --ink:#f4f2f0; --ink-soft:#a3a3a8; --ink-faint:#737378;
+  --rule:#343437; --rule-firm:#45454a;
+  --good:#7cc0b4; --good-bg:#23403c;
+  --warn:#c9d98f; --warn-bg:#36401f;
+  --bad:#e8836a;  --bad-bg:#44241d;
+  --over:#7cc0b4;
+  --grid:#343437; --weekend:#201f21; --marker:#8f9bff;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --brand:oklch(0.66 0.18 28); --brand-fill:oklch(0.66 0.18 28 / 0.16); --brand-quiet:oklch(0.66 0.18 28 / 0.22);
-  --bg:oklch(0.155 0.008 265); --surface:oklch(0.19 0.009 265); --sunk:oklch(0.175 0.009 265);
-  --ink:oklch(0.93 0.006 255); --ink-soft:oklch(0.62 0.014 260); --ink-faint:oklch(0.5 0.012 260);
-  --rule:oklch(0.27 0.01 265); --rule-firm:oklch(0.34 0.012 265);
-  --good:oklch(0.72 0.13 158); --good-bg:oklch(0.28 0.045 158);
-  --warn:oklch(0.78 0.14 80);  --warn-bg:oklch(0.3 0.05 80);
-  --bad:oklch(0.65 0.18 27);   --bad-bg:oklch(0.3 0.05 27);
-  --grid:oklch(0.27 0.01 265); --weekend:oklch(0.175 0.009 265); --marker:oklch(0.78 0.14 80);
+  --brand:#e3643f; --brand-ink:var(--black);
+  --brand-fill:color-mix(in oklab, #e3643f 16%, transparent);
+  --brand-quiet:color-mix(in oklab, #e3643f 24%, transparent);
+  --bg:var(--black); --surface:#262628; --sunk:#201f21;
+  --ink:#f4f2f0; --ink-soft:#a3a3a8; --ink-faint:#737378;
+  --rule:#343437; --rule-firm:#45454a;
+  --good:#7cc0b4; --good-bg:#23403c;
+  --warn:#c9d98f; --warn-bg:#36401f;
+  --bad:#e8836a;  --bad-bg:#44241d;
+  --over:#7cc0b4;
+  --grid:#343437; --weekend:#201f21; --marker:#8f9bff;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;
-     -webkit-font-smoothing:antialiased}
+     font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1120px;margin-inline:auto;
       padding-left:max(16px,env(safe-area-inset-left,0px));
       padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 72px}
 h1,h2,h3{margin:0;letter-spacing:-0.02em;text-wrap:balance}
-h1{font-size:clamp(26px,4vw,38px);font-weight:800;line-height:1.12}
-h2{font-size:22px;font-weight:800}
-h3{font-size:14px;font-weight:700}
+h1{font-family:var(--serif);font-size:clamp(28px,4.4vw,44px);font-weight:500;line-height:1.1;letter-spacing:-0.01em}
+h2{font-size:21px;font-weight:600}
+h3{font-size:14px;font-weight:600}
 p{margin:0}
-.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.eyebrow{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;
-         text-transform:uppercase;color:var(--brand)}
-.meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft)}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.meta{font-size:11.5px;color:var(--ink-soft)}
 .lede{color:var(--ink-soft);font-size:15px;max-width:68ch;margin-top:10px}
 
 header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
            border-bottom:1px solid var(--rule-firm);padding-bottom:22px;flex-wrap:wrap}
-.brandmark{font-weight:800;letter-spacing:-0.03em;font-size:19px}
-.brandmark span{color:var(--brand)}
-.themer{font-family:var(--mono);font-size:11px;border:1px solid var(--rule-firm);background:var(--surface);
-        color:var(--ink-soft);border-radius:999px;padding:6px 12px;cursor:pointer}
+/* The wordmark is strictly black or white -- never tinted (guide p42). */
+.brandmark{font-weight:700;letter-spacing:-0.045em;font-size:21px;color:var(--ink)}
+.themer{font-size:11px;border:1px solid var(--rule-firm);background:var(--surface);
+        color:var(--ink-soft);border-radius:999px;padding:6px 12px;cursor:pointer;font-family:inherit}
 .themer:hover{color:var(--ink);border-color:var(--ink-faint)}
 
 .obj{margin-top:44px;scroll-margin-top:16px}
 .objhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:6px}
-.objhead .num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--brand-ink);
-              background:var(--brand);border-radius:999px;padding:2px 9px}
+.objhead .num{font-size:11px;font-weight:600;color:var(--brand-ink);background:var(--brand);
+              border-radius:999px;padding:2px 10px}
+.objhead h2{font-family:var(--serif);font-weight:500;font-size:25px}
 .objhead p{color:var(--ink-soft);font-size:13.5px}
 .rule{height:1px;background:var(--rule-firm);margin:10px 0 22px}
 
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:11px}
 .tiles3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:11px;margin-bottom:18px}
 .tile{background:var(--surface);border:1px solid var(--rule);border-radius:11px;padding:15px 15px 13px;min-width:0}
-.tile .k{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
-.tile .v{font-family:var(--mono);font-size:29px;font-weight:600;line-height:1.1;margin-top:7px}
-.tile .v small{font-size:14px;color:var(--ink-soft);font-weight:500}
+.tile .k{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);font-weight:500}
+.tile .v{font-size:29px;font-weight:600;line-height:1.1;margin-top:7px;letter-spacing:-0.02em}
+.tile .v small{font-size:14px;color:var(--ink-soft);font-weight:400}
 .tile .n{font-size:12px;color:var(--ink-soft);margin-top:5px}
 .tile.hero .v{color:var(--brand)}
-.tile.warn .v{color:var(--warn)}
+.tile.warn .v{color:var(--brand)}
 
 .viewtabs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 16px}
-.viewtabs button{font-family:var(--mono);font-size:11.5px;border:1px solid var(--rule-firm);
-  background:var(--surface);color:var(--ink-soft);border-radius:999px;padding:7px 14px;cursor:pointer}
-.viewtabs button[aria-selected="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:600}
+.viewtabs button{font-size:11.5px;border:1px solid var(--rule-firm);font-family:inherit;
+  background:var(--surface);color:var(--ink-soft);border-radius:999px;padding:7px 15px;cursor:pointer}
+.viewtabs button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg);font-weight:600}
 .winbar{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:14px}
-.winlabel{font-family:var(--mono);font-size:12.5px;font-weight:600}
+.winlabel{font-size:12.5px;font-weight:600}
 .winsub{font-size:12px;color:var(--ink-soft)}
 
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px}
@@ -384,9 +402,9 @@ header.top{display:flex;justify-content:space-between;align-items:flex-start;gap
 .capmark{position:absolute;inset-block:0;width:1.5px;background:var(--ink-faint);opacity:.75}
 .bar{position:absolute;inset-block:2px;left:0;background:var(--brand);border-radius:4px;
      box-shadow:0 0 0 2px var(--surface)}
-.bar.over{background:var(--warn)}
-.rv{font-family:var(--mono);font-size:11.5px;text-align:right;white-space:nowrap;
-    display:flex;gap:7px;justify-content:flex-end;align-items:baseline}
+.bar.over{background:var(--over)}
+.rv{font-size:11.5px;text-align:right;white-space:nowrap;display:flex;gap:7px;
+    justify-content:flex-end;align-items:baseline}
 .rv b{font-weight:600}
 .rv .sub{color:var(--ink-soft);font-size:10.5px}
 .barnote{font-size:11.5px;color:var(--ink-soft);margin-top:11px;padding-top:9px;border-top:1px solid var(--rule)}
@@ -394,11 +412,11 @@ header.top{display:flex;justify-content:space-between;align-items:flex-start;gap
 
 .panel{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:16px 16px 8px;margin-top:12px}
 .chartwrap{position:relative}
-.ax{font-family:var(--mono);font-size:10.5px;fill:var(--ink-soft)}
+.ax{font-size:10.5px;fill:var(--ink-soft)}
 .mk{font-size:9.5px;fill:var(--marker);font-weight:600}
 .hot{cursor:crosshair}
 #tip{position:absolute;pointer-events:none;opacity:0;transform:translate(-50%,-112%);
-     background:var(--ink);color:var(--bg);border-radius:7px;padding:7px 10px;font-family:var(--mono);
+     background:var(--ink);color:var(--bg);border-radius:7px;padding:7px 10px;
      font-size:11.5px;white-space:nowrap;z-index:3;transition:opacity .1s linear}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-soft);padding:4px 0 12px}
 .legend span{display:inline-flex;align-items:center;gap:6px}
@@ -406,31 +424,32 @@ header.top{display:flex;justify-content:space-between;align-items:flex-start;gap
 
 .tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:11px;background:var(--surface);margin-top:12px}
 table{border-collapse:collapse;width:100%;min-width:760px;font-size:12.5px}
-thead th{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;
-  color:var(--ink-soft);font-weight:600;text-align:left;padding:10px 12px;background:var(--sunk);
+thead th{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);
+  font-weight:500;text-align:left;padding:10px 12px;background:var(--sunk);
   border-bottom:1px solid var(--rule);white-space:nowrap}
 tbody td{padding:9px 12px;border-bottom:1px solid var(--rule)}
 tbody tr:last-child td{border-bottom:0}
-.num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.num{text-align:right;white-space:nowrap}
 .nm{font-weight:600;white-space:nowrap}
 .tm{color:var(--ink-soft);white-space:nowrap}
-.lead{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--brand);margin-left:6px;border:1px solid var(--brand-quiet);border-radius:4px;padding:1px 4px;vertical-align:1px}
-.pill{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 8px;border-radius:999px;
-  white-space:nowrap;border:1px solid transparent}
+.lead{font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--brand);
+  margin-left:6px;border:1px solid var(--brand-quiet);border-radius:4px;padding:1px 4px;vertical-align:1px}
+.pill{font-size:10px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap;
+  border:1px solid transparent}
 .pill.good{background:var(--good-bg);color:var(--good)}
 .pill.warn{background:var(--warn-bg);color:var(--warn)}
 .pill.bad{background:var(--bad-bg);color:var(--bad)}
 .pill.off{background:var(--sunk);color:var(--ink-soft);border-color:var(--rule-firm)}
-.flagn{color:var(--warn);font-weight:600}
-.callout{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--warn);
+.flagn{color:var(--brand);font-weight:600}
+.callout{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--brand);
   border-radius:11px;padding:15px 17px;display:grid;gap:7px;margin-top:12px}
-.callout h3{color:var(--warn)}
 .callout p{font-size:13.5px;color:var(--ink-soft);max-width:74ch}
 .callout b{color:var(--ink)}
 .notes{margin-top:40px;padding-top:18px;border-top:1px solid var(--rule);color:var(--ink-soft);
   font-size:12px;display:grid;gap:7px;max-width:78ch}
 .notes b{color:var(--ink);font-weight:600}
+.swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.swatches i{width:17px;height:17px;border-radius:4px;display:inline-block;border:1px solid var(--rule)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media (max-width:560px){.row{grid-template-columns:minmax(80px,1fr) minmax(50px,1.4fr) auto}}
 """
@@ -487,7 +506,7 @@ def page(pp, al):
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Kijamii Timesheets</title>
 <meta name="description" content="Timesheet adoption and capacity planning across the four pilot teams.">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap">
 <style>%s</style></head><body><div class="wrap">
 
 <header class="top">
@@ -500,7 +519,7 @@ def page(pp, al):
     <p class="meta" style="margin-top:12px">Snapshot %s · working week Sunday–Thursday%s</p>
   </div>
   <div style="display:grid;gap:10px;justify-items:end">
-    <div class="brandmark">kijamii<span>.</span></div>
+    <div class="brandmark">Kijamii</div>
     <button class="themer" id="themer" type="button">Light / dark</button>
   </div>
 </header>
