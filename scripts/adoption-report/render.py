@@ -31,6 +31,21 @@ def day_label(iso):
     return "%d %s" % (int(iso[8:10]), MONTHS.get(iso[5:7], ""))
 
 
+def load_leave():
+    """Names to keep in the roster but out of every participation figure.
+
+    Somebody on holiday has not lapsed, and counting them as one marks their
+    whole team down for it. Their hours to date still count, because that work
+    was really captured; only the "did you log this week" questions skip them.
+    """
+    path = os.path.join(HERE, "leave.json")
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+    return {p["name"]: p.get("note", "on leave") for p in data.get("on_leave", [])}
+
+
 def pct(a, b):
     return round(100 * a / b) if b else 0
 
@@ -120,6 +135,12 @@ def build(payload, template):
     week = payload["week"]
     cap = 8 * int(week["days"])
 
+    leave = load_leave()
+    for p in people:
+        p["on_leave"] = p["name"] in leave
+    avail = [p for p in people if not p["on_leave"]]
+    away = len(people) - len(avail)
+
     for p in people:
         p["hours"] = float(p["hours"] or 0)
         p["wk_hours"] = float(p["wk_hours"] or 0)
@@ -127,25 +148,32 @@ def build(payload, template):
         p["util"] = pct(p["wk_hours"], cap)
 
     cohort = len(people)
-    signed = sum(1 for p in people if p["signed_in"])
-    logged = sum(1 for p in people if p["days"] > 0)
-    active = sum(1 for p in people if p["week_days"] > 0)
+    # Participation is measured against the people who could take part.
+    signed = sum(1 for p in avail if p["signed_in"])
+    logged = sum(1 for p in avail if p["days"] > 0)
+    active = sum(1 for p in avail if p["week_days"] > 0)
+    # Hours and unfiled work are cumulative facts about work already captured,
+    # so they stay whole-cohort: dropping a week's holiday would understate
+    # what the timesheet actually holds.
     hours = sum(p["hours"] for p in people)
     draft_h = sum(p["draft_hours"] for p in people)
     draft_r = sum(p["draft_rows"] for p in people)
+    util = pct(sum(p["wk_hours"] for p in avail), cap * len(avail))
 
     teams = {}
     for p in people:
-        t = teams.setdefault(p["team"], dict(n=0, si=0, log=0, wk=0, h=0.0,
+        t = teams.setdefault(p["team"], dict(n=0, off=0, si=0, log=0, wk=0, h=0.0,
                                              days=0, draft=0.0, wkh=0.0, rows=[]))
-        t["n"] += 1
-        t["si"] += bool(p["signed_in"])
-        t["log"] += p["days"] > 0
-        t["wk"] += p["week_days"] > 0
+        t["n"] += 0 if p["on_leave"] else 1
+        t["off"] += 1 if p["on_leave"] else 0
+        t["si"] += bool(p["signed_in"]) and not p["on_leave"]
+        t["log"] += p["days"] > 0 and not p["on_leave"]
+        t["wk"] += p["week_days"] > 0 and not p["on_leave"]
         t["h"] += p["hours"]
         t["days"] += p["days"]
         t["draft"] += p["draft_hours"]
-        t["wkh"] += p["wk_hours"]
+        if not p["on_leave"]:
+            t["wkh"] += p["wk_hours"]
         t["rows"].append(p)
 
     order = [k for k in ORDER if k in teams] + [k for k in sorted(teams) if k not in ORDER]
@@ -153,25 +181,31 @@ def build(payload, template):
     cards = []
     for k in order:
         t = teams[k]
-        share = pct(t["wk"], t["n"])
+        # t["n"] counts who was available, so a team is not marked down for a
+        # holiday. A team entirely away divides by nothing, hence the guard.
+        share = pct(t["wk"], t["n"]) if t["n"] else 0
         tone = "good" if share >= 80 else ("warn" if share >= 40 else "bad")
         unsent = ('<div class="flag"><dt>Unsubmitted</dt><dd>%s h</dd></div>'
                   % format(t["draft"], ",.1f")) if t["draft"] else ""
+        awayline = ('<div><dt>On leave</dt><dd>%d</dd></div>' % t["off"]) if t["off"] else ""
         cards.append(
             '<article class="team"><header><h3>%s</h3><span class="pill %s">%d%% active</span></header>'
             '<div class="bar"><span style="width:%d%%"></span></div><dl>'
-            '<div><dt>Logging this week</dt><dd><b>%d</b> of %d</dd></div>'
+            '<div><dt>Logging this week</dt><dd><b>%d</b> of %d</dd></div>%s'
             '<div><dt>Days logged</dt><dd>%d</dd></div>'
             '<div><dt>Hours</dt><dd>%s</dd></div>'
             '<div><dt>Utilisation this week</dt><dd><b>%d%%</b></dd></div>'
             '%s</dl></article>'
-            % (k, tone, share, share, t["wk"], t["n"], t["days"],
-               format(t["h"], ",.1f"), pct(t["wkh"], cap * t["n"]), unsent))
+            % (k, tone, share, share, t["wk"], t["n"], awayline, t["days"],
+               format(t["h"], ",.1f"),
+               pct(t["wkh"], cap * t["n"]) if t["n"] else 0, unsent))
 
     rows = []
     for k in order:
         for p in sorted(teams[k]["rows"], key=lambda r: (r["seat"] != "Lead", -r["days"], r["name"])):
-            if not p["signed_in"]:
+            if p["on_leave"]:
+                status, cls = "On leave", "off"
+            elif not p["signed_in"]:
                 status, cls = "Never signed in", "bad"
             elif p["days"] == 0:
                 status, cls = "Signed in, nothing logged", "bad"
@@ -180,21 +214,23 @@ def build(payload, template):
             else:
                 status, cls = "Active", "good"
             u = p["util"]
-            utone = ("u-good" if u >= 90 else "u-mid" if u >= 60 else "u-low" if u > 0 else "u-zero")
+            utone = ("u-zero" if p["on_leave"] else
+                     "u-good" if u >= 90 else "u-mid" if u >= 60 else
+                     "u-low" if u > 0 else "u-zero")
             parts = p["name"].split()
             short = p["name"] if len(parts) <= 3 else " ".join(parts[:2])
             rows.append(
                 '<tr><td class="nm">%s%s</td><td class="tm">%s</td>'
                 '<td class="num">%s</td><td class="num">%s</td><td class="num">%s</td>'
                 '<td class="num%s">%s</td><td class="num">%s</td>'
-                '<td class="num util %s">%d%%</td><td><span class="pill %s">%s</span></td></tr>'
+                '<td class="num util %s">%s</td><td><span class="pill %s">%s</span></td></tr>'
                 % (short, '<span class="lead">Lead</span>' if p["seat"] == "Lead" else "",
                    p["team"], p["days"] or "—", format(p["hours"], ",.2f"),
                    p["week_days"] or "—",
                    " flagn" if p["draft_hours"] else "",
                    format(p["draft_hours"], ",.1f") if p["draft_hours"] else "—",
                    day_label(p["last"]) if p["last"] else "—",
-                   utone, u, cls, status))
+                   utone, "—" if p["on_leave"] else "%d%%" % u, cls, status))
 
     today = daily[-1]
     days = int(week["days"])
@@ -225,15 +261,19 @@ def build(payload, template):
     swap = {
         "{{SNAP}}": payload["snapshot"],
         "{{COHORT}}": str(cohort),
+        "{{AVAIL}}": str(len(avail)),
+        "{{AWAY}}": str(away),
+        "{{LEAVE}}": (" · %d on leave, left out of the participation figures" % away)
+                     if away else "",
         "{{SIGNED}}": str(signed),
         "{{LOGGED}}": str(logged),
         "{{ACTIVE}}": str(active),
-        "{{ACTIVEPCT}}": str(pct(active, cohort)),
-        "{{LOGGEDPCT}}": str(pct(logged, cohort)),
+        "{{ACTIVEPCT}}": str(pct(active, len(avail))),
+        "{{LOGGEDPCT}}": str(pct(logged, len(avail))),
         "{{HOURS}}": format(hours, ",.0f"),
         "{{DRAFTH}}": format(draft_h, ",.0f"),
         "{{DRAFTR}}": str(draft_r),
-        "{{UTIL}}": str(pct(sum(p["wk_hours"] for p in people), cap * cohort)),
+        "{{UTIL}}": str(util),
         "{{WEEKLABEL}}": week["label"],
         "{{CAP}}": str(cap),
         "{{WDAYS}}": str(days),
@@ -242,7 +282,7 @@ def build(payload, template):
         "{{TODAYNOTE}}": todaynote,
         "{{OVERNOTE}}": (" Anyone over 100% logged more than eight hours on some of them."
                          if over else ""),
-        "{{NEVER}}": str(cohort - signed),
+        "{{NEVER}}": str(len(avail) - signed),
         "{{CHART}}": chart(daily, fixed_on="2026-10-14"),
         "{{CARDS}}": "\n".join(cards),
         "{{ROWS}}": "\n".join(rows),
@@ -253,13 +293,15 @@ def build(payload, template):
     if "{{" in out:
         raise SystemExit("unreplaced placeholder in template: %s" % out[out.index("{{"):][:40])
 
-    headline = dict(cohort=cohort, signed=signed, logged=logged, active=active,
-                    util=pct(sum(p["wk_hours"] for p in people), cap * cohort),
+    headline = dict(cohort=cohort, available=len(avail), on_leave=away,
+                    signed=signed, logged=logged, active=active, util=util,
                     hours=round(hours, 2), draft_hours=round(draft_h, 2),
                     week=week["label"], week_days=days, cap=cap,
                     snapshot=payload["snapshot"],
                     teams={k: dict(active=teams[k]["wk"], of=teams[k]["n"],
-                                   util=pct(teams[k]["wkh"], cap * teams[k]["n"]))
+                                   on_leave=teams[k]["off"],
+                                   util=pct(teams[k]["wkh"], cap * teams[k]["n"])
+                                         if teams[k]["n"] else 0)
                            for k in order})
     return out, headline
 

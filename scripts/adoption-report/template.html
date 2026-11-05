@@ -139,6 +139,8 @@
   .pill.good { background: var(--good-bg); color: var(--good); border-color: color-mix(in oklab, var(--good) 30%, transparent); }
   .pill.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in oklab, var(--warn) 30%, transparent); }
   .pill.bad  { background: var(--bad-bg);  color: var(--bad);  border-color: color-mix(in oklab, var(--bad) 30%, transparent); }
+  /* Leave is not a result, so it is the one pill that carries no judgement. */
+  .pill.off  { background: var(--surface-sunk); color: var(--ink-soft); border-color: var(--rule-firm); }
 
   .callout { background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--warn);
              border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; }
@@ -183,23 +185,23 @@
     <p class="lede">The timesheet went out to Nadia's, Marina's, Emad Mutter's and Ramy Kamel's
       teams only — {{COHORT}} people including the four leads. Everyone else at Kijamii is still outside
       it, so nothing here is a company-wide figure.</p>
-    <p class="meta">Snapshot {{SNAP}} · working week Sunday–Thursday</p>
+    <p class="meta">Snapshot {{SNAP}} · working week Sunday–Thursday{{LEAVE}}</p>
   </header>
 
   <div class="tiles">
     <div class="tile hero">
       <div class="k">Logging this week</div>
-      <div class="v">{{ACTIVE}}<small> / {{COHORT}}</small></div>
-      <div class="n">{{ACTIVEPCT}}% of the pilot, {{WEEKLABEL}}</div>
+      <div class="v">{{ACTIVE}}<small> / {{AVAIL}}</small></div>
+      <div class="n">{{ACTIVEPCT}}% of those available, {{WEEKLABEL}}</div>
     </div>
     <div class="tile">
       <div class="k">Have ever logged</div>
-      <div class="v">{{LOGGED}}<small> / {{COHORT}}</small></div>
+      <div class="v">{{LOGGED}}<small> / {{AVAIL}}</small></div>
       <div class="n">{{LOGGEDPCT}}% got started at least once</div>
     </div>
     <div class="tile">
       <div class="k">Signed in</div>
-      <div class="v">{{SIGNED}}<small> / {{COHORT}}</small></div>
+      <div class="v">{{SIGNED}}<small> / {{AVAIL}}</small></div>
       <div class="n">{{NEVER}} have never opened it</div>
     </div>
     <div class="tile">
@@ -279,7 +281,10 @@
     <p><b>Where the numbers come from.</b> Read directly from the timesheet database at the snapshot
       time above, not from an export. A "day logged" is a date with at least one entry carrying hours.</p>
     <p><b>Who counts as the pilot.</b> The four leads plus everyone the staff directory lists as
-      reporting to them: {{COHORT}} people. Two Ramys appear in the directory; this is Ramy Kamel's team.</p>
+      reporting to them: {{COHORT}} people, {{AVAIL}} of them available this week.
+      Anyone on leave keeps their place in the table and their hours to date, but is left out of
+      every "did they log" figure and out of the utilisation denominator, so a team is not marked
+      down for somebody's holiday. Two Ramys appear in the directory; this is Ramy Kamel's team.</p>
     <p><b>The dip in mid-October was a defect, not drop-off.</b> Four people in Ramy Kamel's team
       could not save at all for part of the month. After it was fixed on 14 October they went back
       and filled the missed days in themselves, which is why their day counts jump rather than
