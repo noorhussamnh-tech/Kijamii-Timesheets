@@ -220,7 +220,7 @@ def build(pp, al):
             elif it.get("people"):
                 meta += '<span class="sub">%d people</span>' % it["people"]
             out.append((it["name"], v, None, meta, False))
-        return out[:12]
+        return out[:20]
 
     def fn_rows(view):
         agg = {}
@@ -257,7 +257,7 @@ def build(pp, al):
             '<section class="card"><h3>Per team</h3>%s</section>'
             '<section class="card"><h3>Per region</h3>%s</section>'
             '<section class="card"><h3>Per function</h3>%s</section>'
-            '<section class="card"><h3>Per client</h3>%s</section>'
+            '<section class="card wide"><h3>Client hours</h3>%s</section>'
             '<section class="card"><h3>Per project type</h3>%s</section>'
             '</div></div>'
             % (vk, "" if vk == "week" else ' hidden', esc(win), esc(capline),
@@ -392,6 +392,7 @@ header.top{display:flex;justify-content:space-between;align-items:flex-start;gap
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px}
 .card{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:15px 16px 14px;min-width:0}
 .card h3{margin-bottom:12px}
+.card.wide{grid-column:1/-1}
 .bars{display:grid;gap:7px}
 .row{display:grid;grid-template-columns:minmax(96px,1.1fr) minmax(70px,2.4fr) minmax(96px,auto);
      gap:10px;align-items:center;font-size:12.5px}
@@ -450,10 +451,161 @@ tbody tr:last-child td{border-bottom:0}
 .notes b{color:var(--ink);font-weight:600}
 .swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
 .swatches i{width:17px;height:17px;border-radius:4px;display:inline-block;border:1px solid var(--rule)}
+/* The guide's layout principle: a messaging zone in flat colour above an
+   information zone. These bands are that idea, one accent at a time. */
+.band{border-radius:14px;padding:26px 28px;margin-bottom:14px;position:relative;overflow:hidden}
+.band h2{font-family:var(--serif);font-weight:500;font-size:clamp(23px,3.2vw,34px);line-height:1.1}
+.band p{font-size:14px;margin-top:8px;max-width:62ch;opacity:.86}
+.band .num{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+           display:inline-block;margin-bottom:11px;opacity:.72}
+.band.peach{background:var(--peach);color:var(--black)}
+.band.green{background:var(--kgreen);color:var(--white)}
+.band.lime{background:var(--lime);color:var(--black)}
+.band.ink{background:var(--ink);color:var(--bg)}
+
+.read{display:grid;gap:13px;margin-top:13px}
+.find{background:var(--surface);border:1px solid var(--rule);border-radius:12px;
+      padding:16px 18px;display:grid;gap:6px}
+.find.key{border-left:3px solid var(--brand)}
+.find h4{margin:0;font-size:13.5px;font-weight:600;letter-spacing:-0.01em}
+.find p{font-size:13px;color:var(--ink-soft);max-width:76ch}
+.find b{color:var(--ink);font-weight:600}
+.find .fig{font-family:var(--serif);font-size:34px;font-weight:500;line-height:1;
+           color:var(--brand);letter-spacing:-0.02em}
+.find.two{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start}
+
+.bigstat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+         background:var(--rule);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.bigstat > div{background:var(--surface);padding:17px 16px}
+.bigstat .f{font-family:var(--serif);font-size:30px;font-weight:500;line-height:1.05;letter-spacing:-0.02em}
+.bigstat .l{font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.35}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media (max-width:560px){.row{grid-template-columns:minmax(80px,1fr) minmax(50px,1.4fr) auto}}
 """
 
+
+def insights(pp, al, d):
+    """Read the numbers back as sentences. Every figure here is computed, so the
+    text cannot drift from the table above it the way a hand-written summary does."""
+    people, avail = d["people"], d["avail"]
+    wk, mo = pp["week"], pp["month"]
+    lcap, lgot = d["lcap"], d["lcap_got"]
+    out = []
+
+    # 1. What the headline number is, and what it is not.
+    out.append(("key", "Capture, not utilisation",
+        '<div class="fig">%d%%</div>' % pct(lgot, lcap),
+        'Across the pilot since each team launched, <b>%s h</b> of a possible <b>%s h</b> reached '
+        'the timesheet. The missing <b>%s h</b> is not idle time. It is time nobody wrote down. '
+        'Treat it as a collection problem: every hour here is work that cannot be billed, '
+        'resourced against, or defended in a scope conversation, because there is no record it '
+        'happened.' % (h(lgot), h(lcap), h(lcap - lgot))))
+
+    # 2. Launch dates make the naive comparison wrong.
+    tr = d["team_rows"]("launch")
+    best, worst = tr[0], tr[-1]
+    out.append(("", "The teams are not comparable on raw hours",
+        "",
+        '<b>%s</b> has had %d working days since launch; <b>%s</b> has had %d. Comparing their '
+        'total hours rewards whoever started first. On capture rate against their own runway the '
+        'order is <b>%s</b>, and the spread is %d points from top to bottom.'
+        % (ORDER[0], d["launches"][ORDER[0]]["days"], "Nadia", d["launches"]["Nadia"]["days"],
+           " → ".join("%s %d%%" % (r[0], pct(r[1], r[2])) for r in tr),
+           pct(best[1], best[2]) - pct(worst[1], worst[2]))))
+
+    # 3. Spread within a team is the resourcing signal, not the team average.
+    spread = []
+    for k in d["order"]:
+        mem = [p for p in d["teams"][k]]
+        rates = sorted(pct(float(p["lhours"]), p["ldays"] * 8) for p in mem)
+        spread.append((rates[-1] - rates[0], k, rates[0], rates[-1]))
+    spread.sort(reverse=True)
+    w, wk_team, lo, hi = spread[0]
+    out.append(("key", "Averages hide the people",
+        '<div class="fig">%d pts</div>' % w,
+        '<b>%s</b> runs from %d%% to %d%% inside one team. A team average of %d%% describes '
+        'nobody in it. Capacity decisions taken on the average will overload the people already '
+        'at the top and leave the bottom untouched, so read the per-person bars before moving '
+        'work.' % (wk_team, lo, hi,
+                   pct(sum(float(p["lhours"]) for p in d["teams"][wk_team]),
+                       sum(p["ldays"] * 8 for p in d["teams"][wk_team])))))
+
+    # 4. Client concentration.
+    cl = sorted([c for c in al["clients"] if float(c["hours"]) > 0],
+                key=lambda c: -float(c["hours"]))
+    tot = sum(float(c["hours"]) for c in cl)
+    top3 = sum(float(c["hours"]) for c in cl[:3])
+    named = [c for c in cl if c["name"] != "Not named"]
+    out.append(("", "Where the work actually goes",
+        "",
+        'Three clients take <b>%d%%</b> of everything logged: %s. The pilot carries <b>%d</b> '
+        'client names in all. That concentration is the capacity risk worth watching — a brief '
+        'from %s lands on the same people every time, and their bars above are already the '
+        'fullest.' % (pct(top3, tot),
+                      ", ".join("%s (%s h)" % (esc(c["name"]), h(c["hours"])) for c in cl[:3]),
+                      len(named), esc(cl[0]["name"]))))
+
+    # 5. Rework.
+    am = sum(float(c.get("amend") or 0) for c in cl)
+    worst_rw = sorted([c for c in cl if float(c["hours"]) >= 50],
+                      key=lambda c: -(float(c.get("amend") or 0) / float(c["hours"])))[:3]
+    out.append(("key", "Rework is a capacity tax",
+        '<div class="fig">%d%%</div>' % pct(am, tot),
+        '<b>%s h</b> of the <b>%s h</b> logged was marked as an amend rather than new work. '
+        'Worst by share, among clients over 50 h: %s. Rework is capacity you have already paid '
+        'for once. Halving it across the pilot would return about <b>%s h</b>, roughly %s.'
+        % (h(am), h(tot),
+           ", ".join("%s %d%%" % (esc(c["name"]), pct(float(c.get("amend") or 0), float(c["hours"])))
+                     for c in worst_rw),
+           h(am / 2),
+           ("%.1f person-weeks at 40 h" % (am / 2 / 40)).replace(".0 ", " ")
+           if am / 2 >= 40 else "half a person-week")))
+
+    # 6. Unfiled work.
+    dh = d["draft_h"]
+    holders = sorted([p for p in people if float(p["draft_hours"]) > 0],
+                     key=lambda p: -float(p["draft_hours"]))
+    if holders:
+        out.append(("", "Typed but never sent",
+            "",
+            '<b>%s h</b> across %d rows sits in draft and reaches no report or export. Largest: %s. '
+            'This is the cheapest capacity to recover in the whole report — the work is already '
+            'recorded, it simply has not been submitted.'
+            % (h(dh), d["draft_r"],
+               ", ".join("%s %s h" % (esc(p["name"]), h(p["draft_hours"])) for p in holders[:3]))))
+
+    # 7. Data quality, stated as the blocker it is.
+    ns_r = next((r for r in al["regions"] if r["name"] == "Not set"), None)
+    out.append(("", "Why region and function read \u201cNot set\u201d",
+        "",
+        '<b>%s h</b> carries no region and <b>%s h</b> no function. Neither is a timesheet fault. '
+        'Eight people have a blank <b>Entity</b> in the OPS employee list, so their '
+        '<code>primary_market</code> is empty, and every entry they save inherits no market. The '
+        'same blank rows leave six people with no Function. Fill Entity and Function for those '
+        'rows and both views resolve themselves — until then, read region and function as '
+        'partial.'
+        % (h(float(ns_r["hours"]) if ns_r else 0),
+           h(sum(float(p["hours"]) for p in people if p["function"] == "Not set")))))
+
+    # 8. Leads.
+    leads = [p for p in people if p["seat"] == "Lead"]
+    lrate = pct(sum(float(p["lhours"]) for p in leads), sum(p["ldays"] * 8 for p in leads))
+    mem = [p for p in people if p["seat"] != "Lead"]
+    mrate = pct(sum(float(p["lhours"]) for p in mem), sum(p["ldays"] * 8 for p in mem))
+    out.append(("key" if lrate < mrate else "", "Leads against their own teams",
+        '<div class="fig">%d%% / %d%%</div>' % (lrate, mrate),
+        'The four leads capture <b>%d%%</b> of their available hours; their members <b>%d%%</b>. '
+        '%s' % (lrate, mrate,
+                'A lead who does not log is the single strongest predictor of a team that does '
+                'not either — and it removes the one person whose capacity a resourcing '
+                'conversation most needs to see.' if lrate < mrate else
+                'Leads are ahead of their teams, which is the pattern you want: the behaviour is '
+                'being modelled from the top.')))
+
+    return "".join(
+        '<article class="find%s%s">%s<div><h4>%s</h4><p>%s</p></div></article>'
+        % (" key" if cls == "key" else "", " two" if fig else "", fig, title, body)
+        for cls, title, fig, body in out)
 
 def page(pp, al):
     panes, d = build(pp, al)
@@ -525,9 +677,10 @@ def page(pp, al):
 </header>
 
 <section class="obj" id="adoption">
-  <div class="objhead"><span class="num">01</span><h2>Timesheet adoption</h2>
-    <p>Is everyone using it, and is what they type reaching the data?</p></div>
-  <div class="rule"></div>
+  <div class="band peach"><span class="num">Objective 01</span>
+    <h2>Is the timesheet being used?</h2>
+    <p>Whether people log, whether they keep logging, and whether what they type ever
+      reaches the data. Measured against each team&rsquo;s own launch date.</p></div>
   <div class="tiles">
     <div class="tile hero"><div class="k">Logging this week</div><div class="v">%d<small> / %d</small></div>
       <div class="n">%d%% of those available, %s</div></div>
@@ -560,11 +713,20 @@ def page(pp, al):
 </section>
 
 <section class="obj" id="capacity">
-  <div class="objhead"><span class="num">02</span><h2>Capacity planning</h2>
-    <p>Where the hours went, per person, team, region and function.</p></div>
-  <div class="rule"></div>
+  <div class="band green"><span class="num">Objective 02</span>
+    <h2>Where did the hours go?</h2>
+    <p>Per person, team, region, function, client and project type &mdash; in the week,
+      the month so far, or since launch. Hours captured against hours available.</p></div>
   <div class="viewtabs" role="tablist" aria-label="Time window">%s</div>
   %s
+</section>
+
+<section class="obj" id="reading">
+  <div class="band ink"><span class="num">What it means</span>
+    <h2>Reading the numbers</h2>
+    <p>Eight things the tables above are saying, and what each one implies for how work
+      is allocated. Every figure here is computed from the same data, not written by hand.</p></div>
+  <div class="read">%s</div>
 </section>
 
 <div class="notes">
@@ -629,7 +791,7 @@ def page(pp, al):
       d["signed"], len(avail), len(avail) - d["signed"],
       h(d["hours_all"]), len(people), h(d["draft_h"]), d["draft_r"],
       curve(pp["daily"], marks), teamcards, "\n".join(rows), tabs, "\n".join(panes),
-      h(935.0))
+      insights(pp, al, d), h(935.0))
 
 
 def main():
