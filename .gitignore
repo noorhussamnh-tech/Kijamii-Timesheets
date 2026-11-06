@@ -45,3 +45,7 @@ coverage
 .vercel
 supabase/.temp/
 scripts/adoption-report/headline.json
+
+# Python bytecode, from running the report scripts
+__pycache__/
+*.py[cod]
