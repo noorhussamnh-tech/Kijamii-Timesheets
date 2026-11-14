@@ -1,8 +1,6 @@
 {
-  "_comment": "People away during the reporting window. They are kept in the roster and shown as On leave, but are left out of every participation figure and out of the utilisation denominator, so a team is not marked down for somebody's holiday. Remove a name when they are back.",
+  "_comment": "People away during the reporting window. They keep their row and their hours to date but are left out of the week and month-so-far participation figures, so a team is not marked down for a holiday. Remove a name once they log again.",
   "on_leave": [
-    { "name": "Khaled Khafagy", "note": "on leave" },
-    { "name": "Yehia Ragab",    "note": "on leave" },
-    { "name": "Mahira Faisal",  "note": "on leave" }
+    { "name": "Khaled Khafagy", "note": "on leave since 28 Oct - needs confirming" }
   ]
 }

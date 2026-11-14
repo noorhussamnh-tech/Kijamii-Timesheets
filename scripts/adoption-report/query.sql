@@ -52,16 +52,19 @@ mdays as (
   select g::date as d from mwin, generate_series(mwin.ms, mwin.me, interval '1 day') g
    where extract(dow from g) not in (5,6)
 ),
-mgrs(label, mgr_name, mgr_email) as (values
-  ('Nadia',       'Nadia Mohamed Hesham Aly Elsayed Hassan',       'nadia.hesham@kijamii.com'),
-  ('Marina',      'Marina Youssef Youhana Melika',                  'marina.youssef@kijamii.com'),
-  ('Emad Mutter', 'Emad El-din Mohamed Mutter Abdel Khalek Mutter', 'emad.mutter@kijamii.com'),
-  ('Ramy Kamel',  'Ramy Kamel Mohamed Taher Omar',                  'ramy.kamel@kijamii.com')
+-- The date each team went live. Ramy Kamel's and Marina's teams started a
+-- fortnight before the other two, so comparing their totals rewards whoever
+-- started first; every cumulative figure is measured from these instead.
+mgrs(label, mgr_name, mgr_email, launch) as (values
+  ('Nadia',       'Nadia Mohamed Hesham Aly Elsayed Hassan',       'nadia.hesham@kijamii.com', date '2026-10-16'),
+  ('Marina',      'Marina Youssef Youhana Melika',                  'marina.youssef@kijamii.com', date '2026-10-01'),
+  ('Emad Mutter', 'Emad El-din Mohamed Mutter Abdel Khalek Mutter', 'emad.mutter@kijamii.com', date '2026-10-16'),
+  ('Ramy Kamel',  'Ramy Kamel Mohamed Taher Omar',                  'ramy.kamel@kijamii.com',  date '2026-10-01')
 ),
 cohort as (
-  select distinct m.label as team, d.email, 'Member'::text as seat
+  select distinct m.label as team, m.launch, d.email, 'Member'::text as seat
     from mgrs m join ts_employee_directory d on d.manager = m.mgr_name
-  union select m.label, m.mgr_email, 'Lead' from mgrs m
+  union select m.label, m.launch, m.mgr_email, 'Lead' from mgrs m
 ),
 ids as (select e.id from cohort c join ts_employees e on e.email = c.email)
 select jsonb_build_object(
@@ -104,10 +107,26 @@ select jsonb_build_object(
                            where x.employee_id = e.id
                              and x.work_date in (select d from mdays)), 0),
        'function', coalesce(nullif(btrim(dd.function), ''), 'Not set'),
-       'entity',   coalesce(nullif(btrim(dd.entity), ''), 'Not set'))
+       'entity',   coalesce(nullif(btrim(dd.entity), ''), 'Not set'),
+       'launch',  to_char(c.launch, 'FMDD Mon'),
+       'ldays',   (select count(*) from generate_series(c.launch, (select we from win), interval '1 day') g
+                    where extract(dow from g) not in (5,6)),
+       'llogged', coalesce((select count(distinct x.work_date) from ts_entries x
+                    where x.employee_id = e.id and x.hours is not null
+                      and x.work_date between c.launch and (select we from win)
+                      and extract(dow from x.work_date) not in (5,6)), 0),
+       'lhours',  coalesce((select sum(x.hours) from ts_entries x
+                    where x.employee_id = e.id
+                      and x.work_date between c.launch and (select we from win)
+                      and extract(dow from x.work_date) not in (5,6)), 0))
        order by c.team, c.seat, e.full_name)
      from cohort c join ts_employees e on e.email = c.email
      left join ts_employee_directory dd on dd.email = c.email),
+  'launches', (select jsonb_agg(jsonb_build_object(
+       'team', label, 'date', to_char(launch, 'FMDD Mon'),
+       'days', (select count(*) from generate_series(launch, (select we from win), interval '1 day') g
+                 where extract(dow from g) not in (5,6))) order by launch, label)
+     from mgrs),
   'daily', (select jsonb_agg(jsonb_build_object(
        'date', g::date, 'dow', to_char(g, 'Dy'),
        'work', extract(dow from g) not in (5,6),

@@ -795,10 +795,14 @@ def page(pp, al):
 
 
 def main():
+    """One payload file (what query.sql returns), or two for a hand-split pair."""
     with open(sys.argv[1], encoding="utf-8") as fh:
         pp = json.load(fh)
-    with open(sys.argv[2], encoding="utf-8") as fh:
-        al = json.load(fh)
+    if len(sys.argv) > 2:
+        with open(sys.argv[2], encoding="utf-8") as fh:
+            al = json.load(fh)
+    else:
+        al = {k: pp.get(k, []) for k in ("regions", "clients", "ptypes", "biz", "functions")}
     sys.stdout.write(page(pp, al))
 
 
