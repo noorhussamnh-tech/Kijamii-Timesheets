@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { subDays, addDays } from "date-fns";
 import { AlertCircle, Download, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { fetchEmployeeDetail, type EmployeeDetailExport, type ReadScope } from "@/lib/data/api";
-import { toDateKey } from "@/lib/domain/week";
 import { downloadCsv, toCsv } from "@/lib/export/csv";
 import { perClientView, perDayView, perMonthView, perWeekView } from "@/lib/export/employee-detail";
 
@@ -29,25 +27,35 @@ const GROUPINGS = [
 ] as const;
 
 /**
- * Everything this person has logged, however you want it grouped.
+ * One person's time over the period on screen, however you want it grouped.
  *
- * Deliberately not tied to the week the page above is showing. The table is a
- * chase list for one week; this is the whole record, which is the question
- * somebody asks when they click a name rather than scan a column.
+ * This used to ignore the toolbar and always pull the widest window the export
+ * function accepts -- today less 760 days to today plus 30 -- on the argument
+ * that clicking a name asks for the whole record rather than the week being
+ * scanned. That argument held while the page showed a single week. It stopped
+ * holding when the page grew a date range, and it cost us: an export taken
+ * against "1 - 31 October" returned October and November, the November figure
+ * was read as a contradiction of the October one, and the file carried no
+ * dates to settle it.
  *
- * The window is the widest the export function accepts, which reaches further
- * back than this app has existed. It is bounded rather than open because an
- * unbounded range would eventually be a slow query nobody had thought about,
- * and it runs a month into the future because a week ahead of today can be
- * filled in.
+ * So the period is now the one the toolbar is showing, the same period every
+ * other export on this screen uses and the same one the numbers in the row
+ * beside this button are counted over. The range is in the filename too, so a
+ * file that has been sitting in somebody's downloads folder still says what it
+ * covers.
  */
 export function EmployeeExportMenu({
   employeeId,
   name,
+  from,
+  to,
   scope = "company",
 }: {
   employeeId: string;
   name: string;
+  /** The period on screen. The same `from` and `to` the table is counted over. */
+  from: string;
+  to: string;
   /** Whose rows the file may be drawn from. The database enforces it. */
   scope?: ReadScope;
 }) {
@@ -61,20 +69,16 @@ export function EmployeeExportMenu({
     setError(null);
     setNote(null);
     try {
-      const today = new Date();
-      const data = await fetchEmployeeDetail(
-        toDateKey(subDays(today, 760)),
-        toDateKey(addDays(today, 30)),
-        employeeId,
-        scope,
-      );
+      const data = await fetchEmployeeDetail(from, to, employeeId, scope);
       const shaped = grouping.shape(data);
 
       if (shaped.rows.length === 0) {
         // "Submitted", not "logged". Drafts are deliberately absent from every
         // export, so somebody mid-week with a full timesheet still exports
         // nothing -- and being told they had logged nothing would be wrong.
-        setNote("Nothing submitted yet.");
+        // Says "in this period" because the period is now the toolbar's: an
+        // empty file is a question about the dates as often as about the person.
+        setNote("Nothing submitted in this period.");
         return;
       }
 
@@ -82,7 +86,10 @@ export function EmployeeExportMenu({
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "");
-      downloadCsv(`kijamii-${slug}_by-${grouping.id}.csv`, toCsv(shaped.headers, shaped.rows));
+      downloadCsv(
+        `kijamii-${slug}_by-${grouping.id}_${from}_to_${to}.csv`,
+        toCsv(shaped.headers, shaped.rows),
+      );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The export failed.");
     } finally {

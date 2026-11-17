@@ -390,10 +390,16 @@ function AdminOverview() {
                             ? format(new Date(row.submittedAt), "d MMM · HH:mm")
                             : "—"}
                         </td>
-                        {/* Everything this person has logged, not just the week
-                            the table is showing. */}
+                        {/* The same period the row beside it is counted over.
+                            This button used to export every period at once,
+                            which read as the row's figure being wrong. */}
                         <td className="px-3 py-2.5">
-                          <EmployeeExportMenu employeeId={row.employeeId} name={row.name} />
+                          <EmployeeExportMenu
+                            employeeId={row.employeeId}
+                            name={row.name}
+                            from={from}
+                            to={to}
+                          />
                         </td>
                       </tr>
                     ))}
