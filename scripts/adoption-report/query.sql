@@ -73,12 +73,17 @@ select jsonb_build_object(
      'start', (select ws from win),
      'end',   (select we from win),
      'days',  (select count(*) from wdays),
+     -- Capacity comes from ts_assumed_hours, not from days times eight, so the
+     -- page and the app cannot assume different amounts of the same person:
+     -- 8 a working day, never more than 160 in a calendar month.
+     'cap',   ts_assumed_hours((select ws from win), (select we from win), 40),
      'label', to_char((select ws from win), 'FMDD Mon') || ' – ' ||
               to_char((select we from win), 'FMDD Mon')),
   'month', jsonb_build_object(
      'start', (select ms from mwin),
      'end',   (select me from mwin),
      'days',  (select count(*) from mdays),
+     'cap',   ts_assumed_hours((select ms from mwin), (select me from mwin), 40),
      'label', to_char((select ms from mwin), 'FMDD Mon') || ' – ' ||
               to_char((select me from mwin), 'FMDD Mon')),
   'people', (select jsonb_agg(jsonb_build_object(
@@ -111,6 +116,9 @@ select jsonb_build_object(
        'launch',  to_char(c.launch, 'FMDD Mon'),
        'ldays',   (select count(*) from generate_series(c.launch, (select we from win), interval '1 day') g
                     where extract(dow from g) not in (5,6)),
+       -- Each team's own runway crosses months, and the 160 ceiling is monthly,
+       -- so this is summed month by month rather than ldays times eight.
+       'lcap',    ts_assumed_hours(c.launch, (select we from win), 40),
        'llogged', coalesce((select count(distinct x.work_date) from ts_entries x
                     where x.employee_id = e.id and x.hours is not null
                       and x.work_date between c.launch and (select we from win)

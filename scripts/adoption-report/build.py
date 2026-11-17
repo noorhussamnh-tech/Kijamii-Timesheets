@@ -153,12 +153,19 @@ def build(pp, al):
     launches = {l["team"]: l for l in pp["launches"]}
 
     # Per person, per window: (hours, days logged, capacity hours, days possible)
+    #
+    # Capacity is whatever the query says, and the query asks the database --
+    # 8 hours a working day, capped at 160 in a calendar month. Multiplying
+    # days by eight here instead would have this page assuming 168 hours of
+    # somebody in a month the app assumes 160 of, which is how two views of one
+    # person start disagreeing. Older payloads have no cap in them, so the old
+    # arithmetic stays as the fallback rather than failing the run.
     def cell(p, view):
         if view == "week":
-            return p["wk_hours"], p["week_days"], wk["days"] * 8, wk["days"]
+            return p["wk_hours"], p["week_days"], wk.get("cap") or wk["days"] * 8, wk["days"]
         if view == "mtd":
-            return p["mt_hours"], p["mt_days"], mo["days"] * 8, mo["days"]
-        return p["lhours"], p["llogged"], p["ldays"] * 8, p["ldays"]
+            return p["mt_hours"], p["mt_days"], mo.get("cap") or mo["days"] * 8, mo["days"]
+        return p["lhours"], p["llogged"], p.get("lcap") or p["ldays"] * 8, p["ldays"]
 
     # ---------------------------------------------------------------- adoption
     signed = sum(1 for p in avail if p["signed_in"])
@@ -168,7 +175,7 @@ def build(pp, al):
     draft_h = sum(float(p["draft_hours"]) for p in people)
     draft_r = sum(p["draft_rows"] for p in people)
 
-    lcap = sum(p["ldays"] * 8 for p in people)
+    lcap = sum(float(p.get("lcap") or p["ldays"] * 8) for p in people)
     lcap_got = sum(float(p["lhours"]) for p in people)
 
     # Team rollups per window.
@@ -245,8 +252,8 @@ def build(pp, al):
     panes = []
     for vk, vlabel in VIEWS:
         win = {"week": wk["label"], "mtd": mo["label"], "launch": "each team's own launch date"}[vk]
-        capline = {"week": "%d finished working days, %d h per person" % (wk["days"], wk["days"] * 8),
-                   "mtd": "%d finished working days, %d h per person" % (mo["days"], mo["days"] * 8),
+        capline = {"week": "%d finished working days, %s h per person" % (wk["days"], h(cell(people[0], "week")[2])),
+                   "mtd": "%d finished working days, %s h per person" % (mo["days"], h(cell(people[0], "mtd")[2])),
                    "launch": launch_caption}[vk]
         got = sum(float(cell(p, vk)[0]) for p in (people if vk == "launch" else avail))
         cap = sum(cell(p, vk)[2] for p in (people if vk == "launch" else avail))
