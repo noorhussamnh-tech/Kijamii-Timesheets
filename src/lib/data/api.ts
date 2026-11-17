@@ -530,6 +530,48 @@ export async function syncDirectory(): Promise<DirectorySyncResult> {
   return rpc<DirectorySyncResult>("ts_sync_directory");
 }
 
+/** What the database made of a supplied employee list. */
+export interface DirectoryImportResult {
+  /** False when the list contradicts itself. Nothing was written. */
+  ok: boolean;
+  applied: boolean;
+  rows_in: number;
+  people: number;
+  added: number;
+  changed: number;
+  unchanged: number;
+  /** In the directory but not in this list. Reported, never removed. */
+  absent_from_list: number;
+  new_teams: number;
+  /** Rows left out: no usable address, so no timesheet. */
+  skipped: { kind: string; email: string; name?: string; detail: string }[];
+  /** Contradictions. Any of these and nothing is written at all. */
+  problems: { kind: string; email: string; detail: string }[];
+}
+
+/**
+ * Loads the OPS employee list into the directory.
+ *
+ * The one thing Sync Directory could never do: it pushed the directory onto
+ * the roster but nothing could put anything into the directory, so a new
+ * joiner stayed invisible until somebody wrote a migration. The database does
+ * the checking, because a caller can always reach the RPC directly.
+ *
+ * Call it with `apply` false first. The answer is identical except that
+ * nothing is written, which is what makes a preview worth showing.
+ */
+export async function importDirectory(
+  people: unknown[],
+  dedication: unknown[],
+  apply: boolean,
+): Promise<DirectoryImportResult> {
+  return rpc<DirectoryImportResult>("ts_import_directory", {
+    p_people: people,
+    p_dedication: dedication,
+    p_apply: apply,
+  });
+}
+
 /** How many people report to the signed-in employee, directly or below that. */
 export interface TeamScope {
   /** Everybody underneath them in the OPS list's reporting line. */

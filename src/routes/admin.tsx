@@ -11,6 +11,7 @@ import { ExportByTeam } from "@/components/ExportByTeam";
 import { ExportGrouped } from "@/components/ExportGrouped";
 import { Metric } from "@/components/Metric";
 import { EmployeeExportMenu } from "@/components/EmployeeExportMenu";
+import { LoadDirectory } from "@/components/LoadDirectory";
 import { SyncDirectory } from "@/components/SyncDirectory";
 import { ExportTimeDedication } from "@/components/ExportTimeDedication";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -215,6 +216,7 @@ function AdminOverview() {
           left, and Sync directory leads because it is the only control here
           that changes the roster rather than reading it. */}
       <div className="flex flex-wrap items-center gap-2">
+        <LoadDirectory />
         <SyncDirectory />
         {/* Outside the table, so it stays put while the table scrolls
             sideways on a narrow screen. */}
