@@ -232,12 +232,22 @@ def build(pp, al):
                  % (pct(v[0], v[1]), h(v[0]), v[2]), False) for k, v in agg.items()]
         return sorted(rows, key=lambda r: -(r[1] / r[2] if r[2] else 0))
 
+    # Who started when, read off the payload rather than remembered. Each team's
+    # runway grows by a day every working day, so writing it down here would be
+    # wrong by the end of the week.
+    bydate = {}
+    for l in pp["launches"]:
+        bydate.setdefault((l["date"], l["days"]), []).append(l["team"])
+    launch_caption = "; ".join(
+        "%s from %s (%d days)" % (" and ".join(sorted(t)), dt, dys)
+        for (dt, dys), t in sorted(bydate.items(), key=lambda kv: -kv[0][1]))
+
     panes = []
     for vk, vlabel in VIEWS:
         win = {"week": wk["label"], "mtd": mo["label"], "launch": "each team's own launch date"}[vk]
         capline = {"week": "%d finished working days, %d h per person" % (wk["days"], wk["days"] * 8),
                    "mtd": "%d finished working days, %d h per person" % (mo["days"], mo["days"] * 8),
-                   "launch": "Ramy Kamel and Marina from 1 Oct (25 days); Emad Mutter and Nadia from 16 Oct (14 days)"}[vk]
+                   "launch": launch_caption}[vk]
         got = sum(float(cell(p, vk)[0]) for p in (people if vk == "launch" else avail))
         cap = sum(cell(p, vk)[2] for p in (people if vk == "launch" else avail))
         panes.append(
