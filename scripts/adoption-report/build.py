@@ -32,6 +32,14 @@ def load_leave():
     return {x["name"]: x.get("note", "on leave") for x in d.get("on_leave", [])}
 
 
+def month_label(key):
+    """`2026-10` as `October 2026`, because nobody says two thousand twenty-six ten."""
+    names = ("January", "February", "March", "April", "May", "June", "July",
+             "August", "September", "October", "November", "December")
+    year, month = key.split("-")
+    return "%s %s" % (names[int(month) - 1], year)
+
+
 def day_label(iso):
     return "%d %s" % (int(iso[8:10]), MONTHS.get(iso[5:7], ""))
 
@@ -583,13 +591,48 @@ def insights(pp, al, d):
     holders = sorted([p for p in people if float(p["draft_hours"]) > 0],
                      key=lambda p: -float(p["draft_hours"]))
     if holders:
+        # Split by the month the work belongs to, not just totalled.
+        #
+        # One number here told nobody which month the hours sat in. Six and a
+        # half of Habiba Hany's fourteen draft hours turned out to be October,
+        # and that only surfaced because somebody asked directly. A figure that
+        # has to be asked about is not reporting.
+        #
+        # `ready` can be submitted as it stands; `blocked` still wants a project
+        # type or a work type before the app will accept it. They are different
+        # asks of different people, so they are not added together.
+        by_month = {}
+        for r in pp.get("unfiled", []):
+            m = by_month.setdefault(r["month"], {"hours": 0.0, "ready": 0.0,
+                                                 "blocked": 0.0, "who": []})
+            m["hours"] += float(r["hours"] or 0)
+            m["ready"] += float(r["ready"] or 0)
+            m["blocked"] += float(r["blocked"] or 0)
+            m["who"].append((r["name"], float(r["hours"] or 0)))
+
+        months = ""
+        for key in sorted(by_month, reverse=True):
+            m = by_month[key]
+            named = ", ".join(
+                "%s %s h" % (esc(n), h(v))
+                for n, v in sorted(m["who"], key=lambda w: -w[1])[:4])
+            months += (
+                '<div class="row"><div class="rl">%s</div>'
+                '<div class="rt"><span class="bar" style="width:%.1f%%"></span></div>'
+                '<div class="rv"><b>%s h</b><span class="sub">%s ready · %s needs a field</span></div>'
+                '</div><p class="barnote" style="margin:2px 0 8px;padding:0;border:0">%s</p>'
+                % (month_label(key),
+                   100.0 * m["hours"] / max(dh, 0.01),
+                   h(m["hours"]), h(m["ready"]), h(m["blocked"]), named))
+
         out.append(("", "Typed but never sent",
             "",
-            '<b>%s h</b> across %d rows sits in draft and reaches no report or export. Largest: %s. '
-            'This is the cheapest capacity to recover in the whole report — the work is already '
-            'recorded, it simply has not been submitted.'
-            % (h(dh), d["draft_r"],
-               ", ".join("%s %s h" % (esc(p["name"]), h(p["draft_hours"])) for p in holders[:3]))))
+            '<b>%s h</b> across %d rows sits in draft and reaches no report or export. '
+            'This is the cheapest capacity to recover in the whole report — the work is '
+            'already recorded, it simply has not been submitted. Which month it belongs '
+            'to decides how urgent it is: a closed month is a figure already quoted to '
+            'somebody.<div class="bars" style="margin-top:12px">%s</div>'
+            % (h(dh), d["draft_r"], months)))
 
     # 7. Data quality, stated as the blocker it is.
     ns_r = next((r for r in al["regions"] if r["name"] == "Not set"), None)

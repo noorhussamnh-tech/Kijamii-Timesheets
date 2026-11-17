@@ -211,6 +211,32 @@ select jsonb_build_object(
             where x.employee_id in (select id from ids) and x.hours is not null
             group by 1 having sum(x.hours) > 0) q),
 
+  -- Typed but never filed, split by the month the work belongs to.
+  --
+  -- The daily mail has carried one total for this since the start, which told
+  -- nobody which month the hours sat in: 6.5 of Habiba Hany's 14 draft hours
+  -- turned out to be October, and that only came out because somebody asked.
+  -- `ready` is what could be submitted as it stands; `blocked` still wants a
+  -- project type or a work type before the app will take it, which is a
+  -- different conversation with a different person.
+  'unfiled', (select coalesce(jsonb_agg(jsonb_build_object(
+            'name', name, 'month', month, 'hours', hours, 'rows', rows,
+            'ready', ready, 'blocked', blocked)
+            order by month desc, hours desc), '[]'::jsonb)
+     from (select e2.full_name as name,
+                  to_char(date_trunc('month', x.work_date), 'YYYY-MM') as month,
+                  sum(x.hours)  as hours,
+                  count(*)      as rows,
+                  coalesce(sum(x.hours) filter (where ts_entry_ready(
+                    x.hours, x.client_id, x.client_other, x.project_type, x.work_type)), 0) as ready,
+                  coalesce(sum(x.hours) filter (where not ts_entry_ready(
+                    x.hours, x.client_id, x.client_other, x.project_type, x.work_type)), 0) as blocked
+             from ts_entries x
+             join ts_employees e2 on e2.id = x.employee_id
+            where x.employee_id in (select id from ids)
+              and x.status = 'draft' and x.hours is not null
+            group by 1, 2) q),
+
   'ptypes', (select coalesce(jsonb_agg(jsonb_build_object(
             'name', name, 'hours', hours, 'week', week, 'mtd', mtd, 'amend', amend)
             order by hours desc), '[]'::jsonb)
