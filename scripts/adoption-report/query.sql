@@ -31,26 +31,61 @@ wdays as (
   select g::date as d from win, generate_series(win.ws, win.we, interval '1 day') g
    where extract(dow from g) not in (5,6)
 ),
--- The month so far, on the same rule: finished working days only, today
--- excluded. On the 1st of a month nothing has finished, so it falls back to
--- the whole of last month rather than reporting a capacity of zero.
+-- The month to date: the 1st of the current month through today, today
+-- included. It used to stop at yesterday, on the grounds that an unfinished
+-- day divides badly -- but a report headed "month so far" that leaves out the
+-- morning it is read on is answering a question nobody asked. Today is in the
+-- window; `days_done` and `cap_done` carry the finished-days figures beside it
+-- so the partial day can be stated rather than hidden.
+--
+-- The fallback survives for the one day it is needed: a month whose 1st falls
+-- on a Friday has no working day until the 3rd, and dividing by a capacity of
+-- zero is worse than showing last month.
 mwin as (
   select case when exists (
            select 1 from params p,
-                generate_series(date_trunc('month', p.today)::date, p.today - 1, interval '1 day') g
+                generate_series(date_trunc('month', p.today)::date, p.today, interval '1 day') g
             where extract(dow from g) not in (5,6))
          then (select date_trunc('month', today)::date from params)
          else (select (date_trunc('month', today) - interval '1 month')::date from params) end as ms,
          case when exists (
            select 1 from params p,
-                generate_series(date_trunc('month', p.today)::date, p.today - 1, interval '1 day') g
+                generate_series(date_trunc('month', p.today)::date, p.today, interval '1 day') g
             where extract(dow from g) not in (5,6))
-         then (select today - 1 from params)
+         then (select today from params)
          else (select (date_trunc('month', today) - interval '1 day')::date from params) end as me
+),
+-- The same window, minus today: what a finished-days comparison divides by.
+mdone as (
+  select mwin.ms as ms, least(mwin.me, (select today - 1 from params)) as me from mwin
+),
+-- Every month of the pilot, each ending today if it is the current one. The
+-- month-over-month section reads these; capacity is measured from each
+-- person's own launch date inside the month, so October does not charge a team
+-- for the fortnight before it had the tool.
+mons as (
+  select g::date as ms,
+         least((g + interval '1 month' - interval '1 day')::date, (select today from params)) as me
+    from params p, generate_series(date '2026-10-01',
+                                   date_trunc('month', p.today), interval '1 month') g
+),
+-- Last month's working days, numbered, so the current month can be compared
+-- against the same number of elapsed days rather than against a full month.
+pmdays as (
+  select g::date as d, row_number() over (order by g) as n
+    from params p, generate_series((date_trunc('month', p.today) - interval '1 month')::date,
+                                   (date_trunc('month', p.today) - interval '1 day')::date,
+                                   interval '1 day') g
+   where extract(dow from g) not in (5,6)
 ),
 mdays as (
   select g::date as d from mwin, generate_series(mwin.ms, mwin.me, interval '1 day') g
    where extract(dow from g) not in (5,6)
+),
+ppace as (
+  select (select min(d) from pmdays) as ps,
+         coalesce((select d from pmdays where n = (select count(*) from mdays)),
+                  (select max(d) from pmdays)) as pe
 ),
 -- The date each team went live. Ramy Kamel's and Marina's teams started a
 -- fortnight before the other two, so comparing their totals rewards whoever
@@ -85,7 +120,25 @@ select jsonb_build_object(
      'days',  (select count(*) from mdays),
      'cap',   ts_assumed_hours((select ms from mwin), (select me from mwin), 40),
      'label', to_char((select ms from mwin), 'FMDD Mon') || ' – ' ||
-              to_char((select me from mwin), 'FMDD Mon')),
+              to_char((select me from mwin), 'FMDD Mon'),
+     'key',   to_char((select ms from mwin), 'YYYY-MM'),
+     -- Today is in the window above. These two describe the same window with
+     -- today taken out, which is the only honest denominator before the day is
+     -- over: a capture rate that counts eight unlived hours reads as a
+     -- collapse every morning.
+     'days_done', (select count(*) from mdone m,
+                        generate_series(m.ms, m.me, interval '1 day') g
+                    where extract(dow from g) not in (5,6)),
+     'cap_done',  (select ts_assumed_hours(m.ms, m.me, 40) from mdone m),
+     'open',      (select (select me from mwin) = p.today
+                     and extract(dow from p.today) not in (5,6) from params p),
+     'today',     to_char((select today from params), 'FMDD Mon'),
+     'today_h',   coalesce((select sum(x.hours) from ts_entries x
+                    where x.employee_id in (select id from ids)
+                      and x.work_date = (select today from params)), 0),
+     'today_n',   coalesce((select count(distinct x.employee_id) from ts_entries x
+                    where x.employee_id in (select id from ids) and x.hours is not null
+                      and x.work_date = (select today from params)), 0)),
   'people', (select jsonb_agg(jsonb_build_object(
        'team', c.team, 'seat', c.seat, 'name', e.full_name,
        'signed_in', e.auth_user_id is not null,
@@ -111,6 +164,12 @@ select jsonb_build_object(
        'mt_hours', coalesce((select sum(x.hours) from ts_entries x
                            where x.employee_id = e.id
                              and x.work_date in (select d from mdays)), 0),
+       -- Today, on its own. The month-to-date window includes today, and the
+       -- page states what the same figures read without it; doing that from a
+       -- cohort-wide total would be wrong by whatever somebody on leave logged.
+       'today_h', coalesce((select sum(x.hours) from ts_entries x
+                           where x.employee_id = e.id
+                             and x.work_date = (select today from params)), 0),
        'function', coalesce(nullif(btrim(dd.function), ''), 'Not set'),
        'entity',   coalesce(nullif(btrim(dd.entity), ''), 'Not set'),
        'launch',  to_char(c.launch, 'FMDD Mon'),
@@ -247,5 +306,109 @@ select jsonb_build_object(
                   sum(x.hours) filter (where x.work_type = 'amend')               as amend
              from ts_entries x
             where x.employee_id in (select id from ids) and x.hours is not null
-            group by 1 having sum(x.hours) > 0) q)
+            group by 1 having sum(x.hours) > 0) q),
+
+  -- ------------------------------------------------------- month over month
+  --
+  -- One month against the next, which the three rolling windows above cannot
+  -- show: they all end today, so none of them says whether this month is
+  -- better than the last one. Capacity is measured from each person's own
+  -- launch date inside the month, so October is not charged for the fortnight
+  -- two of the teams did not yet have the tool.
+  --
+  -- The current month is partial by definition. `prev_pace` below is the
+  -- like-for-like answer: the same number of elapsed working days of the month
+  -- before, which is the only comparison that is not rigged by the calendar.
+  'months', (select coalesce(jsonb_agg(jsonb_build_object(
+        'key',   to_char(m.ms, 'YYYY-MM'),
+        'label', to_char(m.ms, 'FMMon YYYY'),
+        'start', m.ms, 'end', m.me,
+        'partial', m.me < (m.ms + interval '1 month' - interval '1 day')::date,
+        'days', (select count(*) from generate_series(m.ms, m.me, interval '1 day') g
+                  where extract(dow from g) not in (5,6)),
+        'cap', (select coalesce(sum(ts_assumed_hours(greatest(m.ms, c.launch), m.me, 40)), 0)
+                  from cohort c join ts_employees e on e.email = c.email),
+        'hours', coalesce((select sum(x.hours) from ts_entries x
+                   where x.employee_id in (select id from ids)
+                     and x.work_date between m.ms and m.me), 0),
+        'submitted', coalesce((select sum(x.hours) from ts_entries x
+                   where x.employee_id in (select id from ids)
+                     and x.work_date between m.ms and m.me and x.status <> 'draft'), 0),
+        'draft', coalesce((select sum(x.hours) from ts_entries x
+                   where x.employee_id in (select id from ids)
+                     and x.work_date between m.ms and m.me and x.status = 'draft'), 0),
+        'amend', coalesce((select sum(x.hours) from ts_entries x
+                   where x.employee_id in (select id from ids)
+                     and x.work_date between m.ms and m.me and x.work_type = 'amend'), 0),
+        'active', coalesce((select count(distinct x.employee_id) from ts_entries x
+                   where x.employee_id in (select id from ids) and x.hours is not null
+                     and x.work_date between m.ms and m.me), 0),
+        'clients', coalesce((select count(distinct coalesce(cl.name,
+                       nullif(btrim(x.client_other), ''), 'Not named'))
+                     from ts_entries x left join ts_clients cl on cl.id = x.client_id
+                    where x.employee_id in (select id from ids) and x.hours is not null
+                      and x.work_date between m.ms and m.me), 0))
+        order by m.ms), '[]'::jsonb)
+     from mons m),
+
+  'prev_pace', (select jsonb_build_object(
+        'month', to_char(ps, 'YYYY-MM'),
+        'label', to_char(ps, 'FMDD Mon') || ' – ' || to_char(pe, 'FMDD Mon'),
+        'days',  (select count(*) from pmdays where d <= pe),
+        'cap',   (select coalesce(sum(ts_assumed_hours(greatest(ps, c.launch), pe, 40)), 0)
+                    from cohort c join ts_employees e on e.email = c.email),
+        'hours', coalesce((select sum(x.hours) from ts_entries x
+                   where x.employee_id in (select id from ids)
+                     and x.work_date between ps and pe), 0),
+        'active', coalesce((select count(distinct x.employee_id) from ts_entries x
+                   where x.employee_id in (select id from ids) and x.hours is not null
+                     and x.work_date between ps and pe), 0))
+     from ppace),
+
+  'emp_month', (select coalesce(jsonb_agg(jsonb_build_object(
+        'name', e.full_name, 'team', c.team, 'month', to_char(m.ms, 'YYYY-MM'),
+        'hours', coalesce((select sum(x.hours) from ts_entries x
+                   where x.employee_id = e.id and x.work_date between m.ms and m.me), 0),
+        'days', coalesce((select count(distinct x.work_date) from ts_entries x
+                   where x.employee_id = e.id and x.hours is not null
+                     and x.work_date between m.ms and m.me), 0),
+        'cap', ts_assumed_hours(greatest(m.ms, c.launch), m.me, 40))
+        order by e.full_name, m.ms), '[]'::jsonb)
+     from cohort c
+     join ts_employees e on e.email = c.email
+     cross join mons m),
+
+  'acct_month', (select coalesce(jsonb_agg(jsonb_build_object(
+        'name', name, 'month', month, 'hours', hours, 'people', people)
+        order by month, hours desc), '[]'::jsonb)
+     from (select coalesce(cl.name, nullif(btrim(x.client_other), ''), 'Not named') as name,
+                  to_char(date_trunc('month', x.work_date), 'YYYY-MM') as month,
+                  sum(x.hours) as hours,
+                  count(distinct x.employee_id) as people
+             from ts_entries x left join ts_clients cl on cl.id = x.client_id
+            where x.employee_id in (select id from ids) and x.hours is not null
+              and x.work_date >= date '2026-10-01'
+              and x.work_date <= (select today from params)
+            group by 1, 2 having sum(x.hours) > 0) q),
+
+  -- ------------------------------------------------- who works on what, and how much
+  --
+  -- The client block says a client took 300 hours. It does not say whose. This
+  -- crosses the two, so a resourcing conversation can see that one account is
+  -- most of one person's month while another is spread thinly over nine.
+  'emp_acct', (select coalesce(jsonb_agg(jsonb_build_object(
+        'name', name, 'team', team, 'client', client, 'hours', hours,
+        'mtd', mtd, 'amend', amend, 'days', days) order by name, hours desc), '[]'::jsonb)
+     from (select e.full_name as name, c.team as team,
+                  coalesce(cl.name, nullif(btrim(x.client_other), ''), 'Not named') as client,
+                  sum(x.hours) as hours,
+                  coalesce(sum(x.hours) filter (where x.work_date in (select d from mdays)), 0) as mtd,
+                  coalesce(sum(x.hours) filter (where x.work_type = 'amend'), 0) as amend,
+                  count(distinct x.work_date) as days
+             from ts_entries x
+             join ts_employees e on e.id = x.employee_id
+             join cohort c on c.email = e.email
+             left join ts_clients cl on cl.id = x.client_id
+            where x.employee_id in (select id from ids) and x.hours is not null
+            group by 1, 2, 3 having sum(x.hours) > 0) q)
 ) as payload;

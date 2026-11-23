@@ -10,7 +10,7 @@ time was ever written down. They are kept apart because they are read by
 different people for different decisions, and mixing them is how "47% utilisation"
 came to mean nothing.
 
-Every capacity figure exists in three windows -- this week, this month so far,
+Every capacity figure exists in three windows -- this week, the month to date,
 and since each team's own launch -- and the page switches between them in the
 browser, so one render answers all three. Teams launched on different dates, so
 only the launch window compares them fairly; the other two are for the day to day.
@@ -146,7 +146,7 @@ def bars(rows, note=""):
         "".join(out), ('<p class="barnote">%s</p>' % note) if note else "")
 
 
-VIEWS = [("week", "This week"), ("mtd", "Month so far"), ("launch", "Since launch")]
+VIEWS = [("week", "This week"), ("mtd", "Month to date"), ("launch", "Since launch")]
 
 
 def build(pp, al):
@@ -257,16 +257,41 @@ def build(pp, al):
         "%s from %s (%d days)" % (" and ".join(sorted(t)), dt, dys)
         for (dt, dys), t in sorted(bydate.items(), key=lambda kv: -kv[0][1]))
 
+    def partial_note(vk):
+        """Today is inside the month-to-date window, so say what that costs.
+
+        The window used to stop at yesterday. Reading a report headed "month so
+        far" that left out the morning it was read on was the odder of the two
+        behaviours, so today is in -- but an unlived day still carries eight
+        hours of capacity, which drags the rate down every morning until people
+        log. Stating both figures is the only way to have the window the month
+        actually is and a denominator that is not a fiction."""
+        if vk != "mtd" or not mo.get("open") or not mo.get("cap_done"):
+            return ""
+        done_cap = sum(float(mo["cap_done"]) for _ in avail)
+        done_got = sum(float(p["mt_hours"]) - float(p.get("today_h") or 0) for p in avail)
+        today_got = sum(float(p.get("today_h") or 0) for p in avail)
+        today_n = sum(1 for p in avail if float(p.get("today_h") or 0) > 0)
+        return ('<p class="barnote" style="margin:-6px 0 16px;padding:0;border:0">'
+                'Today, %s, is inside this window and is not over. Counting only the %d '
+                'finished days before it, the same people have captured <b>%s h</b> of '
+                '<b>%s h</b> \u2014 <b>%d%%</b>. Today itself carries %s h from %d '
+                'people so far.</p>'
+                % (esc(mo.get("today", "today")), mo["days_done"], h(done_got), h(done_cap),
+                   pct(done_got, done_cap), h(today_got), today_n))
+
     panes = []
     for vk, vlabel in VIEWS:
         win = {"week": wk["label"], "mtd": mo["label"], "launch": "each team's own launch date"}[vk]
         capline = {"week": "%d finished working days, %s h per person" % (wk["days"], h(cell(people[0], "week")[2])),
-                   "mtd": "%d finished working days, %s h per person" % (mo["days"], h(cell(people[0], "mtd")[2])),
+                   "mtd": "%d working days to the %s, %s h per person%s"
+                          % (mo["days"], mo.get("today", "day"), h(cell(people[0], "mtd")[2]),
+                             " \u00b7 today is still open" if mo.get("open") else ""),
                    "launch": launch_caption}[vk]
         got = sum(float(cell(p, vk)[0]) for p in (people if vk == "launch" else avail))
         cap = sum(cell(p, vk)[2] for p in (people if vk == "launch" else avail))
         panes.append(
-            '<div class="pane" data-view="%s"%s>'
+            '<div class="pane" data-group="cap" data-view="%s"%s>'
             '<div class="winbar"><span class="winlabel">%s</span>'
             '<span class="winsub">%s</span></div>'
             '<div class="tiles3">'
@@ -276,7 +301,7 @@ def build(pp, al):
             '<div class="n">hours written down, not hours worked</div></div>'
             '<div class="tile warn"><div class="k">Unaccounted for</div><div class="v">%s<small> h</small></div>'
             '<div class="n">paid time with no record against it</div></div>'
-            '</div>'
+            '</div>%s'
             '<div class="grid2">'
             '<section class="card"><h3>Per person</h3>%s</section>'
             '<section class="card"><h3>Per team</h3>%s</section>'
@@ -286,7 +311,7 @@ def build(pp, al):
             '<section class="card"><h3>Per project type</h3>%s</section>'
             '</div></div>'
             % (vk, "" if vk == "week" else ' hidden', esc(win), esc(capline),
-               h(got), h(cap), pct(got, cap), h(cap - got),
+               h(got), h(cap), pct(got, cap), h(cap - got), partial_note(vk),
                bars(person_rows(vk), "The faint band behind each bar is that person's available hours. Past it is overtime."),
                bars(team_rows(vk)),
                bars(dim_rows(al["regions"], vk),
@@ -296,7 +321,7 @@ def build(pp, al):
                bars(dim_rows(al["ptypes"], vk))))
 
     return panes, dict(
-        people=people, avail=avail, away=away, order=order, teams=teams,
+        people=people, avail=avail, away=away, order=order, teams=teams, mo=mo,
         signed=signed, logged=logged, active=active, hours_all=hours_all,
         draft_h=draft_h, draft_r=draft_r, lcap=lcap, lcap_got=lcap_got,
         wk=wk, team_rows=team_rows, launches=launches, leave=leave)
@@ -488,7 +513,10 @@ tbody tr:last-child td{border-bottom:0}
 .band.lime{background:var(--lime);color:var(--black)}
 .band.ink{background:var(--ink);color:var(--bg)}
 
-.read{display:grid;gap:13px;margin-top:13px}
+/* minmax(0,1fr) rather than a bare 1fr: an auto track is sized to its items'
+   min-content and will happily overflow the viewport on a phone, which it did
+   -- nine pixels of horizontal page scroll traced back to this line. */
+.read{display:grid;grid-template-columns:minmax(0,1fr);gap:13px;margin-top:13px}
 .find{background:var(--surface);border:1px solid var(--rule);border-radius:12px;
       padding:16px 18px;display:grid;gap:6px}
 .find.key{border-left:3px solid var(--brand)}
@@ -497,16 +525,371 @@ tbody tr:last-child td{border-bottom:0}
 .find b{color:var(--ink);font-weight:600}
 .find .fig{font-family:var(--serif);font-size:34px;font-weight:500;line-height:1;
            color:var(--brand);letter-spacing:-0.02em}
-.find.two{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start}
+.find.two{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:start}
+.find p,.find h4{overflow-wrap:break-word}
 
 .bigstat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
          background:var(--rule);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
 .bigstat > div{background:var(--surface);padding:17px 16px}
 .bigstat .f{font-family:var(--serif);font-size:30px;font-weight:500;line-height:1.05;letter-spacing:-0.02em}
 .bigstat .l{font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.35}
+/* The account matrix. One hue, light to dark: a magnitude scale, which is what
+   a share is. Every step keeps body text at or above 4.5:1 in both themes --
+   computed, not judged -- which is why the darkest stops at 70%. */
+.hm1{background:color-mix(in oklab, var(--brand) 10%, var(--surface))}
+.hm2{background:color-mix(in oklab, var(--brand) 26%, var(--surface))}
+.hm3{background:color-mix(in oklab, var(--brand) 46%, var(--surface))}
+.hm4{background:color-mix(in oklab, var(--brand) 70%, var(--surface))}
+table.matrix{min-width:980px}
+table.matrix td:first-child,table.matrix th:first-child{position:sticky;left:0;z-index:1;
+  background:var(--surface);box-shadow:1px 0 0 var(--rule)}
+table.matrix thead th:first-child{background:var(--sunk)}
+table.matrix tfoot td:first-child{background:var(--sunk)}
+table.matrix td,table.mom td{padding:7px 10px}
+table.matrix thead th{text-align:right}
+table.matrix thead th:first-child,table.matrix thead th:nth-child(2),
+table.mom thead th:first-child,table.mom thead th:nth-child(2){text-align:left}
+table.matrix td.num,table.mom td.num{line-height:1.25}
+table.matrix td b,table.mom td b{font-weight:600}
+table.matrix td i,table.mom td i{display:block;font-style:normal;font-size:9.5px;
+  color:var(--ink-soft);letter-spacing:.01em}
+.hm3 i,.hm4 i{color:color-mix(in oklab, var(--ink) 72%, transparent)}
+td.quiet,span.quiet{color:var(--ink-faint)}
+td.tot{border-left:1px solid var(--rule-firm)}
+table.matrix tfoot td{background:var(--sunk);border-top:1px solid var(--rule-firm);
+  font-size:11.5px;padding:9px 10px}
+table.mom{min-width:620px}
+table.mom tbody tr td:first-child{white-space:nowrap}
+.ramp{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-soft);
+  padding:2px 0 10px}
+.ramp i{width:22px;height:11px;border-radius:2px;display:inline-block;border:1px solid var(--rule)}
+/* Direction is written as a sign as well as coloured, so the colour is never
+   the only thing carrying it. */
+.d{font-size:11px;font-weight:600;white-space:nowrap}
+.d.up{color:var(--good)}
+.d.down{color:var(--bad)}
+.d.flat{color:var(--ink-faint);font-weight:400}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media (max-width:560px){.row{grid-template-columns:minmax(80px,1fr) minmax(50px,1.4fr) auto}}
 """
+
+
+# The shading steps for the account matrix: one hue, light to dark, which is
+# what a magnitude scale is for. A categorical palette was tried first and
+# cannot be made to work here -- against the brand's own accents no six-colour
+# set clears an all-pairs colour-blindness check (torch red against the lime
+# collapses to a delta of 0.2 under deuteranopia), and the brand guide asks for
+# one accent at a time in any case. Every step keeps body text above 4.5:1 in
+# both themes; the top step stops at 70% for that reason and no other.
+HEAT = ((50, 4), (30, 3), (15, 2), (0.01, 1))
+
+
+def heat(share):
+    for lo, k in HEAT:
+        if share >= lo:
+            return " hm%d" % k
+    return ""
+
+
+def delta(now, before, unit="h"):
+    """A change, with its direction written out as well as coloured."""
+    now, before = float(now or 0), float(before or 0)
+    if not before and not now:
+        return '<span class="d flat">\u2014</span>'
+    if not before:
+        return '<span class="d up">new \u00b7 +%s %s</span>' % (h(now), unit)
+    diff = now - before
+    sign = "+" if diff >= 0 else "\u2212"
+    cls = "up" if diff > 0.009 else ("down" if diff < -0.009 else "flat")
+    if unit == "pts":
+        # A rate that moves from 70% to 61% has fallen nine points. Calling that
+        # "13%" is a percentage of a percentage and means nothing to anybody.
+        return '<span class="d %s">%s%s pts</span>' % (cls, sign, h(abs(diff)))
+    return ('<span class="d %s">%s%s %s \u00b7 %s%d%%</span>'
+            % (cls, sign, h(abs(diff)), unit, sign, round(abs(100 * diff / before))))
+
+
+ROLLUP = "All other accounts"
+
+
+def account_matrix(pp, d, view):
+    """Employee against account: hours, and what share of that person's time each took.
+
+    The client block answers "how much did this account take". It cannot answer
+    "from whom", which is the question a resourcing conversation actually asks:
+    two accounts of 150 hours are different problems if one is most of one
+    person's month and the other is nine people's afternoons.
+
+    Share is of the person's own captured hours, not of the account, because the
+    row is about that person's time. The capacity column keeps the other sense
+    of the word honest -- a person can be 100% allocated across accounts and
+    still have logged a third of their available hours.
+    """
+    rows = pp.get("emp_acct") or []
+    if not rows:
+        return '<p class="empty">No client hours recorded yet.</p>'
+    key = "mtd" if view == "mtd" else "hours"
+
+    whole = {}
+    for r in rows:
+        v = float(r.get(key) or 0)
+        if v > 0:
+            whole[r["client"]] = whole.get(r["client"], 0.0) + v
+    cols = [c for c, _v in sorted(whole.items(), key=lambda kv: (-kv[1], kv[0]))][:8]
+    if not cols:
+        return '<p class="empty">Nothing logged against a client in this window.</p>'
+    rest = [c for c in whole if c not in cols]
+
+    byname = {}
+    for r in rows:
+        v = float(r.get(key) or 0)
+        if v > 0:
+            byname.setdefault(r["name"], {})[r["client"]] = v
+    team = {p["name"]: p["team"] for p in d["people"]}
+    capof = {p["name"]: float((mo_cap(d) if view == "mtd" else p.get("lcap")) or 0)
+             for p in d["people"]}
+
+    body, foot = [], dict((c, 0.0) for c in cols + [ROLLUP])
+    for name in sorted(byname, key=lambda n: -sum(byname[n].values())):
+        got = byname[name]
+        tot = sum(got.values())
+        cells = []
+        for c in cols + [ROLLUP]:
+            v = sum(got[x] for x in rest if x in got) if c == ROLLUP else got.get(c, 0.0)
+            foot[c] += v
+            if v <= 0:
+                cells.append('<td class="num quiet">\u2014</td>')
+                continue
+            share = 100.0 * v / tot
+            cells.append('<td class="num%s"><b>%s</b><i>%d%%</i></td>'
+                         % (heat(share), h(v), round(share)))
+        cap = capof.get(name) or 0
+        # Their own total comes before the breakdown, not after it: the table is
+        # wider than a laptop and the one figure nobody should have to scroll
+        # for is the one the row is about.
+        body.append('<tr><td class="nm">%s</td><td class="tm">%s</td>'
+                    '<td class="num tot"><b>%s</b><i>%s of cap</i></td>%s</tr>'
+                    % (esc(name), esc(team.get(name, "")), h(tot),
+                       ("%d%%" % pct(tot, cap)) if cap else "\u2014", "".join(cells)))
+
+    grand = sum(foot.values())
+    head = "".join('<th class="num">%s</th>' % esc(c) for c in cols + [ROLLUP])
+    totrow = "".join('<td class="num"><b>%s</b><i>%d%%</i></td>' % (h(foot[c]), pct(foot[c], grand))
+                     for c in cols + [ROLLUP])
+    return ('<div class="tablewrap"><table class="matrix"><thead><tr>'
+            '<th>Person</th><th>Team</th><th class="num">Their total</th>%s</tr></thead>'
+            '<tbody>%s</tbody><tfoot><tr><td class="nm">All %d people</td><td></td>'
+            '<td class="num tot"><b>%s</b></td>%s</tr></tfoot></table></div>'
+            % (head, "".join(body), len(byname), h(grand), totrow))
+
+
+def mo_cap(d):
+    """Capacity per person for the month-to-date window."""
+    mo = d["mo"]
+    return mo.get("cap") or mo["days"] * 8
+
+
+def accounts_section(pp, d):
+    """Objective 03 on the page: who works on what."""
+    rows = pp.get("emp_acct") or []
+    if not rows:
+        return ""
+    whole = {}
+    for r in rows:
+        whole[r["client"]] = whole.get(r["client"], 0.0) + float(r["hours"])
+    grand = sum(whole.values()) or 1.0
+
+    # Concentration: the share of a person's time taken by their single biggest
+    # account. High is a single point of failure; low is somebody being sliced
+    # too thin to finish anything.
+    byname = {}
+    for r in rows:
+        byname.setdefault(r["name"], []).append((float(r["hours"]), r["client"]))
+    conc = []
+    for name, got in byname.items():
+        tot = sum(v for v, _c in got)
+        big, bigc = max(got)
+        conc.append((name, 100.0 * big / tot, bigc, tot, len(got)))
+    conc.sort(key=lambda x: -x[1])
+
+    cbars = [(n, sh, 100.0,
+              '<b>%d%%</b><span class="sub">%s \u00b7 %d accounts</span>'
+              % (round(sh), esc(c if len(c) < 22 else c[:20] + "\u2026"), k), False)
+             for n, sh, c, _t, k in conc]
+
+    unnamed = sum(v for c, v in whole.items()
+                  if c.lower().startswith("other") or c == "Not named")
+    spread = sum(1 for _n, sh, _c, _t, _k in conc if sh < 40)
+
+    tabs = "".join('<button role="tab" data-v="%s" aria-selected="%s">%s</button>'
+                   % (k, "true" if k == "all" else "false", lab)
+                   for k, lab in (("all", "Since launch"), ("mtd", "Month to date")))
+
+    return ('<section class="obj" id="accounts">'
+            '<div class="band lime"><span class="num">Objective 03</span>'
+            '<h2>Who works on what</h2>'
+            '<p>Every person against every account they logged against &mdash; in hours, and as a '
+            'share of their own captured time. The client totals say how big an account is; only '
+            'this says whose month it took.</p></div>'
+            '<div class="tiles3">'
+            '<div class="tile hero"><div class="k">Accounts in play</div><div class="v">%d</div>'
+            '<div class="n">across %d people and %s h</div></div>'
+            '<div class="tile"><div class="k">Most concentrated</div><div class="v">%d<small>%%</small></div>'
+            '<div class="n">%s, on %s</div></div>'
+            '<div class="tile warn"><div class="k">Against no named client</div>'
+            '<div class="v">%d<small>%%</small></div>'
+            '<div class="n">%s h booked to a placeholder, not an account</div></div>'
+            '</div>'
+            '<div class="viewtabs" role="tablist" data-group="acct" aria-label="Window">%s</div>'
+            '<div class="pane" data-group="acct" data-view="all">'
+            '<p class="barnote" style="margin:0 0 12px;padding:0;border:0">Hours since each '
+            'team&rsquo;s launch. The shade is the share of that person&rsquo;s own captured time, '
+            'so a dark cell is an account that owns somebody. The table scrolls sideways for the '
+            'remaining accounts; the name and the total stay put.</p>%s</div>'
+            '<div class="pane" data-group="acct" data-view="mtd" hidden>'
+            '<p class="barnote" style="margin:0 0 12px;padding:0;border:0">The same table for '
+            '%s only.</p>%s</div>'
+            '<div class="grid2" style="margin-top:12px">'
+            '<section class="card"><h3>Concentration \u2014 share taken by their largest account</h3>%s</section>'
+            '<section class="card"><h3>Accounts by hours, and how many people touch them</h3>%s</section>'
+            '</div></section>'
+            % (len(whole), len(byname), h(grand),
+               round(conc[0][1]), esc(conc[0][0]), esc(conc[0][2]),
+               pct(unnamed, grand), h(unnamed), tabs,
+               account_matrix(pp, d, "all"), esc(d["mo"]["label"]),
+               account_matrix(pp, d, "mtd"),
+               bars(cbars, "Above 60%% is a single point of failure: that account is most of that "
+                           "person&rsquo;s recorded month. Below 40%% \u2014 %d people \u2014 is the "
+                           "other failure, somebody sliced across so many accounts that none of "
+                           "them gets a whole day." % spread),
+               bars([(c, v, None, '<b>%s h</b><span class="sub">%d people</span>'
+                      % (h(v), len(set(r["name"] for r in rows if r["client"] == c))), False)
+                     for c, v in sorted(whole.items(), key=lambda kv: -kv[1])[:12]])))
+
+
+def mom_section(pp, d):
+    """Objective 04: this month against the last one."""
+    ms = [m for m in (pp.get("months") or [])]
+    if len(ms) < 2:
+        return ""
+    pv, cur, prev = pp.get("prev_pace") or {}, ms[-1], ms[-2]
+
+    mrows = [(m["label"] + ("*" if m.get("partial") else ""), float(m["hours"]), float(m["cap"]),
+              '<b>%d%%</b><span class="sub">%s of %s h \u00b7 %d days</span>'
+              % (pct(float(m["hours"]), float(m["cap"])), h(m["hours"]), h(m["cap"]), m["days"]),
+              False) for m in ms]
+
+    head = "".join('<th class="num">%s</th>' % esc(m["label"] + ("*" if m.get("partial") else ""))
+                   for m in ms)
+    mtable = "".join(
+        '<tr><td class="nm">%s</td>%s<td class="num">%s</td></tr>'
+        % (label, "".join('<td class="num">%s</td>' % fmt(m) for m in ms),
+           delta(val(ms[-1]), val(ms[-2]), unit))
+        for label, fmt, val, unit in (
+            ("Hours captured", lambda m: "<b>%s</b>" % h(m["hours"]), lambda m: m["hours"], "h"),
+            ("Hours available", lambda m: h(m["cap"]), lambda m: m["cap"], "h"),
+            ("Capture rate", lambda m: "%d%%" % pct(float(m["hours"]), float(m["cap"])),
+             lambda m: pct(float(m["hours"]), float(m["cap"])), "pts"),
+            ("People who logged", lambda m: str(m["active"]), lambda m: m["active"], ""),
+            ("Working days", lambda m: str(m["days"]), lambda m: m["days"], ""),
+            ("Submitted", lambda m: h(m["submitted"]), lambda m: m["submitted"], "h"),
+            ("Still in draft", lambda m: h(m["draft"]), lambda m: m["draft"], "h"),
+            ("Rework (amend)", lambda m: h(m["amend"]), lambda m: m["amend"], "h"),
+            ("Accounts touched", lambda m: str(m["clients"]), lambda m: m["clients"], "")))
+
+    # Accounts, month against month.
+    am = {}
+    for r in pp.get("acct_month") or []:
+        am.setdefault(r["name"], {})[r["month"]] = float(r["hours"])
+    keys = [m["key"] for m in ms]
+    arows = "".join(
+        '<tr><td class="nm">%s</td>%s<td class="num">%s</td></tr>'
+        % (esc(name),
+           "".join('<td class="num">%s</td>'
+                   % (h(am[name][k]) if am[name].get(k) else '<span class="quiet">\u2014</span>')
+                   for k in keys),
+           delta(am[name].get(keys[-1], 0), am[name].get(keys[-2], 0)))
+        for name in sorted(am, key=lambda n: -(am[n].get(keys[-1], 0) + am[n].get(keys[-2], 0))))
+
+    # People, month against month.
+    em = {}
+    for r in pp.get("emp_month") or []:
+        em.setdefault(r["name"], {})[r["month"]] = (float(r["hours"]), float(r["cap"] or 0))
+    team = {p["name"]: p["team"] for p in d["people"]}
+    erows = "".join(
+        '<tr><td class="nm">%s</td><td class="tm">%s</td>%s<td class="num">%s</td></tr>'
+        % (esc(name), esc(team.get(name, "")),
+           "".join('<td class="num">%s<i>%s</i></td>'
+                   % (h(em[name].get(k, (0, 0))[0]),
+                      ("%d%% of cap" % pct(em[name][k][0], em[name][k][1]))
+                      if em[name].get(k) and em[name][k][1] else "\u2014")
+                   for k in keys),
+           delta(em[name].get(keys[-1], (0, 0))[0], em[name].get(keys[-2], (0, 0))[0]))
+        for name in sorted(em, key=lambda n: -em[n].get(keys[-1], (0, 0))[0]))
+
+    pace = ""
+    if pv and float(pv.get("cap") or 0):
+        now_h = float(cur["hours"])
+        pace = (
+            '<div class="tiles3" style="margin-top:14px">'
+            '<div class="tile hero"><div class="k">%s so far</div><div class="v">%s<small> h</small></div>'
+            '<div class="n">%d%% of %s h available \u00b7 %d people logged</div></div>'
+            '<div class="tile"><div class="k">Same stretch of %s</div><div class="v">%s<small> h</small></div>'
+            '<div class="n">%s, the first %d working days \u00b7 %d%% of %s h</div></div>'
+            '<div class="tile"><div class="k">Like for like</div><div class="v">%s</div>'
+            '<div class="n">hours against the same number of elapsed working days</div></div></div>'
+            % (esc(cur["label"]), h(now_h), pct(now_h, float(cur["cap"])), h(cur["cap"]),
+               cur["active"], esc(month_label(pv["month"])), h(pv["hours"]),
+               esc(pv["label"]), pv["days"], pct(float(pv["hours"]), float(pv["cap"])), h(pv["cap"]),
+               delta(now_h, float(pv["hours"]))))
+
+    return ('<section class="obj" id="mom">'
+            '<div class="band ink"><span class="num">Objective 04</span>'
+            '<h2>Month against month</h2>'
+            '<p>The three windows above all end today, so none of them can say whether this month '
+            'is better than the last one. This one can. The current month is still running, so the '
+            'fair comparison is the same number of elapsed working days, not a whole month against '
+            'a part of one.</p></div>'
+            '%s'
+            '<div class="grid2" style="margin-top:14px">'
+            '<section class="card wide"><h3>Hours captured against hours available</h3>%s</section>'
+            '<section class="card wide"><h3>The month in figures</h3>'
+            '<div class="tablewrap" style="margin-top:0"><table class="mom"><thead><tr><th></th>%s'
+            '<th class="num">Change</th></tr></thead><tbody>%s</tbody></table></div></section>'
+            '</div>'
+            '<h3 style="margin-top:22px">Accounts, month by month</h3>'
+            '<div class="tablewrap"><table class="mom"><thead><tr><th>Account</th>%s'
+            '<th class="num">Change</th></tr></thead><tbody>%s</tbody></table></div>'
+            '<h3 style="margin-top:22px">People, month by month</h3>'
+            '<div class="tablewrap"><table class="mom"><thead><tr><th>Person</th><th>Team</th>%s'
+            '<th class="num">Change</th></tr></thead><tbody>%s</tbody></table></div>'
+            '<p class="barnote">* still running. Hours available are measured from each '
+            'team&rsquo;s own launch date inside the month, so October is not charged for the '
+            'fortnight Emad Mutter&rsquo;s and Nadia&rsquo;s teams did not yet have the tool. '
+            'That is also why available hours rise between the two months while the calendar '
+            'shrinks. A person over 100%% of capacity is not an error: they either logged more '
+            'than the assumed eight hours a day, which stands as submitted, or they backfilled '
+            'days from before their own team went live, which capacity does not count.</p>'
+            '</section>'
+            % (pace, bars(mrows), head, mtable, head, arows, head, erows))
+
+
+def placeholder_trend(pp):
+    """Whether the unnamed-client problem is getting better or worse."""
+    ms = [m["key"] for m in (pp.get("months") or [])]
+    if len(ms) < 2:
+        return ""
+    by = {}
+    for r in pp.get("acct_month") or []:
+        if r["name"].lower().startswith("other") or r["name"] == "Not named":
+            by[r["month"]] = by.get(r["month"], 0.0) + float(r["hours"])
+    now, before = by.get(ms[-1], 0.0), by.get(ms[-2], 0.0)
+    if not before or not now:
+        return ""
+    if now > before:
+        return (' It is also growing: <b>%s h</b> last month against <b>%s h</b> this one, '
+                'with the month not finished.' % (h(before), h(now)))
+    return ' It is shrinking: <b>%s h</b> last month against <b>%s h</b> this one.' % (h(before), h(now))
 
 
 def insights(pp, al, d):
@@ -542,7 +925,7 @@ def insights(pp, al, d):
     spread = []
     for k in d["order"]:
         mem = [p for p in d["teams"][k]]
-        rates = sorted(pct(float(p["lhours"]), p["ldays"] * 8) for p in mem)
+        rates = sorted(pct(float(p["lhours"]), float(p.get("lcap") or p["ldays"] * 8)) for p in mem)
         spread.append((rates[-1] - rates[0], k, rates[0], rates[-1]))
     spread.sort(reverse=True)
     w, wk_team, lo, hi = spread[0]
@@ -553,7 +936,8 @@ def insights(pp, al, d):
         'at the top and leave the bottom untouched, so read the per-person bars before moving '
         'work.' % (wk_team, lo, hi,
                    pct(sum(float(p["lhours"]) for p in d["teams"][wk_team]),
-                       sum(p["ldays"] * 8 for p in d["teams"][wk_team])))))
+                       sum(float(p.get("lcap") or p["ldays"] * 8)
+                           for p in d["teams"][wk_team])))))
 
     # 4. Client concentration.
     cl = sorted([c for c in al["clients"] if float(c["hours"]) > 0],
@@ -634,6 +1018,51 @@ def insights(pp, al, d):
             'somebody.<div class="bars" style="margin-top:12px">%s</div>'
             % (h(dh), d["draft_r"], months)))
 
+    # 6b. Month against month, on a like-for-like window.
+    ms = pp.get("months") or []
+    pv = pp.get("prev_pace") or {}
+    if len(ms) >= 2 and float(pv.get("cap") or 0):
+        cur, prv = ms[-1], ms[-2]
+        now_r = pct(float(cur["hours"]), float(cur["cap"]))
+        was_r = pct(float(pv["hours"]), float(pv["cap"]))
+        grew = float(cur["hours"]) - float(pv["hours"])
+        out.append(("key", "This month against the same stretch of last",
+            '<div class="fig">%s%d pts</div>' % ("+" if now_r >= was_r else "\u2212", abs(now_r - was_r)),
+            '<b>%s h</b> captured in %s against <b>%s h</b> over the first %d working days of %s '
+            '\u2014 %s%s h of hours. The rate moved the other way, %d%% to %d%%, and the reason is '
+            'the denominator rather than the behaviour: all %d people are inside the window now, '
+            'where October only counted two of the four teams for its first fortnight. More hours '
+            'are arriving from more people against more available time.'
+            % (h(cur["hours"]), esc(cur["label"]), h(pv["hours"]), pv["days"],
+               esc(month_label(pv["month"])), "+" if grew >= 0 else "\u2212", h(abs(grew)),
+               was_r, now_r, cur["active"])))
+
+    # 6c. Hours booked to a placeholder instead of an account.
+    ea = pp.get("emp_acct") or []
+    if ea:
+        whole = {}
+        for r in ea:
+            whole[r["client"]] = whole.get(r["client"], 0.0) + float(r["hours"])
+        gr = sum(whole.values()) or 1.0
+        un = sorted(((v, c) for c, v in whole.items()
+                     if c.lower().startswith("other") or c == "Not named"), reverse=True)
+        if un:
+            who = sorted(((sum(float(r["hours"]) for r in ea
+                               if r["name"] == n and (r["client"].lower().startswith("other")
+                                                      or r["client"] == "Not named")), n)
+                          for n in set(r["name"] for r in ea)), reverse=True)[:4]
+            out.append(("key", "A quarter of the work has no client name on it",
+                '<div class="fig">%d%%</div>' % pct(sum(v for v, _c in un), gr),
+                '<b>%s h</b> is booked to a placeholder rather than an account \u2014 more than any '
+                'real client in the pilot. It is not missing time: the hours are there, the '
+                'client field is not. Every one of them is invisible to a profitability or scope '
+                'conversation, which is most of what the timesheet exists for. Held mainly by '
+                '%s. A short list of the accounts people cannot find in the dropdown would '
+                'recover the lot.'
+                % (h(sum(v for v, _c in un)),
+                   ", ".join("%s (%s h)" % (esc(n), h(v)) for v, n in who if v > 0))
+                + placeholder_trend(pp)))
+
     # 7. Data quality, stated as the blocker it is.
     ns_r = next((r for r in al["regions"] if r["name"] == "Not set"), None)
     out.append(("", "Why region and function read \u201cNot set\u201d",
@@ -649,9 +1078,11 @@ def insights(pp, al, d):
 
     # 8. Leads.
     leads = [p for p in people if p["seat"] == "Lead"]
-    lrate = pct(sum(float(p["lhours"]) for p in leads), sum(p["ldays"] * 8 for p in leads))
+    lrate = pct(sum(float(p["lhours"]) for p in leads),
+                sum(float(p.get("lcap") or p["ldays"] * 8) for p in leads))
     mem = [p for p in people if p["seat"] != "Lead"]
-    mrate = pct(sum(float(p["lhours"]) for p in mem), sum(p["ldays"] * 8 for p in mem))
+    mrate = pct(sum(float(p["lhours"]) for p in mem),
+                sum(float(p.get("lcap") or p["ldays"] * 8) for p in mem))
     out.append(("key" if lrate < mrate else "", "Leads against their own teams",
         '<div class="fig">%d%% / %d%%</div>' % (lrate, mrate),
         'The four leads capture <b>%d%%</b> of their available hours; their members <b>%d%%</b>. '
@@ -669,6 +1100,8 @@ def insights(pp, al, d):
 
 def page(pp, al):
     panes, d = build(pp, al)
+    accounts = accounts_section(pp, d)
+    mom = mom_section(pp, d)
     people, avail, away = d["people"], d["avail"], d["away"]
     wk = d["wk"]
 
@@ -689,7 +1122,7 @@ def page(pp, al):
                 st, cls = "Stopped", "warn"
             else:
                 st, cls = "Active", "good"
-            rate = pct(float(p["lhours"]), p["ldays"] * 8)
+            rate = pct(float(p["lhours"]), float(p.get("lcap") or p["ldays"] * 8))
             rows.append(
                 '<tr><td class="nm">%s%s</td><td class="tm">%s</td><td class="tm">%s</td>'
                 '<td class="num">%s</td><td class="num">%d/%d</td><td class="num">%s</td>'
@@ -712,7 +1145,7 @@ def page(pp, al):
            esc(d["launches"][name]["date"]), len(d["teams"][name]))
         for name, got, cap, _m, _o in d["team_rows"]("launch"))
 
-    leavenote = (" · %d on leave, left out of this week and the month so far" % away) if away else ""
+    leavenote = (" · %d on leave, left out of this week and the month to date" % away) if away else ""
 
     return """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -776,16 +1209,19 @@ def page(pp, al):
   <div class="band green"><span class="num">Objective 02</span>
     <h2>Where did the hours go?</h2>
     <p>Per person, team, region, function, client and project type &mdash; in the week,
-      the month so far, or since launch. Hours captured against hours available.</p></div>
-  <div class="viewtabs" role="tablist" aria-label="Time window">%s</div>
+      the month to date, or since launch. Hours captured against hours available.</p></div>
+  <div class="viewtabs" role="tablist" data-group="cap" aria-label="Time window">%s</div>
   %s
 </section>
+
+%s
+%s
 
 <section class="obj" id="reading">
   <div class="band ink"><span class="num">What it means</span>
     <h2>Reading the numbers</h2>
-    <p>Eight things the tables above are saying, and what each one implies for how work
-      is allocated. Every figure here is computed from the same data, not written by hand.</p></div>
+    <p>What the tables above are saying, and what each one implies for how work is
+      allocated. Every figure here is computed from the same data, not written by hand.</p></div>
   <div class="read">%s</div>
 </section>
 
@@ -797,7 +1233,7 @@ def page(pp, al):
     Emad Mutter's and Nadia's on 16 October. Only the "since launch" window compares them on equal
     terms; the other two windows are for the week in front of you.</p>
   <p><b>Leave.</b> Anyone on leave keeps their row and their hours to date but is left out of this
-    week and the month so far, so a team is not marked down for a holiday. The since-launch window
+    week and the month to date, so a team is not marked down for a holiday. The since-launch window
     still includes their full runway, which understates them.</p>
   <p><b>Region and function are incomplete.</b> %s h of work carries no market, and six people have
     no function in the staff directory, so both views show a large "Not set". The market is set when
@@ -810,15 +1246,18 @@ def page(pp, al):
 
 <script>
 (function(){
-  var tabs=[].slice.call(document.querySelectorAll('.viewtabs button'));
-  var panes=[].slice.call(document.querySelectorAll('.pane'));
-  tabs.forEach(function(b){b.addEventListener('click',function(){
-    tabs.forEach(function(o){o.setAttribute('aria-selected',String(o===b));});
-    panes.forEach(function(p){p.hidden=(p.dataset.view!==b.dataset.v);});
-    try{localStorage.setItem('kj-view',b.dataset.v);}catch(e){}
-  });});
-  try{var v=localStorage.getItem('kj-view');
-    if(v){var t=tabs.filter(function(b){return b.dataset.v===v;})[0]; if(t)t.click();}}catch(e){}
+  [].forEach.call(document.querySelectorAll('.viewtabs'),function(bar){
+    var g=bar.getAttribute('data-group')||'cap';
+    var tabs=[].slice.call(bar.querySelectorAll('button'));
+    var panes=[].slice.call(document.querySelectorAll('.pane[data-group="'+g+'"]'));
+    tabs.forEach(function(b){b.addEventListener('click',function(){
+      tabs.forEach(function(o){o.setAttribute('aria-selected',String(o===b));});
+      panes.forEach(function(p){p.hidden=(p.getAttribute('data-view')!==b.dataset.v);});
+      try{localStorage.setItem('kj-view-'+g,b.dataset.v);}catch(e){}
+    });});
+    try{var v=localStorage.getItem('kj-view-'+g);
+      if(v){var t=tabs.filter(function(b){return b.dataset.v===v;})[0]; if(t)t.click();}}catch(e){}
+  });
 
   var root=document.documentElement, tb=document.getElementById('themer');
   try{var s=localStorage.getItem('kj-theme'); if(s)root.setAttribute('data-theme',s);}catch(e){}
@@ -851,7 +1290,7 @@ def page(pp, al):
       d["signed"], len(avail), len(avail) - d["signed"],
       h(d["hours_all"]), len(people), h(d["draft_h"]), d["draft_r"],
       curve(pp["daily"], marks), teamcards, "\n".join(rows), tabs, "\n".join(panes),
-      insights(pp, al, d), h(935.0))
+      accounts, mom, insights(pp, al, d), h(935.0))
 
 
 def main():
