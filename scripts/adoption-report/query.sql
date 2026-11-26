@@ -7,7 +7,7 @@
 -- The pilot is the four launch leads plus everyone the staff directory lists as
 -- reporting to them. Leads are matched by email because the directory writes a
 -- manager's full legal name while ts_employees holds the short one.
-with
+with recursive
 params as (
   select current_date as today,
          current_date - (extract(dow from current_date)::int % 7) as wk_start
@@ -96,10 +96,36 @@ mgrs(label, mgr_name, mgr_email, launch) as (values
   ('Emad Mutter', 'Emad El-din Mohamed Mutter Abdel Khalek Mutter', 'emad.mutter@kijamii.com', date '2026-10-16'),
   ('Ramy Kamel',  'Ramy Kamel Mohamed Taher Omar',                  'ramy.kamel@kijamii.com',  date '2026-10-01')
 ),
-cohort as (
-  select distinct m.label as team, m.launch, d.email, 'Member'::text as seat
+-- Everyone under a lead, however far down the chain.
+--
+-- The rule used to be "direct reports of the four leads". Anybody reporting to
+-- a team member rather than to the lead fell outside it, and two people were
+-- doing exactly that: Marwan Badran under Khaled Khafagy and Shady El Kashef
+-- under Mariam Osman, logging every week, 343 h between them, in no view of
+-- this report and in none of the client or account totals either. Walking the
+-- chain picks the next one up on the day they are staffed instead of whenever
+-- somebody thinks to check.
+--
+-- A person is not followed twice on the same path and the walk stops at six
+-- levels, so a circular manager chain in the OPS list cannot spin this query
+-- forever. Somebody who appears under two leads is counted once, under the
+-- shallower one; a lead is always their own team's Lead rather than a member
+-- of somebody else's.
+tree as (
+  select m.label as team, m.launch, d.email, d.full_name, 1 as depth,
+         array[lower(d.email)] as seen
     from mgrs m join ts_employee_directory d on d.manager = m.mgr_name
-  union select m.label, m.launch, m.mgr_email, 'Lead' from mgrs m
+  union all
+  select t.team, t.launch, d.email, d.full_name, t.depth + 1, t.seen || lower(d.email)
+    from tree t join ts_employee_directory d on d.manager = t.full_name
+   where t.depth < 6 and not (lower(d.email) = any (t.seen))
+),
+cohort as (
+  select distinct on (email) team, launch, email, seat
+    from (select team, launch, email, 'Member'::text as seat, depth from tree
+          union all
+          select label, launch, mgr_email, 'Lead', 0 from mgrs) q
+   order by email, depth, team
 ),
 ids as (select e.id from cohort c join ts_employees e on e.email = c.email)
 select jsonb_build_object(
