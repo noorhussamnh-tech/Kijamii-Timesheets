@@ -1,7 +1,16 @@
 # The daily sweep
 
-Runs every morning at 08:17 Cairo, about ninety minutes before the adoption
-report, so anything it fixes is already fixed by the time the report is built.
+Runs every morning at 09:46 Cairo, seven days a week, as the first step of the
+`Timesheet sweep + adoption report` routine. It runs before the report is built,
+in the same session, so anything it fixes is already fixed by the time the page
+and the mail are made from the data.
+
+Seven days is deliberate. The working week is Sunday to Thursday, but 214 h of
+weekend work has been logged since launch and a fault introduced on a Thursday
+evening should not wait until Sunday to be found. What changes at the weekend is
+only who hears about it: Friday and Saturday are silent unless the sweep raises
+an alarm or fixes something, because an adoption report on a day nobody worked
+is noise, and noise is how a daily mail stops being read.
 
     checks.sql   -- one query over the live database, returns a JSON array of findings
     sweep.py     -- cross-checks the report's own payload, reads leave.json, writes the mail
@@ -51,10 +60,15 @@ commit, not to report it and move on.
 
 ## When it mails
 
-Only when there is an `alarm` or a `fix`, plus once a week on Sunday whatever
-happens. A sweep that mails every morning is a sweep nobody reads by the second
-week; a sweep that is always silent cannot be told apart from one that has
-stopped running. The Sunday note is the heartbeat.
+Sunday to Thursday its findings ride at the top of the daily adoption mail,
+which is itself the proof the routine ran. Friday and Saturday it mails only on
+an `alarm` or a `fix`, and otherwise says nothing at all.
+
+`sweep.py` can also stand alone: run by itself it mails only on an alarm or a
+fix, plus once a week on a Sunday whatever happens, so that an absence of mail
+can be told apart from a routine that has quietly stopped. That heartbeat is
+unused while the sweep rides inside the daily report, which arrives every
+working morning regardless.
 
 ## What it will not do
 
