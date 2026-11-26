@@ -155,15 +155,28 @@ select jsonb_build_object(
        'week_days', coalesce((select count(distinct x.work_date) from ts_entries x
                            where x.employee_id = e.id and x.hours is not null
                              and x.work_date in (select d from wdays)), 0),
+       -- Hours follow the window's calendar range, not its working days.
+       -- Somebody who works a Saturday has worked it: filtering the sum down to
+       -- Sun-Thu quietly dropped 214.25 h of submitted work out of the week, the
+       -- month and the launch windows, while leaving it in the all-time total,
+       -- so the page disagreed with itself. Capacity stays on the five-day week,
+       -- which is what is actually assumed of a person; the overflow shows up as
+       -- over 100%, which is how submitted overtime is meant to read.
+       --
+       -- The day COUNTS below stay on working days on purpose: "16/16 days" is a
+       -- measure of turning up on the days you were expected, and a Saturday is
+       -- not one of them.
        'wk_hours',  coalesce((select sum(x.hours) from ts_entries x
                            where x.employee_id = e.id
-                             and x.work_date in (select d from wdays)), 0),
+                             and x.work_date between (select ws from win)
+                                                 and (select we from win)), 0),
        'mt_days', coalesce((select count(distinct x.work_date) from ts_entries x
                            where x.employee_id = e.id and x.hours is not null
                              and x.work_date in (select d from mdays)), 0),
        'mt_hours', coalesce((select sum(x.hours) from ts_entries x
                            where x.employee_id = e.id
-                             and x.work_date in (select d from mdays)), 0),
+                             and x.work_date between (select ms from mwin)
+                                                 and (select me from mwin)), 0),
        -- Today, on its own. The month-to-date window includes today, and the
        -- page states what the same figures read without it; doing that from a
        -- cohort-wide total would be wrong by whatever somebody on leave logged.
@@ -184,8 +197,7 @@ select jsonb_build_object(
                       and extract(dow from x.work_date) not in (5,6)), 0),
        'lhours',  coalesce((select sum(x.hours) from ts_entries x
                     where x.employee_id = e.id
-                      and x.work_date between c.launch and (select we from win)
-                      and extract(dow from x.work_date) not in (5,6)), 0))
+                      and x.work_date between c.launch and (select we from win)), 0))
        order by c.team, c.seat, e.full_name)
      from cohort c join ts_employees e on e.email = c.email
      left join ts_employee_directory dd on dd.email = c.email),
@@ -213,28 +225,16 @@ select jsonb_build_object(
   -- whichever team the client and market resolve to, so one person feeds
   -- several teams in a week; there is no honest per-team denominator, and
   -- inventing one would read as utilisation when it is nothing of the kind.
-  'biz', (select coalesce(jsonb_agg(jsonb_build_object(
-            'name', name, 'hours', hours, 'week', week, 'mtd', mtd,
-            'amend', amend, 'people', people)
-            order by hours desc), '[]'::jsonb)
-     from (select t.name as name,
-                  sum(x.hours) as hours,
-                  sum(x.hours) filter (where x.work_date in (select d from wdays)) as week,
-                  sum(x.hours) filter (where x.work_date in (select d from mdays)) as mtd,
-                  sum(x.hours) filter (where x.work_type = 'amend')               as amend,
-                  count(distinct x.employee_id)                                   as people
-             from ts_entries x join ts_teams t on t.id = x.team_id
-            where x.employee_id in (select id from ids) and x.hours is not null
-            group by t.name having sum(x.hours) > 0) q),
-
   'clients', (select coalesce(jsonb_agg(jsonb_build_object(
             'name', name, 'hours', hours, 'week', week, 'mtd', mtd,
             'amend', amend, 'people', people)
             order by hours desc), '[]'::jsonb)
      from (select coalesce(cl.name, nullif(btrim(x.client_other), ''), 'Not named') as name,
                   sum(x.hours) as hours,
-                  sum(x.hours) filter (where x.work_date in (select d from wdays)) as week,
-                  sum(x.hours) filter (where x.work_date in (select d from mdays)) as mtd,
+                  sum(x.hours) filter (where x.work_date between (select ws from win)
+                                                        and (select we from win)) as week,
+                  sum(x.hours) filter (where x.work_date between (select ms from mwin)
+                                                        and (select me from mwin)) as mtd,
                   sum(x.hours) filter (where x.work_type = 'amend')               as amend,
                   count(distinct x.employee_id)                                   as people
              from ts_entries x
@@ -247,8 +247,10 @@ select jsonb_build_object(
             'amend', amend, 'people', people) order by hours desc), '[]'::jsonb)
      from (select coalesce(x.market::text, 'Not set') as name,
                   sum(x.hours) as hours,
-                  sum(x.hours) filter (where x.work_date in (select d from wdays)) as week,
-                  sum(x.hours) filter (where x.work_date in (select d from mdays)) as mtd,
+                  sum(x.hours) filter (where x.work_date between (select ws from win)
+                                                        and (select we from win)) as week,
+                  sum(x.hours) filter (where x.work_date between (select ms from mwin)
+                                                        and (select me from mwin)) as mtd,
                   sum(x.hours) filter (where x.work_type = 'amend') as amend,
                   count(distinct x.employee_id) as people
              from ts_entries x
@@ -260,8 +262,10 @@ select jsonb_build_object(
             'amend', amend, 'people', people) order by hours desc), '[]'::jsonb)
      from (select coalesce(nullif(btrim(d2.function), ''), 'Not set') as name,
                   sum(x.hours) as hours,
-                  sum(x.hours) filter (where x.work_date in (select d from wdays)) as week,
-                  sum(x.hours) filter (where x.work_date in (select d from mdays)) as mtd,
+                  sum(x.hours) filter (where x.work_date between (select ws from win)
+                                                        and (select we from win)) as week,
+                  sum(x.hours) filter (where x.work_date between (select ms from mwin)
+                                                        and (select me from mwin)) as mtd,
                   sum(x.hours) filter (where x.work_type = 'amend') as amend,
                   count(distinct x.employee_id) as people
              from ts_entries x
@@ -301,8 +305,10 @@ select jsonb_build_object(
             order by hours desc), '[]'::jsonb)
      from (select coalesce(nullif(btrim(x.project_type), ''), 'Not named') as name,
                   sum(x.hours) as hours,
-                  sum(x.hours) filter (where x.work_date in (select d from wdays)) as week,
-                  sum(x.hours) filter (where x.work_date in (select d from mdays)) as mtd,
+                  sum(x.hours) filter (where x.work_date between (select ws from win)
+                                                        and (select we from win)) as week,
+                  sum(x.hours) filter (where x.work_date between (select ms from mwin)
+                                                        and (select me from mwin)) as mtd,
                   sum(x.hours) filter (where x.work_type = 'amend')               as amend
              from ts_entries x
             where x.employee_id in (select id from ids) and x.hours is not null
@@ -402,7 +408,8 @@ select jsonb_build_object(
      from (select e.full_name as name, c.team as team,
                   coalesce(cl.name, nullif(btrim(x.client_other), ''), 'Not named') as client,
                   sum(x.hours) as hours,
-                  coalesce(sum(x.hours) filter (where x.work_date in (select d from mdays)), 0) as mtd,
+                  coalesce(sum(x.hours) filter (where x.work_date between (select ms from mwin)
+                                                                 and (select me from mwin)), 0) as mtd,
                   coalesce(sum(x.hours) filter (where x.work_type = 'amend'), 0) as amend,
                   count(distinct x.work_date) as days
              from ts_entries x

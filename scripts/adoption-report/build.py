@@ -1238,6 +1238,10 @@ def page(pp, al):
   <p><b>Region and function are incomplete.</b> %s h of work carries no market, and six people have
     no function in the staff directory, so both views show a large "Not set". The market is set when
     an entry is saved; the function comes from the OPS employee list.</p>
+  <p><b>Weekends.</b> The working week is Sunday to Thursday, so capacity is only ever counted
+    on those five days. Hours are not: an entry saved against a Friday or a Saturday is real work
+    and is counted in full, which is why somebody can read over 100%%. The days-logged counts stay
+    on working days, because those measure turning up when you were expected to.</p>
   <p><b>Rework</b> is any entry marked as an amend rather than a new task.</p>
   <p><b>Where the numbers come from.</b> Read live from the timesheet database at the snapshot time
     above, not from an export. A day counts as logged when it carries at least one entry with hours.</p>
@@ -1301,7 +1305,7 @@ def main():
         with open(sys.argv[2], encoding="utf-8") as fh:
             al = json.load(fh)
     else:
-        al = {k: pp.get(k, []) for k in ("regions", "clients", "ptypes", "biz", "functions")}
+        al = {k: pp.get(k, []) for k in ("regions", "clients", "ptypes", "functions")}
     sys.stdout.write(page(pp, al))
 
 

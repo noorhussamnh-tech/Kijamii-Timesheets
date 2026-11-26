@@ -1,6 +1,4 @@
 {
-  "_comment": "People away during the reporting window. They keep their row and their hours to date but are left out of the week and month-so-far participation figures, so a team is not marked down for a holiday. Remove a name once they log again.",
-  "on_leave": [
-    { "name": "Khaled Khafagy", "note": "on leave since 28 Oct - needs confirming" }
-  ]
+  "_comment": "People away during the reporting window. They keep their row and their hours to date but are left out of the week and month-to-date participation figures, so a team is not marked down for a holiday. Remove a name once they log again - a stale entry here is worse than an empty list, because it quietly removes a working person and their capacity from the headline. Khaled Khafagy was listed from 28 Oct and stayed listed while he logged 99 h across 37 days; removed 26 Nov.",
+  "on_leave": []
 }
